@@ -2,91 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Student Events</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <!-- ✅ THIS MUST BE A SCRIPT TAG -->
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js<style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f6f6f6;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 25px;
-    }
-    .events-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 16px;
-      max-width: 1200px;
-      margin: auto;
-    }
-    .event-card {
-      background: #fffbea;
-      border-radius: 10px;
-      padding: 15px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    .event-title {
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 8px;
-    }
-    .event-meta {
-      font-size: 14px;
-      margin: 4px 0;
-    }
-  </style>
+  <title>JS Test</title>
 </head>
-
 <body>
+  <h1 style="text-align:center;">✅ HTML Loaded</h1>
 
-<h1>Upcoming Student Events</h1>
-<div class="events-container" id="events"></div>
-
-<script>
-  console.log("✅ JavaScript running");
-
-  const csvUrl =
-    "https://aku4-my.sharepoint.com/:u:/g/personal/waqas_haider_aku_edu/IQDxneRM7B77QJZGKMg-oG7EAciYjGL1OfezimgPkUawExk?download=1";
-
-  Papa.parse(csvUrl, {
-    download: true,
-    header: true,
-    skipEmptyLines: true,
-    complete: function (results) {
-      console.log("✅ CSV loaded", results.data.length);
-
-      const container = document.getElementById("events");
-
-      results.data.forEach(event => {
-        if (!event["Event Name"]) return;
-
-        const dateValue = Number(event["Date of the Event"]);
-        const eventDate = new Date((dateValue - 25569) * 86400000);
-
-        const card = document.createElement("div");
-        card.className = "event-card";
-
-        card.innerHTML = `
-          <div class="event-title">${event["Event Name"]}</div>
-          <div class="event-meta">📅 ${eventDate.toDateString()}</div>
-          <div class="event-meta">⏰ ${event["Start Time"] || ""}</div>
-          <div class="event-meta">📍 ${event["Venue"] || ""}</div>
-          <div class="event-meta">🏷 ${event["Organiser"] || ""}</div>
-        `;
-
-        container.appendChild(card);
-      });
-    },
-    error: function (err) {
-      console.error("❌ CSV error", err);
-    }
-  });
-</script>
-
+  <script>
+    alert("✅ JavaScript is executing");
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      "<p style='text-align:center;color:green;'>✅ DOM manipulation works</p>"
+    );
+  </script>
 </body>
 </html>
