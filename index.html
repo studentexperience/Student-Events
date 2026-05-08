@@ -65,28 +65,18 @@
   const csvUrl = "https://aku4-my.sharepoint.com/:u:/g/personal/waqas_haider_aku_edu/IQDxneRM7B77QJZGKMg-oG7EAciYjGL1OfezimgPkUawExk?download=1";
 
   fetch(csvUrl)
-    .then(res => res.text())
+    .then(response => response.text())
     .then(text => {
       const rows = text.trim().split("\n").slice(1);
 
       rows.forEach(row => {
         const cols = row.split(",");
-        if (cols.length < 10) return;
+        if (cols.length < 6) return;
 
         const card = document.createElement("div");
         card.className = "event-card";
+
         card.innerHTML = `
           <div class="event-title">${cols[3]}</div>
           <div class="event-meta">📅 ${new Date(Number(cols[4]) * 86400000).toDateString()}</div>
           <div class="event-meta">⏰ ${cols[5]}</div>
-          <div class="event-meta">📍 ${cols[10] || ""}</div>
-          <div class="event-meta">🏷 ${cols[2]}</div>
-          <span class="tag">${cols[6]}</span>
-        `;
-        document.getElementById("events").appendChild(card);
-      });
-    });
-</script>
-
-</body>
-</html>
