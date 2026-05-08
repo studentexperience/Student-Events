@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>Student Events</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -11,20 +12,81 @@
       margin: 0;
       padding: 20px;
     }
+
     h1 {
       text-align: center;
+      margin-bottom: 25px;
     }
-    p {
-      text-align: center;
-      color: #666;
+
+    .events-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .event-card {
+      background: #fffbea;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .event-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .event-meta {
+      font-size: 14px;
+      margin: 4px 0;
+      color: #333;
+    }
+
+    .tag {
+      display: inline-block;
+      background: #e0e0e0;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-top: 6px;
     }
   </style>
 </head>
+
 <body>
 
-  <h1>Upcoming Student Events</h1>
-  <p>Website under construction</p>
+<h1>Upcoming Student Events</h1>
+<div class="events-container" id="events"></div>
+
+<script>
+  const csvUrl = "https://aku4-my.sharepoint.com/:u:/g/personal/waqas_haider_aku_edu/IQDxneRM7B77QJZGKMg-oG7EAciYjGL1OfezimgPkUawExk?download=1";
+
+  fetch(csvUrl)
+    .then(res => res.text())
+    .then(text => {
+      const rows = text.trim().split("\n").slice(1);
+
+      rows.forEach(row => {
+        const cols = row.split(",");
+        if (cols.length < 10) return;
+
+        const card = document.createElement("div");
+        card.className = "event-card";
+        card.innerHTML = `
+          <div class="event-title">${cols[3]}</div>
+          <div class="event-meta">📅 ${new Date(Number(cols[4]) * 86400000).toDateString()}</div>
+          <div class="event-meta">⏰ ${cols[5]}</div>
+          <div class="event-meta">📍 ${cols[10] || ""}</div>
+          <div class="event-meta">🏷 ${cols[2]}</div>
+          <span class="tag">${cols[6]}</span>
+        `;
+        document.getElementById("events").appendChild(card);
+      });
+    });
+</script>
 
 </body>
 </html>
-``
