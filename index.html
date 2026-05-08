@@ -5,7 +5,7 @@
   <title>Student Events</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- CSV parser -->
+  <!-- ✅ CORRECT CSV parser include -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
   <style>
@@ -75,8 +75,11 @@
       const events = results.data;
 
       events.forEach(event => {
-        // Excel serial date → real date
-        const eventDate = new Date((Number(event["Date of the Event"]) - 25569) * 86400000);
+        if (!event["Event Name"] || !event["Date of the Event"]) return;
+
+        const eventDate = new Date(
+          (Number(event["Date of the Event"]) - 25569) * 86400000
+        );
 
         const card = document.createElement("div");
         card.className = "event-card";
@@ -84,10 +87,10 @@
         card.innerHTML = `
           <div class="event-title">${event["Event Name"]}</div>
           <div class="event-meta">📅 ${eventDate.toDateString()}</div>
-          <div class="event-meta">⏰ ${event["Start Time"]}</div>
+          <div class="event-meta">⏰ ${event["Start Time"] || ""}</div>
           <div class="event-meta">📍 ${event["Venue"] || ""}</div>
-          <div class="event-meta">🏷 ${event["Organiser"]}</div>
-          <span class="tag">${event["Category of the Event"]}</span>
+          <div class="event-meta">🏷 ${event["Organiser"] || ""}</div>
+          <span class="tag">${event["Category of the Event"] || ""}</span>
         `;
 
         document.getElementById("events").appendChild(card);
