@@ -2,10 +2,105 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>GitHub Pages Test</title>
+  <title>Student Events</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- CSV parser -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f6f6f6;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .events-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .event-card {
+      background: #fffbea;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .event-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .event-meta {
+      font-size: 14px;
+      margin: 4px 0;
+      color: #333;
+    }
+
+    .tag {
+      display: inline-block;
+      background: #e0e0e0;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-top: 6px;
+    }
+  </style>
 </head>
+
 <body>
-  <h1>✅ GitHub Pages is LIVE</h1>
-  <p>If you see this text, Pages is rendering correctly.</p>
+
+<h1>Upcoming Student Events</h1>
+<div class="events-container" id="events"></div>
+
+<script>
+  const csvUrl =
+    "https://aku4-my.sharepoint.com/:u:/g/personal/waqas_haider_aku_edu/IQDxneRM7B77QJZGKMg-oG7EAciYjGL1OfezimgPkUawExk?download=1";
+
+  Papa.parse(csvUrl, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: function (results) {
+      const container = document.getElementById("events");
+
+      results.data.forEach(event => {
+        if (!event["Event Name"] || !event["Date of the Event"]) return;
+
+        const eventDate =
+          new Date((Number(event["Date of the Event"]) - 25569) * 86400000);
+
+        const card = document.createElement("div");
+        card.className = "event-card";
+
+        card.innerHTML = `
+          <div class="event-title">${event["Event Name"]}</div>
+          <div class="event-meta">📅 ${eventDate.toDateString()}</div>
+          <div class="event-meta">⏰ ${event["Start Time"] || ""}</div>
+          <div class="event-meta">📍 ${event["Venue"] || ""}</div>
+          <div class="event-meta">🏷 ${event["Organiser"] || ""}</div>
+          <span class="tag">${event["Category of the Event"] || ""}</span>
+        `;
+
+        container.appendChild(card);
+      });
+    },
+    error: function (err) {
+      console.error("CSV load error:", err);
+    }
+  });
+</script>
+
 </body>
 </html>
