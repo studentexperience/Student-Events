@@ -5,9 +5,8 @@
   <title>Student Events</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- ✅ CORRECT CSV parser include -->
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-
+  <!-- Load Papa Parse correctly -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -45,6 +44,7 @@
     .event-meta {
       font-size: 14px;
       margin: 4px 0;
+      color: #333;
     }
 
     .tag {
@@ -72,9 +72,9 @@
     header: true,
     skipEmptyLines: true,
     complete: function (results) {
-      const events = results.data;
+      const eventsDiv = document.getElementById("events");
 
-      events.forEach(event => {
+      results.data.forEach(event => {
         if (!event["Event Name"] || !event["Date of the Event"]) return;
 
         const eventDate = new Date(
@@ -93,11 +93,11 @@
           <span class="tag">${event["Category of the Event"] || ""}</span>
         `;
 
-        document.getElementById("events").appendChild(card);
+        eventsDiv.appendChild(card);
       });
     },
     error: function (err) {
-      console.error("CSV load error:", err);
+      console.error("CSV parsing failed:", err);
     }
   });
 </script>
