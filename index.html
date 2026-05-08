@@ -5,22 +5,18 @@
   <title>Student Events</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- CSV parser -->
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-
-  <style>
+  <!-- ✅ CORRECT PapaParse loader -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min>
     body {
       font-family: Arial, sans-serif;
       background-color: #f6f6f6;
       margin: 0;
       padding: 20px;
     }
-
     h1 {
       text-align: center;
       margin-bottom: 25px;
     }
-
     .events-container {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -28,26 +24,21 @@
       max-width: 1200px;
       margin: auto;
     }
-
     .event-card {
       background: #fffbea;
       border-radius: 10px;
       padding: 15px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
-
     .event-title {
       font-size: 18px;
       font-weight: bold;
       margin-bottom: 8px;
     }
-
     .event-meta {
       font-size: 14px;
       margin: 4px 0;
-      color: #333;
     }
-
     .tag {
       display: inline-block;
       background: #e0e0e0;
