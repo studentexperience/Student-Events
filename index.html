@@ -5,7 +5,7 @@
   <title>Student Events</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- CSV parser -->
+  <!-- PapaParse CSV parser -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
   <style>
@@ -43,69 +43,3 @@
     }
 
     .event-meta {
-      font-size: 14px;
-      margin: 4px 0;
-    }
-
-    .tag {
-      display: inline-block;
-      background: #e0e0e0;
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: 12px;
-      margin-top: 6px;
-    }
-  </style>
-</head>
-
-<body>
-
-<h1>Upcoming Student Events</h1>
-<div class="events-container" id="events"></div>
-
-<script>
-  const csvUrl = "website-data.csv";
-
-  // Get today's date at midnight (local time)
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  Papa.parse(csvUrl, {
-    download: true,
-    header: true,
-    skipEmptyLines: true,
-
-    complete: function (results) {
-      const container = document.getElementById("events");
-
-      results.data.forEach(event => {
-        if (!event["Event Name"] || !event["Date of the Event"]) return;
-
-        // Convert Excel serial date to JS date
-        const excelDate = Number(event["Date of the Event"]);
-        const eventDate = new Date((excelDate - 25569) * 86400000);
-        eventDate.setHours(0, 0, 0, 0);
-
-        // ✅ FILTER: Skip past events
-        if (eventDate < today) return;
-
-        const card = document.createElement("div");
-        card.className = "event-card";
-
-        card.innerHTML = `
-          <div class="event-title">${event["Event Name"]}</div>
-          <div class="event-meta">📅 ${eventDate.toDateString()}</div>
-          <div class="event-meta">⏰ ${event["Start Time"] || ""}</div>
-          <div class="event-meta">📍 ${event["Venue"] || ""}</div>
-          <div class="event-meta">🏷 ${event["Organiser"] || ""}</div>
-          <span class="tag">${event["Category of the Event"] || ""}</span>
-        `;
-
-        container.appendChild(card);
-      });
-    }
-  });
-</script>
-
-</body>
-</html>
