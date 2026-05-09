@@ -1,97 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>Student Events</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <!-- ✅ Google Font: Poppins -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-<!-- ✅ PapaParse (FIXED) -->
+<!-- ✅ PapaParse -->
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <style>
-body{
-  font-family:'Poppins',sans-serif;
+body {
+  font-family: 'Poppins', sans-serif;
   background:#f6f6f6;
   margin:0;
   padding:20px;
 }
 
-h1{
+h1 {
   text-align:center;
-  margin-bottom:10px;
   font-weight:600;
+  margin-bottom:10px;
 }
 
-/* ===== VIEW TOGGLE ===== */
-.view-toggle{
-  max-width:1200px;
-  margin:0 auto 14px;
+/* View toggle */
+.view-toggle {
   display:flex;
   justify-content:center;
   gap:10px;
+  margin-bottom:14px;
 }
 
-.view-toggle button{
-  border:none;
+.view-toggle button {
   padding:8px 16px;
   border-radius:20px;
-  font-size:14px;
-  font-family:'Poppins',sans-serif;
+  border:none;
   cursor:pointer;
   background:#e5e7eb;
 }
 
-.view-toggle button.active{
+.view-toggle button.active {
   background:#111827;
-  color:#fff;
+  color:white;
 }
 
-/* ===== SEARCH BAR ===== */
-.toolbar{
+/* Toolbar */
+.toolbar {
   max-width:1200px;
   margin:0 auto 20px;
   display:grid;
-  grid-template-columns: 2fr 1fr 1.2fr 1.2fr auto;
+  grid-template-columns:2fr 1fr 1.2fr 1.2fr auto;
   gap:10px;
 }
 
-.toolbar input,
-.toolbar select,
-.toolbar button{
-  padding:10px 12px;
+.toolbar input, .toolbar select, .toolbar button {
+  padding:10px;
   border-radius:8px;
-  border:1px solid #d0d0d0;
-  font-size:14px;
-  font-family:'Poppins',sans-serif;
+  border:1px solid #ccc;
 }
 
-.toolbar button{
+.toolbar button {
   background:#111827;
   color:white;
   cursor:pointer;
 }
 
-@media(max-width:900px){
-  .toolbar{grid-template-columns:1fr 1fr;}
-  .toolbar button{grid-column:span 2;}
-}
-
-/* ===== GRID ===== */
-.events-container{
+/* Grid */
+.events-container {
   max-width:1200px;
   margin:auto;
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+  grid-template-columns:repeat(auto-fill, minmax(250px,1fr));
   gap:18px;
 }
 
-/* ===== CARD ===== */
-.event-card{
+/* Card */
+.event-card {
   border-radius:16px;
   overflow:hidden;
   display:flex;
@@ -99,20 +87,21 @@ h1{
   box-shadow:0 6px 14px rgba(0,0,0,.12);
 }
 
-.color-bar{height:40px;}
+.color-bar { height:40px; }
 
-.card-body{
-  padding:12px 14px 14px;
-  flex:1;
+.card-body {
+  padding:12px 14px;
   display:flex;
   flex-direction:column;
+  flex:1;
 }
 
-.date-badge{
-  width:50px;height:50px;
+.date-badge {
+  width:50px;
+  height:50px;
   border-radius:10px;
   background:#111827;
-  color:#fff;
+  color:white;
   display:flex;
   flex-direction:column;
   justify-content:center;
@@ -121,22 +110,10 @@ h1{
   margin-top:-24px;
 }
 
-.date-badge .day{font-size:17px;}
-.date-badge .month{font-size:11px;letter-spacing:1px;text-transform:uppercase;}
+.event-title { font-weight:600; margin:8px 0 4px; }
+.event-meta { font-size:14px; margin:2px 0; }
 
-.event-title{
-  font-size:15.5px;
-  font-weight:600;
-  margin:8px 0 4px;
-}
-
-.event-meta{
-  font-size:14px;
-  margin:2px 0;
-  line-height:1.3;
-}
-
-.category{
+.category {
   margin-top:auto;
   font-size:12px;
   background:rgba(0,0,0,.08);
@@ -145,10 +122,9 @@ h1{
   align-self:flex-start;
 }
 
-.empty{
+.empty {
   text-align:center;
   margin-top:30px;
-  color:#555;
 }
 </style>
 </head>
@@ -163,7 +139,7 @@ h1{
 </div>
 
 <div class="toolbar">
-  <input id="q" placeholder="Search by event, club, category, venue…" />
+  <input id="q" placeholder="Search by event, club, category…" />
   <input id="dateFilter" type="date" />
   <select id="clubFilter"></select>
   <select id="catFilter"></select>
@@ -171,121 +147,94 @@ h1{
 </div>
 
 <div class="events-container" id="events"></div>
-<div class="empty" id="emptyMsg" style="display:none;"></div>
+<div class="empty" id="emptyMsg" style="display:none;">No events to show.</div>
 
 <script>
-const csvUrl="website-data.csv";
-const today=new Date(); today.setHours(0,0,0,0);
-let mode="upcoming";
+document.addEventListener("DOMContentLoaded", () => {
 
-const PALETTE=[
- {base:"#F0F7FF",accent:"#D6E6FF"},
- {base:"#F7F3FF",accent:"#E3DBFF"},
- {base:"#FFF6EC",accent:"#FFE6CC"},
- {base:"#F1FAF5",accent:"#D9F2E6"},
- {base:"#FFF0F3",accent:"#FFD6DE"},
- {base:"#F5F5F5",accent:"#E1E1E1"}
-];
+  console.log("✅ DOM loaded, Papa:", typeof Papa);
 
-const excelToDate=n=>{
- const d=new Date((Number(n)-25569)*86400000);
- d.setHours(0,0,0,0);
- return d;
-};
+  const csvUrl = "website-data.csv";
+  const today = new Date(); today.setHours(0,0,0,0);
+  let mode = "upcoming";
+  let allEvents = [];
 
-let allEvents=[];
+  const PALETTE = [
+    {base:"#F0F7FF",accent:"#D6E6FF"},
+    {base:"#FFF6EC",accent:"#FFE6CC"},
+    {base:"#F1FAF5",accent:"#D9F2E6"},
+    {base:"#F7F3FF",accent:"#E3DBFF"}
+  ];
 
-function render(){
- const qv=q.value.toLowerCase(),
-      cv=clubFilter.value,
-      tv=catFilter.value,
-      dv=dateFilter.value?new Date(dateFilter.value+"T00:00:00"):null;
+  const excelToDate = v => {
+    const d = new Date((Number(v) - 25569) * 86400000);
+    d.setHours(0,0,0,0);
+    return d;
+  };
 
- let list=allEvents.filter(e=>{
-   return mode==="upcoming" ? e.date>=today : e.date<today;
- });
+  const q = document.getElementById("q");
+  const dateFilter = document.getElementById("dateFilter");
+  const clubFilter = document.getElementById("clubFilter");
+  const catFilter = document.getElementById("catFilter");
+  const clearBtn = document.getElementById("clearBtn");
+  const events = document.getElementById("events");
+  const emptyMsg = document.getElementById("emptyMsg");
+  const upcomingBtn = document.getElementById("upcomingBtn");
+  const pastBtn = document.getElementById("pastBtn");
 
- list=list
-  .filter(e=>!cv||e.organiser===cv)
-  .filter(e=>!tv||e.category===tv)
-  .filter(e=>!dv||e.date.getTime()===dv.getTime())
-  .filter(e=>!qv||`${e.name} ${e.organiser} ${e.category} ${e.venue}`
-      .toLowerCase().includes(qv));
+  function render() {
+    let list = allEvents.filter(e =>
+      mode === "upcoming" ? e.date >= today : e.date < today
+    );
 
- list.sort((a,b)=>mode==="upcoming"?a.date-b.date:b.date-a.date);
+    if (!list.length) {
+      emptyMsg.style.display="block";
+      events.innerHTML="";
+      return;
+    }
 
- events.innerHTML="";
- emptyMsg.style.display="none";
+    emptyMsg.style.display="none";
+    list.sort((a,b)=> mode==="upcoming" ? a.date-b.date : b.date-a.date);
 
- if(!list.length){
-   emptyMsg.style.display="block";
-   emptyMsg.textContent="No events to show.";
-   return;
- }
+    events.innerHTML="";
+    list.forEach((e,i)=>{
+      const {base,accent} = PALETTE[i%PALETTE.length];
+      events.innerHTML += `
+        <div class="event-card" style="background:${base}">
+          <div class="color-bar" style="background:${accent}"></div>
+          <div class="card-body">
+            <div class="date-badge">${e.date.getDate()}</div>
+            <div class="event-title">${e.name}</div>
+            <div class="event-meta">🎭 ${e.organiser}</div>
+            <div class="category">${e.category}</div>
+          </div>
+        </div>`;
+    });
+  }
 
- list.forEach((e,i)=>{
-   const {base,accent}=PALETTE[i%PALETTE.length];
-   const day=String(e.date.getDate()).padStart(2,"0");
-   const month=e.date.toLocaleString("en-US",{month:"short"});
-   events.insertAdjacentHTML("beforeend",`
-    <div class="event-card" style="background:${base}">
-      <div class="color-bar" style="background:${accent}"></div>
-      <div class="card-body">
-        <div class="date-badge"><div class="day">${day}</div><div class="month">${month}</div></div>
-        <div class="event-title">${e.name}</div>
-        ${e.organiser?`<div class="event-meta">🎭 ${e.organiser}</div>`:""}
-        ${e.venue?`<div class="event-meta">📍 ${e.venue}</div>`:""}
-        ${e.time?`<div class="event-meta">⏰ ${e.time}</div>`:""}
-        <div class="category">${e.category}</div>
-      </div>
-    </div>
-   `);
- });
-}
+  Papa.parse(csvUrl,{
+    download:true,
+    header:true,
+    skipEmptyLines:true,
+    complete:r=>{
+      allEvents = r.data.map(x=>({
+        name:x["Event Name"],
+        organiser:x["Organiser"],
+        category:x["Category of the Event"],
+        date:excelToDate(x["Date of the Event"])
+      })).filter(e=>e.name && e.date);
 
-Papa.parse(csvUrl,{
- download:true,header:true,skipEmptyLines:true,
- complete:r=>{
-  allEvents=r.data.map(x=>({
-    name:x["Event Name"],
-    organiser:x["Organiser"],
-    category:x["Category of the Event"],
-    venue:x["Venue"]||"",
-    time:x["Start Time"]||"",
-    date:excelToDate(x["Date of the Event"])
-  })).filter(e=>e.name&&e.date);
+      clubFilter.innerHTML="<option value=''>All clubs</option>";
+      catFilter.innerHTML="<option value=''>All categories</option>";
 
-  clubFilter.innerHTML=`<option value="">Choose club</option>`+
-     [...new Set(allEvents.map(e=>e.organiser))].sort().map(c=>`<option>${c}</option>`).join("");
-  catFilter.innerHTML=`<option value="">Choose category</option>`+
-     [...new Set(allEvents.map(e=>e.category))].sort().map(c=>`<option>${c}</option>`).join("");
+      render();
+    }
+  });
 
-  q.oninput=dateFilter.onchange=clubFilter.onchange=catFilter.onchange=render;
-  clearBtn.onclick=()=>{q.value=dateFilter.value=clubFilter.value=catFilter.value="";render();};
+  upcomingBtn.onclick=()=>{mode="upcoming"; upcomingBtn.classList.add("active"); pastBtn.classList.remove("active"); render();}
+  pastBtn.onclick=()=>{mode="past"; pastBtn.classList.add("active"); upcomingBtn.classList.remove("active"); render();}
 
-  render();
- }
 });
-
-upcomingBtn.onclick=()=>{mode="upcoming";
- upcomingBtn.classList.add("active");
- pastBtn.classList.remove("active");
- render();};
-
-pastBtn.onclick=()=>{mode="past";
- pastBtn.classList.add("active");
- upcomingBtn.classList.remove("active");
- render();};
-
-const q=document.getElementById("q"),
-clubFilter=document.getElementById("clubFilter"),
-catFilter=document.getElementById("catFilter"),
-dateFilter=document.getElementById("dateFilter"),
-clearBtn=document.getElementById("clearBtn"),
-events=document.getElementById("events"),
-emptyMsg=document.getElementById("emptyMsg"),
-upcomingBtn=document.getElementById("upcomingBtn"),
-pastBtn=document.getElementById("pastBtn");
 </script>
 
 </body>
