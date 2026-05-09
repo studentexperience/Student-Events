@@ -5,7 +5,7 @@
   <title>Student Events</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- PapaParse CSV parser -->
+  <!-- ✅ FIXED: Proper PapaParse script -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
   <style>
@@ -44,6 +44,7 @@
       cursor: pointer;
       background: #111827;
       color: #fff;
+      border: 1px solid #111827;
     }
 
     .events-container {
@@ -70,34 +71,31 @@
     .event-meta {
       font-size: 14px;
       margin: 4px 0;
-      color: #333;
     }
 
-    /* ✅ Category Tags (Base) */
+    /* Category tags */
     .tag {
       display: inline-block;
       padding: 4px 10px;
       border-radius: 12px;
       font-size: 12px;
       color: white;
-      margin-top: 8px;
+      margin-top: 6px;
     }
-
-    /* ✅ Color‑coded categories */
-    .tag-sports { background: #16a34a; }              /* Green */
-    .tag-recreational-social { background: #7c3aed; } /* Purple */
-    .tag-workshop-session { background: #2563eb; }    /* Blue */
-    .tag-orientation { background: #ea580c; }          /* Orange */
-    .tag-competition { background: #dc2626; }          /* Red */
-    .tag-welfare { background: #0f766e; }               /* Teal */
-    .tag-meeting { background: #6b7280; }               /* Gray */
-    .tag-other { background: #9ca3af; color:#111; }     /* Light gray */
+    .tag-sports { background:#16a34a; }
+    .tag-recreational-social { background:#7c3aed; }
+    .tag-workshop-session { background:#2563eb; }
+    .tag-orientation { background:#ea580c; }
+    .tag-competition { background:#dc2626; }
+    .tag-welfare { background:#0f766e; }
+    .tag-meeting { background:#6b7280; }
+    .tag-other { background:#9ca3af; color:#111; }
 
     .empty {
       text-align: center;
-      color: #444;
       margin-top: 26px;
       font-size: 15px;
+      color: #444;
     }
   </style>
 </head>
@@ -106,68 +104,116 @@
 
 <h1>Upcoming Student Events</h1>
 
-<div class="events-container" id="events"></div>
-<div class="empty" id="emptyMsg" style="display:none;">
-  ✨ Looks like our clubs and societies are taking a short break before the fun begins again :-)
+<div class="toolbar">
+  <input id="q" placeholder="🔍 Search by event, club, category, venue…" />
+  <input id="dateFilter" type="date" />
+  <select id="clubFilter"></select>
+  <select id="catFilter"></select>
+  <button id="clearBtn">Clear</button>
 </div>
+
+<div class="events-container" id="events"></div>
+<div class="empty" id="emptyMsg" style="display:none;"></div>
 
 <script>
   const csvUrl = "website-data.csv";
 
-  const today = new Date();
-  today.setHours(0,0,0,0);
+  const ALL_CLUBS = [
+    "ACC MC - Undergraduate","ACC SONAM - Graduate","ACC SONAM - Undergraduate",
+    "ACCs FAS","Activity Club IED","AKU Athletics Club","AKU Chess Club",
+    "AKU Graduate Education Student Society (AGESS)","AKU Journalism Club",
+    "AKU Majlis","AKU MUN","AKU Photography Club",
+    "Arts and Culture Committee (AAC) (AKU-FAS)",
+    "Arts and Culture Committee (AAC) (AKU-IED)",
+    "Arts and Culture Committee (AAC) (AKU-SONAM) Graduate",
+    "Arts and Culture Committee (AAC) (AKU-SONAM) Undergraduate",
+    "Arts and Culture Committee (ACC) (AKU-MC)",
+    "Aurora","Class Representative","Club for Theatrics (ACT)",
+    "Entrepreneurial Society (AES)","Explorers Club",
+    "FALAH (FAS)","FALAH (MBBS)","FALAH (SONAM)",
+    "Music Society","OSEP Internal","Public Speaking Forum (PSF)",
+    "Publication and Literary Society (APLS) (FAS)",
+    "Publication and Literary Society (APLS) (MBBS)",
+    "Publication and Literary Society (APLS) (SONAM)",
+    "Rowing Club (ARC)","Society for Arts and Culture",
+    "Society of Climate Conservation and Health (SoCCH)",
+    "Sports Society","Student Research Forum (SRF) (FAS)",
+    "Student Research Forum (SRF) (MBBS)",
+    "Student Research Forum (SRF) (SONAM)",
+    "SRF-FAS Conference","Synergy (FAS)","Synergy (MBBS)","Synergy (SONAM)"
+  ];
 
-  function excelToDate(n) {
-    const d = new Date((Number(n) - 25569) * 86400000);
-    d.setHours(0,0,0,0);
-    return d;
-  }
+  const ALL_CATEGORIES = [
+    "Competition","Meeting","Orientation","Other",
+    "Recreational/Social","Sports","Welfare","Workshop/Session"
+  ];
 
-  function slugifyCategory(str) {
-    return str.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  }
+  const today = new Date(); today.setHours(0,0,0,0);
+  let allEvents = [];
 
-  Papa.parse(csvUrl, {
-    download: true,
-    header: true,
-    skipEmptyLines: true,
-    complete(res) {
-      const container = document.getElementById("events");
-      const emptyMsg = document.getElementById("emptyMsg");
+  const excelDate = n => {
+    const d = new Date((Number(n)-25569)*86400000);
+    d.setHours(0,0,0,0); return d;
+  };
 
-      const upcoming = res.data
-        .map(r => ({
-          name: r["Event Name"],
-          organiser: r["Organiser"],
-          category: r["Category of the Event"],
-          date: excelToDate(r["Date of the Event"]),
-          time: r["Start Time"],
-          venue: r["Venue"]
-        }))
-        .filter(e => e.name && e.date >= today)
-        .sort((a,b) => a.date - b.date);
+  const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g,'-');
 
-      if (upcoming.length === 0) {
-        emptyMsg.style.display = "block";
-        return;
-      }
+  function render(){
+    const qv = q.value.toLowerCase();
+    const cv = clubFilter.value;
+    const tv = catFilter.value;
+    const dv = dateFilter.value ? new Date(dateFilter.value+"T00:00:00") : null;
 
-      upcoming.forEach(e => {
-        const tagClass = "tag-" + slugifyCategory(e.category);
-        const card = document.createElement("div");
-        card.className = "event-card";
+    const filtered = allEvents
+      .filter(e => e.date >= today)
+      .filter(e => !cv || e.organiser===cv)
+      .filter(e => !tv || e.category===tv)
+      .filter(e => !dv || e.date.getTime()===dv.getTime())
+      .filter(e => !qv || `${e.name} ${e.organiser} ${e.category} ${e.venue}`.toLowerCase().includes(qv))
+      .sort((a,b)=>a.date-b.date);
 
-        card.innerHTML = `
+    events.innerHTML="";
+    emptyMsg.style.display="none";
+
+    if(!filtered.length){
+      emptyMsg.style.display="block";
+      emptyMsg.innerHTML = cv
+        ? "✨ Looks like our clubs and societies are taking a short break before the fun begins again :-)"
+        : tv
+        ? "💡 Don't see any relevant event? How about you bring the event, and OSEP would love to support you in planning and execution of the event."
+        : "✨ Looks like our clubs and societies are taking a short break before the fun begins again :-)";
+      return;
+    }
+
+    filtered.forEach(e=>{
+      events.insertAdjacentHTML("beforeend",`
+        <div class="event-card">
           <div class="event-title">${e.name}</div>
           <div class="event-meta">📅 ${e.date.toDateString()}</div>
-          <div class="event-meta">⏰ ${e.time || ""}</div>
-          <div class="event-meta">📍 ${e.venue || ""}</div>
-          <div class="event-meta">🏷 ${e.organiser || ""}</div>
-          <span class="tag ${tagClass}">${e.category}</span>
-        `;
+          <div class="event-meta">🏷 ${e.organiser}</div>
+          <span class="tag tag-${slug(e.category)}">${e.category}</span>
+        </div>`);
+    });
+  }
 
-        container.appendChild(card);
-      });
+  Papa.parse(csvUrl,{
+    download:true,header:true,skipEmptyLines:true,
+    complete:r=>{
+      allEvents=r.data.map(x=>({
+        name:x["Event Name"],
+        organiser:x["Organiser"],
+        category:x["Category of the Event"],
+        venue:x["Venue"]||"",
+        date:excelDate(x["Date of the Event"])
+      })).filter(e=>e.name&&e.date);
+
+      clubFilter.innerHTML=`<option value="">🏷️ Choose a club</option>`+ALL_CLUBS.map(c=>`<option>${c}</option>`).join("");
+      catFilter.innerHTML=`<option value="">🎯 Choose activity type</option>`+ALL_CATEGORIES.map(c=>`<option>${c}</option>`).join("");
+
+      q.oninput=dateFilter.onchange=clubFilter.onchange=catFilter.onchange=render;
+      clearBtn.onclick=()=>{q.value=dateFilter.value=clubFilter.value=catFilter.value="";render();};
+
+      render();
     }
   });
 </script>
