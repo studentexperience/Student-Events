@@ -1,161 +1,149 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Upcoming Student Events</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <title>Upcoming Student Events</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- ✅ Google Font: Poppins -->
-https://fonts.googleapis.com
-https://fonts.gstatic.com
-https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap
+  <!-- ✅ Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-<!-- PapaParse -->
-https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.jsscript>
+  <!-- ✅ PapaParse -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
-<style>
-body {
-  font-family: 'Poppins', sans-serif;
-  background: #f6f6f6;
-  margin: 0;
-  padding: 20px;
-  font-weight: 400;
-}
+  <style>
+    body {
+      font-family: 'Poppins', Arial, sans-serif;
+      background:#f6f6f6;
+      margin:0;
+      padding:20px;
+    }
 
-h1 {
-  text-align: center;
-  margin-bottom: 14px;
-  font-weight: 600;
-}
+    h1 {
+      text-align:center;
+      margin-bottom:16px;
+      font-weight:600;
+    }
 
-/* ========== SEARCH / FILTER BAR ========== */
-.toolbar {
-  max-width: 1200px;
-  margin: 0 auto 20px;
-  display: grid;
-  grid-template-columns: 2fr 1fr 1.2fr 1.2fr auto;
-  gap: 10px;
-}
+    /* ===== SEARCH BAR ===== */
+    .toolbar {
+      max-width:1200px;
+      margin:0 auto 22px;
+      display:grid;
+      grid-template-columns: 2fr 1fr 1.2fr 1.2fr auto;
+      gap:10px;
+    }
 
-.toolbar input,
-.toolbar select,
-.toolbar button {
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid #d0d0d0;
-  font-size: 14px;
-  font-family: 'Poppins', sans-serif;
-}
+    .toolbar input,
+    .toolbar select,
+    .toolbar button {
+      padding:10px 12px;
+      border-radius:8px;
+      border:1px solid #d0d0d0;
+      font-size:14px;
+      font-family:'Poppins', sans-serif;
+    }
 
-.toolbar button {
-  background: #111827;
-  color: #fff;
-  cursor: pointer;
-  font-weight: 500;
-}
+    .toolbar button {
+      background:#111827;
+      color:white;
+      cursor:pointer;
+    }
 
-@media (max-width: 900px) {
-  .toolbar {
-    grid-template-columns: 1fr 1fr;
-  }
-  .toolbar button {
-    grid-column: span 2;
-  }
-}
+    @media (max-width: 900px) {
+      .toolbar { grid-template-columns:1fr 1fr; }
+      .toolbar button { grid-column: span 2; }
+    }
 
-/* ========== GRID ========== */
-.events-container {
-  max-width: 1200px;
-  margin: auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 18px;
-}
+    /* ===== GRID ===== */
+    .events-container {
+      max-width:1200px;
+      margin:auto;
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap:20px;
+    }
 
-/* ========== CARD ========== */
-.event-card {
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
-  display: flex;
-  flex-direction: column;
-}
+    /* ===== CARD ===== */
+    .event-card {
+      border-radius:16px;
+      overflow:hidden;
+      box-shadow:0 6px 14px rgba(0,0,0,0.12);
+      display:flex;
+      flex-direction:column;
+      min-height:240px;
+    }
 
-/* Accent bar */
-.color-bar {
-  height: 40px;
-}
+    /* ✅ Accent bar */
+    .color-bar {
+      height:40px;
+    }
 
-/* Card body fills fully */
-.card-body {
-  padding: 12px 14px 14px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
+    /* ===== CARD BODY ===== */
+    .card-body {
+      padding:12px 14px 14px;
+      flex:1;
+      display:flex;
+      flex-direction:column;
+    }
 
-/* Date badge */
-.date-badge {
-  width: 50px;
-  height: 50px;
-  border-radius: 10px;
-  background: #111827;
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  font-weight: 600;
-  margin-top: -24px;
-}
+    /* ===== DATE ===== */
+    .date-badge {
+      width:52px;
+      height:52px;
+      border-radius:10px;
+      background:#111827;
+      color:white;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      font-weight:600;
+      margin-top:-26px;
+    }
 
-.date-badge .day {
-  font-size: 17px;
-  line-height: 17px;
-}
+    .date-badge .day { font-size:18px; line-height:18px; }
+    .date-badge .month {
+      font-size:11px;
+      letter-spacing:1px;
+      text-transform:uppercase;
+    }
 
-.date-badge .month {
-  font-size: 11px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
+    /* ===== CONTENT ===== */
+    .event-title {
+      font-size:16px;
+      font-weight:600;
+      margin:8px 0 6px;
+      line-height:1.35;
+    }
 
-/* Content */
-.event-title {
-  font-size: 15.5px;
-  font-weight: 600;
-  margin: 8px 0 4px;
-}
+    .event-meta-group { margin-top:4px; }
 
-.event-meta {
-  font-size: 14px;
-  margin: 2px 0;
-  line-height: 1.3;
-  color: #333;
-  font-weight: 400;
-}
+    .event-meta {
+      font-size:14px;
+      line-height:1.35;
+      color:#333;
+      margin:2px 0;
+    }
 
-/* Category pill */
-.category {
-  margin-top: auto;
-  margin-bottom: 2px;
-  font-size: 12px;
-  background: rgba(0, 0, 0, 0.08);
-  padding: 4px 10px;
-  border-radius: 20px;
-  align-self: flex-start;
-  font-weight: 500;
-}
+    .category {
+      margin-top:auto;
+      font-size:12px;
+      background:rgba(0,0,0,0.08);
+      padding:4px 10px;
+      border-radius:20px;
+      align-self:flex-start;
+    }
 
-/* Empty state */
-.empty {
-  text-align: center;
-  margin-top: 30px;
-  font-size: 15px;
-  color: #444;
-  font-weight: 400;
-}
-</style>
+    .empty {
+      text-align:center;
+      margin-top:30px;
+      font-size:15px;
+      color:#444;
+    }
+  </style>
 </head>
 
 <body>
@@ -174,136 +162,125 @@ h1 {
 <div class="empty" id="emptyMsg" style="display:none;"></div>
 
 <script>
-const csvUrl = "website-data.csv";
-const today = new Date();
-today.setHours(0,0,0,0);
+  /* ===== DOM ===== */
+  const q = document.getElementById("q");
+  const dateFilter = document.getElementById("dateFilter");
+  const clubFilter = document.getElementById("clubFilter");
+  const catFilter = document.getElementById("catFilter");
+  const clearBtn = document.getElementById("clearBtn");
+  const eventsEl = document.getElementById("events");
+  const emptyMsg = document.getElementById("emptyMsg");
 
-/* Inclusive pastel palette */
-const CARD_PALETTE = [
-  { base:"#F0F7FF", accent:"#D6E6FF" },
-  { base:"#F7F3FF", accent:"#E3DBFF" },
-  { base:"#FFF6EC", accent:"#FFE6CC" },
-  { base:"#F1FAF5", accent:"#D9F2E6" },
-  { base:"#FFF0F3", accent:"#FFD6DE" },
-  { base:"#F5F5F5", accent:"#E1E1E1" }
-];
+  const csvUrl = "website-data.csv";
+  const today = new Date(); today.setHours(0,0,0,0);
 
-const excelToDate = n => {
-  const d = new Date((Number(n) - 25569) * 86400000);
-  d.setHours(0,0,0,0);
-  return d;
-};
+  const CARD_PALETTE = [
+    { base:"#F0F7FF", accent:"#D6E6FF" },
+    { base:"#F7F3FF", accent:"#E3DBFF" },
+    { base:"#FFF6EC", accent:"#FFE6CC" },
+    { base:"#F1FAF5", accent:"#D9F2E6" },
+    { base:"#FFF0F3", accent:"#FFD6DE" },
+    { base:"#F5F5F5", accent:"#E1E1E1" }
+  ];
 
-let allEvents = [];
-
-function render() {
-  const qv = q.value.toLowerCase();
-  const cv = clubFilter.value;
-  const tv = catFilter.value;
-  const dv = dateFilter.value ? new Date(dateFilter.value + "T00:00:00") : null;
-
-  const filtered = allEvents
-    .filter(e => e.date >= today)
-    .filter(e => !cv || e.organiser === cv)
-    .filter(e => !tv || e.category === tv)
-    .filter(e => !dv || e.date.getTime() === dv.getTime())
-    .filter(e =>
-      !qv ||
-      `${e.name} ${e.organiser} ${e.category} ${e.venue}`.toLowerCase().includes(qv)
-    )
-    .sort((a,b) => a.date - b.date);
-
-  events.innerHTML = "";
-  emptyMsg.style.display = "none";
-
-  if (!filtered.length) {
-    emptyMsg.style.display = "block";
-    emptyMsg.textContent =
-      "✨ Looks like our clubs and societies are taking a short break before the fun begins again :-)";
-    return;
+  function excelToDate(n){
+    const d = new Date((Number(n)-25569)*86400000);
+    d.setHours(0,0,0,0);
+    return d;
   }
 
-  filtered.forEach((e, i) => {
-    const { base, accent } = CARD_PALETTE[i % CARD_PALETTE.length];
-    const day = String(e.date.getDate()).padStart(2, "0");
-    const month = e.date.toLocaleString("en-US", { month: "short" });
+  let allEvents = [];
 
-    const orgHTML   = e.organiser ? `<div class="event-meta">🎭 ${e.organiser}</div>` : "";
-    const venueHTML = e.venue ? `<div class="event-meta">📍 ${e.venue}</div>` : "";
-    const timeHTML  = e.time ? `<div class="event-meta">⏰ ${e.time}</div>` : "";
+  function render(){
+    const qv = q.value.toLowerCase();
+    const cv = clubFilter.value;
+    const tv = catFilter.value;
+    const dv = dateFilter.value ? new Date(dateFilter.value+"T00:00:00") : null;
 
-    events.insertAdjacentHTML("beforeend", `
-      <div class="event-card" style="background:${base}">
-        <div class="color-bar" style="background:${accent}"></div>
-        <div class="card-body">
-          <div class="date-badge">
-            <div class="day">${day}</div>
-            <div class="month">${month}</div>
+    const filtered = allEvents
+      .filter(e => e.date >= today)
+      .filter(e => !cv || e.organiser===cv)
+      .filter(e => !tv || e.category===tv)
+      .filter(e => !dv || e.date.getTime()===dv.getTime())
+      .filter(e =>
+        !qv ||
+        `${e.name} ${e.organiser} ${e.category} ${e.venue}`
+        .toLowerCase().includes(qv)
+      )
+      .sort((a,b)=>a.date-b.date);
+
+    eventsEl.innerHTML="";
+    emptyMsg.style.display="none";
+
+    if(!filtered.length){
+      emptyMsg.style.display="block";
+      emptyMsg.innerHTML =
+        cv
+          ? "✨ Looks like our clubs and societies are taking a short break before the fun begins again :-)"
+          : tv
+          ? "💡 Don't see any relevant event? How about you bring the event and OSEP would love to support you in planning and execution of the event."
+          : "✨ Looks like our clubs and societies are taking a short break before the fun begins again :-)";
+      return;
+    }
+
+    filtered.forEach((e,i)=>{
+      const { base, accent } = CARD_PALETTE[i % CARD_PALETTE.length];
+      const day = String(e.date.getDate()).padStart(2,"0");
+      const month = e.date.toLocaleString("en-US",{month:"short"});
+
+      const org = e.organiser ? `<div class="event-meta">🎭 ${e.organiser}</div>` : "";
+      const venue = e.venue ? `<div class="event-meta">📍 ${e.venue}</div>` : "";
+      const time = e.time ? `<div class="event-meta">⏰ ${e.time}</div>` : "";
+
+      eventsEl.insertAdjacentHTML("beforeend",`
+        <div class="event-card" style="background:${base}">
+          <div class="color-bar" style="background:${accent}"></div>
+          <div class="card-body">
+            <div class="date-badge">
+              <div class="day">${day}</div>
+              <div class="month">${month}</div>
+            </div>
+            <div class="event-title">${e.name}</div>
+            <div class="event-meta-group">
+              ${org}
+              ${venue}
+              ${time}
+            </div>
+            <div class="category">${e.category}</div>
           </div>
-          <div class="event-title">${e.name}</div>
-          ${orgHTML}
-          ${venueHTML}
-          ${timeHTML}
-          <div class="category">${e.category}</div>
         </div>
-      </div>
-    `);
-  });
-}
-
-Papa.parse(csvUrl, {
-  download: true,
-  header: true,
-  skipEmptyLines: true,
-  complete: r => {
-    allEvents = r.data.map(x => ({
-      name: x["Event Name"],
-      organiser: x["Organiser"],
-      category: x["Category of the Event"],
-      venue: x["Venue"] || "",
-      time: x["Start Time"] || "",
-      date: excelToDate(x["Date of the Event"])
-    })).filter(e => e.name && e.date);
-
-    clubFilter.innerHTML =
-      `<option value="">🎭 Choose a club or society</option>` +
-      [...new Set(allEvents.map(e => e.organiser))]
-        .sort()
-        .map(c => `<option>${c}</option>`)
-        .join("");
-
-    catFilter.innerHTML =
-      `<option value="">🎯 Choose an activity type</option>` +
-      [...new Set(allEvents.map(e => e.category))]
-        .sort()
-        .map(c => `<option>${c}</option>`)
-        .join("");
-
-    q.oninput =
-    dateFilter.onchange =
-    clubFilter.onchange =
-    catFilter.onchange = render;
-
-    clearBtn.onclick = () => {
-      q.value = "";
-      dateFilter.value = "";
-      clubFilter.value = "";
-      catFilter.value = "";
-      render();
-    };
-
-    render();
+      `);
+    });
   }
-});
 
-/* DOM refs */
-const q = document.getElementById("q"),
-      dateFilter = document.getElementById("dateFilter"),
-      clubFilter = document.getElementById("clubFilter"),
-      catFilter = document.getElementById("catFilter"),
-      clearBtn = document.getElementById("clearBtn"),
-      events = document.getElementById("events"),
-      emptyMsg = document.getElementById("emptyMsg");
+  Papa.parse(csvUrl,{
+    download:true,
+    header:true,
+    skipEmptyLines:true,
+    complete(res){
+      allEvents = res.data.map(r=>({
+        name:r["Event Name"],
+        organiser:r["Organiser"],
+        category:r["Category of the Event"],
+        venue:r["Venue"]||"",
+        time:r["Start Time"]||"",
+        date:excelToDate(r["Date of the Event"])
+      })).filter(e=>e.name && e.date);
+
+      clubFilter.innerHTML =
+        `<option value="">🎭 Choose a club or society</option>` +
+        [...new Set(allEvents.map(e=>e.organiser))].sort().map(c=>`<option>${c}</option>`).join("");
+
+      catFilter.innerHTML =
+        `<option value="">🎯 Choose an activity type</option>` +
+        [...new Set(allEvents.map(e=>e.category))].sort().map(c=>`<option>${c}</option>`).join("");
+
+      q.oninput = dateFilter.onchange = clubFilter.onchange = catFilter.onchange = render;
+      clearBtn.onclick = ()=>{ q.value=dateFilter.value=clubFilter.value=catFilter.value=""; render(); };
+
+      render();
+    }
+  });
 </script>
 
 </body>
