@@ -5,7 +5,7 @@
   <title>Student Events</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- ✅ PapaParse (correct script tag) -->
+  <!-- PapaParse -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
   <style>
@@ -21,7 +21,6 @@
       margin: 12px 0 18px;
     }
 
-    /* ---------- TOOLBAR ---------- */
     .toolbar {
       max-width: 1200px;
       margin: 0 auto 18px;
@@ -52,15 +51,6 @@
       background: #0b1220;
     }
 
-    .hint {
-      max-width: 1200px;
-      margin: 0 auto 14px;
-      color: #666;
-      font-size: 13px;
-      text-align: center;
-    }
-
-    /* ---------- EVENT CARDS ---------- */
     .events-container {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -88,7 +78,7 @@
       color: #333;
     }
 
-    /* ---------- CATEGORY TAGS ---------- */
+    /* Category tags */
     .tag {
       display: inline-block;
       padding: 4px 10px;
@@ -113,15 +103,6 @@
       font-size: 15px;
       color: #444;
     }
-
-    @media (max-width: 900px) {
-      .toolbar {
-        grid-template-columns: 1fr 1fr;
-      }
-      .toolbar button {
-        grid-column: span 2;
-      }
-    }
   </style>
 </head>
 
@@ -129,7 +110,6 @@
 
 <h1>Upcoming Student Events</h1>
 
-<!-- ✅ SEARCH / FILTER BAR -->
 <div class="toolbar">
   <input id="q" placeholder="🔍 Search by event, club, category, or venue…" />
   <input id="dateFilter" type="date" />
@@ -138,17 +118,12 @@
   <button id="clearBtn">Clear</button>
 </div>
 
-<div class="hint">
-  Find events using search, date, club/society, or activity type.
-</div>
-
 <div class="events-container" id="events"></div>
 <div class="empty" id="emptyMsg" style="display:none;"></div>
 
 <script>
   const csvUrl = "website-data.csv";
 
-  /* ---------- MASTER LISTS ---------- */
   const ALL_CLUBS = [
     "ACC MC - Undergraduate","ACC SONAM - Graduate","ACC SONAM - Undergraduate",
     "ACCs FAS","Activity Club IED","AKU Athletics Club","AKU Chess Club",
@@ -222,10 +197,9 @@
         <div class="event-card">
           <div class="event-title">${e.name}</div>
           <div class="event-meta">📅 ${e.date.toDateString()}</div>
-          <div class="event-meta">🏷 ${e.organiser}</div>
+          <div class="event-meta">🎭 ${e.organiser}</div>
           <span class="tag tag-${slug(e.category)}">${e.category}</span>
-        </div>
-      `);
+        </div>`);
     });
   }
 
