@@ -5,7 +5,7 @@
   <title>Student Events</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- ✅ FIXED: Proper PapaParse script -->
+  <!-- ✅ PapaParse (correct script tag) -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
   <style>
@@ -21,11 +21,12 @@
       margin: 12px 0 18px;
     }
 
+    /* ---------- TOOLBAR ---------- */
     .toolbar {
       max-width: 1200px;
       margin: 0 auto 18px;
       display: grid;
-      grid-template-columns: 1.6fr 1fr 1.1fr 1.1fr auto;
+      grid-template-columns: 1.6fr 1fr 1.2fr 1.2fr auto;
       gap: 10px;
       align-items: center;
     }
@@ -47,6 +48,19 @@
       border: 1px solid #111827;
     }
 
+    .toolbar button:hover {
+      background: #0b1220;
+    }
+
+    .hint {
+      max-width: 1200px;
+      margin: 0 auto 14px;
+      color: #666;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    /* ---------- EVENT CARDS ---------- */
     .events-container {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -71,17 +85,19 @@
     .event-meta {
       font-size: 14px;
       margin: 4px 0;
+      color: #333;
     }
 
-    /* Category tags */
+    /* ---------- CATEGORY TAGS ---------- */
     .tag {
       display: inline-block;
       padding: 4px 10px;
       border-radius: 12px;
       font-size: 12px;
-      color: white;
-      margin-top: 6px;
+      color: #fff;
+      margin-top: 8px;
     }
+
     .tag-sports { background:#16a34a; }
     .tag-recreational-social { background:#7c3aed; }
     .tag-workshop-session { background:#2563eb; }
@@ -97,6 +113,15 @@
       font-size: 15px;
       color: #444;
     }
+
+    @media (max-width: 900px) {
+      .toolbar {
+        grid-template-columns: 1fr 1fr;
+      }
+      .toolbar button {
+        grid-column: span 2;
+      }
+    }
   </style>
 </head>
 
@@ -104,12 +129,17 @@
 
 <h1>Upcoming Student Events</h1>
 
+<!-- ✅ SEARCH / FILTER BAR -->
 <div class="toolbar">
-  <input id="q" placeholder="🔍 Search by event, club, category, venue…" />
+  <input id="q" placeholder="🔍 Search by event, club, category, or venue…" />
   <input id="dateFilter" type="date" />
   <select id="clubFilter"></select>
   <select id="catFilter"></select>
   <button id="clearBtn">Clear</button>
+</div>
+
+<div class="hint">
+  Find events using search, date, club/society, or activity type.
 </div>
 
 <div class="events-container" id="events"></div>
@@ -118,6 +148,7 @@
 <script>
   const csvUrl = "website-data.csv";
 
+  /* ---------- MASTER LISTS ---------- */
   const ALL_CLUBS = [
     "ACC MC - Undergraduate","ACC SONAM - Graduate","ACC SONAM - Undergraduate",
     "ACCs FAS","Activity Club IED","AKU Athletics Club","AKU Chess Club",
@@ -151,24 +182,25 @@
   const today = new Date(); today.setHours(0,0,0,0);
   let allEvents = [];
 
-  const excelDate = n => {
+  const excelToDate = n => {
     const d = new Date((Number(n)-25569)*86400000);
-    d.setHours(0,0,0,0); return d;
+    d.setHours(0,0,0,0);
+    return d;
   };
 
-  const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+  const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g,"-");
 
   function render(){
-    const qv = q.value.toLowerCase();
+    const qv = q.value.toLowerCase().trim();
     const cv = clubFilter.value;
     const tv = catFilter.value;
     const dv = dateFilter.value ? new Date(dateFilter.value+"T00:00:00") : null;
 
     const filtered = allEvents
       .filter(e => e.date >= today)
-      .filter(e => !cv || e.organiser===cv)
-      .filter(e => !tv || e.category===tv)
-      .filter(e => !dv || e.date.getTime()===dv.getTime())
+      .filter(e => !cv || e.organiser === cv)
+      .filter(e => !tv || e.category === tv)
+      .filter(e => !dv || e.date.getTime() === dv.getTime())
       .filter(e => !qv || `${e.name} ${e.organiser} ${e.category} ${e.venue}`.toLowerCase().includes(qv))
       .sort((a,b)=>a.date-b.date);
 
@@ -192,30 +224,42 @@
           <div class="event-meta">📅 ${e.date.toDateString()}</div>
           <div class="event-meta">🏷 ${e.organiser}</div>
           <span class="tag tag-${slug(e.category)}">${e.category}</span>
-        </div>`);
+        </div>
+      `);
     });
   }
 
   Papa.parse(csvUrl,{
-    download:true,header:true,skipEmptyLines:true,
+    download:true, header:true, skipEmptyLines:true,
     complete:r=>{
-      allEvents=r.data.map(x=>({
+      allEvents = r.data.map(x=>({
         name:x["Event Name"],
         organiser:x["Organiser"],
         category:x["Category of the Event"],
         venue:x["Venue"]||"",
-        date:excelDate(x["Date of the Event"])
-      })).filter(e=>e.name&&e.date);
+        date:excelToDate(x["Date of the Event"])
+      })).filter(e=>e.name && e.date);
 
-      clubFilter.innerHTML=`<option value="">🏷️ Choose a club</option>`+ALL_CLUBS.map(c=>`<option>${c}</option>`).join("");
-      catFilter.innerHTML=`<option value="">🎯 Choose activity type</option>`+ALL_CATEGORIES.map(c=>`<option>${c}</option>`).join("");
+      clubFilter.innerHTML = `<option value="">🎭 Choose a club or society</option>` +
+        ALL_CLUBS.map(c=>`<option>${c}</option>`).join("");
 
-      q.oninput=dateFilter.onchange=clubFilter.onchange=catFilter.onchange=render;
-      clearBtn.onclick=()=>{q.value=dateFilter.value=clubFilter.value=catFilter.value="";render();};
+      catFilter.innerHTML = `<option value="">🎯 Choose an activity type</option>` +
+        ALL_CATEGORIES.map(c=>`<option>${c}</option>`).join("");
+
+      q.oninput = dateFilter.onchange = clubFilter.onchange = catFilter.onchange = render;
+      clearBtn.onclick = ()=>{ q.value=dateFilter.value=clubFilter.value=catFilter.value=""; render(); };
 
       render();
     }
   });
+
+  const q=document.getElementById("q"),
+        dateFilter=document.getElementById("dateFilter"),
+        clubFilter=document.getElementById("clubFilter"),
+        catFilter=document.getElementById("catFilter"),
+        clearBtn=document.getElementById("clearBtn"),
+        events=document.getElementById("events"),
+        emptyMsg=document.getElementById("emptyMsg");
 </script>
 
 </body>
