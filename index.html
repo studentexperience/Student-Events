@@ -43,3 +43,86 @@
     }
 
     .event-meta {
+      font-size: 14px;
+      margin: 4px 0;
+      color: #333;
+    }
+
+    .tag {
+      display: inline-block;
+      background: #e0e0e0;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>Upcoming Student Events</h1>
+<div class="events-container" id="events"></div>
+
+<script>
+  const csvUrl = "website-data.csv";
+
+  // Today at midnight (local)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  Papa.parse(csvUrl, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+
+    complete: function (results) {
+      const container = document.getElementById("events");
+
+      // STEP 1: Build list of upcoming events
+      const upcomingEvents = [];
+
+      results.data.forEach(event => {
+        if (!event["Event Name"] || !event["Date of the Event"]) return;
+
+        const excelDate = Number(event["Date of the Event"]);
+        const eventDate = new Date((excelDate - 25569) * 86400000);
+        eventDate.setHours(0, 0, 0, 0);
+
+        // Skip past events
+        if (eventDate < today) return;
+
+        upcomingEvents.push({
+          data: event,
+          date: eventDate
+        });
+      });
+
+      // STEP 2: Sort by nearest date first
+      upcomingEvents.sort((a, b) => a.date - b.date);
+
+      // STEP 3: Render in sorted order
+      upcomingEvents.forEach(item => {
+        const event = item.data;
+        const eventDate = item.date;
+
+        const card = document.createElement("div");
+        card.className = "event-card";
+
+        card.innerHTML = `
+          <div class="event-title">${event["Event Name"]}</div>
+          <div class="event-meta">📅 ${eventDate.toDateString()}</div>
+          <div class="event-meta">⏰ ${event["Start Time"] || ""}</div>
+          <div class="event-meta">📍 ${event["Venue"] || ""}</div>
+          <div class="event-meta">🏷 ${event["Organiser"] || ""}</div>
+          <span class="tag">${event["Category of the Event"] || ""}</span>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+  });
+</script>
+
+</body>
+</html>
