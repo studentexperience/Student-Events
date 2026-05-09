@@ -5,6 +5,7 @@
 <title>Upcoming Student Events</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
+<!-- ✅ Correct PapaParse -->
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <style>
@@ -61,17 +62,16 @@ h1 {
 /* ===== CARD ===== */
 .event-card {
   border-radius:16px;
-  background:white;
   box-shadow:0 6px 14px rgba(0,0,0,0.12);
   overflow:hidden;
   display:flex;
   flex-direction:column;
 }
 
-/* ===== HEADER BAND ===== */
+/* ===== HEADER STRIP (decorative) ===== */
 .card-header {
-  height:60px;
-  background: linear-gradient(120deg, #eef2ff, #fdf2f8);
+  height:56px;
+  background:rgba(0,0,0,0.05);
 }
 
 /* ===== BODY ===== */
@@ -122,7 +122,7 @@ h1 {
   margin-top:10px;
   display:inline-block;
   font-size:12px;
-  background:#e5e7eb;
+  background:rgba(0,0,0,0.1);
   padding:4px 10px;
   border-radius:20px;
 }
@@ -155,7 +155,16 @@ h1 {
 <script>
 const csvUrl = "website-data.csv";
 const today = new Date(); today.setHours(0,0,0,0);
-let allEvents = [];
+
+/* ✅ Inclusive pastel palette */
+const CARD_COLORS = [
+  "#F0F7FF",
+  "#F7F3FF",
+  "#FFF6EC",
+  "#F1FAF5",
+  "#FFF0F3",
+  "#F5F5F5"
+];
 
 const excelToDate = n => {
   const d = new Date((Number(n)-25569)*86400000);
@@ -190,16 +199,18 @@ function render(){
     return;
   }
 
-  filtered.forEach(e=>{
+  filtered.forEach((e,i)=>{
     const day = String(e.date.getDate()).padStart(2,"0");
     const month = e.date.toLocaleString("en-US",{month:"short"});
+
+    const cardColor = CARD_COLORS[i % CARD_COLORS.length];
 
     const orgHTML   = e.organiser ? `<div class="event-meta">🎭 ${e.organiser}</div>` : "";
     const venueHTML= e.venue ? `<div class="event-meta">📍 ${e.venue}</div>` : "";
     const timeHTML = e.time ? `<div class="event-meta">⏰ ${e.time}</div>` : "";
 
     events.insertAdjacentHTML("beforeend",`
-      <div class="event-card">
+      <div class="event-card" style="background:${cardColor}">
         <div class="card-header"></div>
         <div class="card-body">
           <div class="date-badge">
@@ -216,6 +227,8 @@ function render(){
     `);
   });
 }
+
+let allEvents = [];
 
 Papa.parse(csvUrl,{
   download:true,header:true,skipEmptyLines:true,
