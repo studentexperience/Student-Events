@@ -5,10 +5,12 @@
 <title>Student Events</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<!-- Google Font -->
+<!-- ✅ Google Font: Poppins -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-<!-- PapaParse -->
+<!-- ✅ PapaParse (FIXED) -->
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <style>
@@ -19,7 +21,6 @@ body{
   padding:20px;
 }
 
-/* ===== HEADER ===== */
 h1{
   text-align:center;
   margin-bottom:10px;
@@ -40,9 +41,9 @@ h1{
   padding:8px 16px;
   border-radius:20px;
   font-size:14px;
+  font-family:'Poppins',sans-serif;
   cursor:pointer;
   background:#e5e7eb;
-  font-family:'Poppins',sans-serif;
 }
 
 .view-toggle button.active{
@@ -55,7 +56,7 @@ h1{
   max-width:1200px;
   margin:0 auto 20px;
   display:grid;
-  grid-template-columns:2fr 1fr 1.2fr 1.2fr auto;
+  grid-template-columns: 2fr 1fr 1.2fr 1.2fr auto;
   gap:10px;
 }
 
@@ -66,6 +67,7 @@ h1{
   border-radius:8px;
   border:1px solid #d0d0d0;
   font-size:14px;
+  font-family:'Poppins',sans-serif;
 }
 
 .toolbar button{
@@ -113,14 +115,14 @@ h1{
   color:#fff;
   display:flex;
   flex-direction:column;
-  align-items:center;
   justify-content:center;
+  align-items:center;
   font-weight:600;
   margin-top:-24px;
 }
 
-.date-badge .day{font-size:17px;line-height:17px;}
-.date-badge .month{font-size:11px;text-transform:uppercase;letter-spacing:1px;}
+.date-badge .day{font-size:17px;}
+.date-badge .month{font-size:11px;letter-spacing:1px;text-transform:uppercase;}
 
 .event-title{
   font-size:15.5px;
@@ -155,13 +157,11 @@ h1{
 
 <h1>Student Events</h1>
 
-<!-- View switch -->
 <div class="view-toggle">
   <button id="upcomingBtn" class="active">Upcoming Events</button>
   <button id="pastBtn">Past Events</button>
 </div>
 
-<!-- Filters -->
 <div class="toolbar">
   <input id="q" placeholder="Search by event, club, category, venue…" />
   <input id="dateFilter" type="date" />
@@ -189,43 +189,41 @@ const PALETTE=[
 
 const excelToDate=n=>{
  const d=new Date((Number(n)-25569)*86400000);
- d.setHours(0,0,0,0); return d;
+ d.setHours(0,0,0,0);
+ return d;
 };
 
 let allEvents=[];
 
 function render(){
  const qv=q.value.toLowerCase(),
-       cv=clubFilter.value,
-       tv=catFilter.value,
-       dv=dateFilter.value ? new Date(dateFilter.value+"T00:00:00") : null;
+      cv=clubFilter.value,
+      tv=catFilter.value,
+      dv=dateFilter.value?new Date(dateFilter.value+"T00:00:00"):null;
 
- let filtered=allEvents.filter(e=>{
-   if(mode==="upcoming") return e.date>=today;
-   return e.date<today;
+ let list=allEvents.filter(e=>{
+   return mode==="upcoming" ? e.date>=today : e.date<today;
  });
 
- filtered=filtered
+ list=list
   .filter(e=>!cv||e.organiser===cv)
   .filter(e=>!tv||e.category===tv)
   .filter(e=>!dv||e.date.getTime()===dv.getTime())
-  .filter(e=>!qv||`${e.name} ${e.organiser} ${e.category} ${e.venue}`.toLowerCase().includes(qv));
+  .filter(e=>!qv||`${e.name} ${e.organiser} ${e.category} ${e.venue}`
+      .toLowerCase().includes(qv));
 
- // sorting
- filtered.sort((a,b)=>{
-   return mode==="upcoming" ? a.date-b.date : b.date-a.date;
- });
+ list.sort((a,b)=>mode==="upcoming"?a.date-b.date:b.date-a.date);
 
  events.innerHTML="";
  emptyMsg.style.display="none";
 
- if(!filtered.length){
+ if(!list.length){
    emptyMsg.style.display="block";
-   emptyMsg.innerText="No events to show.";
+   emptyMsg.textContent="No events to show.";
    return;
  }
 
- filtered.forEach((e,i)=>{
+ list.forEach((e,i)=>{
    const {base,accent}=PALETTE[i%PALETTE.length];
    const day=String(e.date.getDate()).padStart(2,"0");
    const month=e.date.toLocaleString("en-US",{month:"short"});
@@ -233,10 +231,7 @@ function render(){
     <div class="event-card" style="background:${base}">
       <div class="color-bar" style="background:${accent}"></div>
       <div class="card-body">
-        <div class="date-badge">
-          <div class="day">${day}</div>
-          <div class="month">${month}</div>
-        </div>
+        <div class="date-badge"><div class="day">${day}</div><div class="month">${month}</div></div>
         <div class="event-title">${e.name}</div>
         ${e.organiser?`<div class="event-meta">🎭 ${e.organiser}</div>`:""}
         ${e.venue?`<div class="event-meta">📍 ${e.venue}</div>`:""}
@@ -249,24 +244,21 @@ function render(){
 }
 
 Papa.parse(csvUrl,{
- download:true,
- header:true,
- skipEmptyLines:true,
+ download:true,header:true,skipEmptyLines:true,
  complete:r=>{
   allEvents=r.data.map(x=>({
-   name:x["Event Name"],
-   organiser:x["Organiser"],
-   category:x["Category of the Event"],
-   venue:x["Venue"]||"",
-   time:x["Start Time"]||"",
-   date:excelToDate(x["Date of the Event"])
+    name:x["Event Name"],
+    organiser:x["Organiser"],
+    category:x["Category of the Event"],
+    venue:x["Venue"]||"",
+    time:x["Start Time"]||"",
+    date:excelToDate(x["Date of the Event"])
   })).filter(e=>e.name&&e.date);
 
   clubFilter.innerHTML=`<option value="">Choose club</option>`+
-   [...new Set(allEvents.map(e=>e.organiser))].sort().map(c=>`<option>${c}</option>`).join("");
-
+     [...new Set(allEvents.map(e=>e.organiser))].sort().map(c=>`<option>${c}</option>`).join("");
   catFilter.innerHTML=`<option value="">Choose category</option>`+
-   [...new Set(allEvents.map(e=>e.category))].sort().map(c=>`<option>${c}</option>`).join("");
+     [...new Set(allEvents.map(e=>e.category))].sort().map(c=>`<option>${c}</option>`).join("");
 
   q.oninput=dateFilter.onchange=clubFilter.onchange=catFilter.onchange=render;
   clearBtn.onclick=()=>{q.value=dateFilter.value=clubFilter.value=catFilter.value="";render();};
@@ -275,24 +267,20 @@ Papa.parse(csvUrl,{
  }
 });
 
-upcomingBtn.onclick=()=>{
- mode="upcoming";
+upcomingBtn.onclick=()=>{mode="upcoming";
  upcomingBtn.classList.add("active");
  pastBtn.classList.remove("active");
- render();
-};
+ render();};
 
-pastBtn.onclick=()=>{
- mode="past";
+pastBtn.onclick=()=>{mode="past";
  pastBtn.classList.add("active");
  upcomingBtn.classList.remove("active");
- render();
-};
+ render();};
 
 const q=document.getElementById("q"),
-dateFilter=document.getElementById("dateFilter"),
 clubFilter=document.getElementById("clubFilter"),
 catFilter=document.getElementById("catFilter"),
+dateFilter=document.getElementById("dateFilter"),
 clearBtn=document.getElementById("clearBtn"),
 events=document.getElementById("events"),
 emptyMsg=document.getElementById("emptyMsg"),
