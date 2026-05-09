@@ -65,9 +65,9 @@ h1 {
   box-shadow:0 6px 14px rgba(0,0,0,0.12);
 }
 
-/* ✅ ACCENT BAR (opaque, soft) */
+/* ✅ Taller accent bar (FIX) */
 .color-bar {
-  height:10px;
+  height:20px;
 }
 
 /* ===== BODY ===== */
@@ -75,7 +75,7 @@ h1 {
   padding:14px 16px 16px;
 }
 
-/* ===== DATE BADGE ===== */
+/* ✅ Date badge adjusted (FIX) */
 .date-badge {
   width:52px;
   height:52px;
@@ -87,10 +87,14 @@ h1 {
   justify-content:center;
   align-items:center;
   font-weight:bold;
-  margin-top:-32px;
+  margin-top:-20px;  /* ← key fix */
 }
 
-.date-badge .day { font-size:18px; line-height:18px; }
+.date-badge .day {
+  font-size:18px;
+  line-height:18px;
+}
+
 .date-badge .month {
   font-size:11px;
   letter-spacing:1px;
@@ -146,7 +150,6 @@ h1 {
 const csvUrl = "website-data.csv";
 const today = new Date(); today.setHours(0,0,0,0);
 
-/* ✅ Base pastel + matching accent */
 const CARD_PALETTE = [
   { base:"#F0F7FF", accent:"#D6E6FF" },
   { base:"#F7F3FF", accent:"#E3DBFF" },
