@@ -5,7 +5,7 @@
 <title>Upcoming Student Events</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- ✅ Correct PapaParse -->
+<!-- ✅ PapaParse -->
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <style>
@@ -66,18 +66,18 @@ h1 {
   overflow:hidden;
   display:flex;
   flex-direction:column;
+  position:relative;
 }
 
-/* ===== HEADER STRIP (decorative) ===== */
-.card-header {
-  height:56px;
-  background:rgba(0,0,0,0.05);
+/* ===== Soft translucent header bar ===== */
+.color-bar {
+  height:10px;
+  opacity:0.5;
 }
 
 /* ===== BODY ===== */
 .card-body {
   padding:14px 16px 16px;
-  flex:1;
 }
 
 /* ===== DATE BADGE ===== */
@@ -92,7 +92,7 @@ h1 {
   justify-content:center;
   align-items:center;
   font-weight:bold;
-  margin-top:-36px;
+  margin-top:-32px;
 }
 
 .date-badge .day {
@@ -172,6 +172,8 @@ const excelToDate = n => {
   return d;
 };
 
+let allEvents = [];
+
 function render(){
   const qv = q.value.toLowerCase();
   const cv = clubFilter.value;
@@ -202,17 +204,16 @@ function render(){
   filtered.forEach((e,i)=>{
     const day = String(e.date.getDate()).padStart(2,"0");
     const month = e.date.toLocaleString("en-US",{month:"short"});
-
-    const cardColor = CARD_COLORS[i % CARD_COLORS.length];
+    const color = CARD_COLORS[i % CARD_COLORS.length];
 
     const orgHTML   = e.organiser ? `<div class="event-meta">🎭 ${e.organiser}</div>` : "";
     const venueHTML= e.venue ? `<div class="event-meta">📍 ${e.venue}</div>` : "";
     const timeHTML = e.time ? `<div class="event-meta">⏰ ${e.time}</div>` : "";
 
     events.insertAdjacentHTML("beforeend",`
-      <div class="event-card" style="background:${cardColor}">
-        <div class="card-header"></div>
-        <div class="card-body">
+      <div class="event-card">
+        <div class="color-bar" style="background:${color}"></div>
+        <div class="card-body" style="background:${color}">
           <div class="date-badge">
             <div class="day">${day}</div>
             <div class="month">${month}</div>
@@ -227,8 +228,6 @@ function render(){
     `);
   });
 }
-
-let allEvents = [];
 
 Papa.parse(csvUrl,{
   download:true,header:true,skipEmptyLines:true,
