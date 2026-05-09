@@ -5,7 +5,7 @@
 <title>Upcoming Student Events</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- ✅ Correct PapaParse script -->
+<!-- ✅ PapaParse -->
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <style>
@@ -57,7 +57,7 @@ h1 {
   }
 }
 
-/* ===== GRID CARDS ===== */
+/* ===== GRID ===== */
 .events-container {
   max-width:1200px;
   margin:auto;
@@ -76,7 +76,7 @@ h1 {
   justify-content:space-between;
 }
 
-/* soft inclusive backgrounds */
+/* Soft inclusive colors */
 .bg-0{background:#F0F7FF;}
 .bg-1{background:#F7F3FF;}
 .bg-2{background:#FFF6EC;}
@@ -84,15 +84,13 @@ h1 {
 .bg-4{background:#FFF0F3;}
 .bg-5{background:#F5F5F5;}
 
-/* ===== DATE ===== */
+/* ===== TEXT ===== */
 .event-date {
   font-size:13px;
   font-weight:bold;
   margin-bottom:6px;
-  color:#111;
 }
 
-/* ===== CONTENT ===== */
 .event-title {
   font-size:16px;
   font-weight:bold;
@@ -114,7 +112,7 @@ h1 {
   border-radius:20px;
 }
 
-/* ===== EMPTY STATE ===== */
+/* ===== EMPTY ===== */
 .empty {
   text-align:center;
   margin-top:30px;
@@ -128,7 +126,6 @@ h1 {
 
 <h1>Upcoming Student Events</h1>
 
-<!-- ✅ SEARCH / FILTER BAR -->
 <div class="toolbar">
   <input id="q" placeholder="🔍 Search by event, club, category, venue…" />
   <input id="dateFilter" type="date" />
@@ -211,13 +208,17 @@ function render(){
   }
 
   filtered.forEach((e,i)=>{
+    const orgHTML   = e.organiser ? `<div class="event-meta">🎭 ${e.organiser}</div>` : "";
+    const venueHTML= e.venue ? `<div class="event-meta">📍 ${e.venue}</div>` : "";
+    const timeHTML = e.time ? `<div class="event-meta">⏰ ${e.time}</div>` : "";
+
     events.insertAdjacentHTML("beforeend",`
       <div class="event-card bg-${i % COLOR_COUNT}">
         <div class="event-date">📅 ${e.date.toDateString()}</div>
         <div class="event-title">${e.name}</div>
-        <div class="event-meta">🎭 ${e.organiser}</div>
-        <div class="event-meta">📍 ${e.venue || ""}</div>
-        <div class="event-meta">⏰ ${e.time || ""}</div>
+        ${orgHTML}
+        ${venueHTML}
+        ${timeHTML}
         <div class="category">${e.category}</div>
       </div>
     `);
@@ -238,7 +239,6 @@ Papa.parse(csvUrl,{
 
     clubFilter.innerHTML=`<option value="">🎭 Choose a club or society</option>` +
       ALL_CLUBS.map(c=>`<option>${c}</option>`).join("");
-
     catFilter.innerHTML=`<option value="">🎯 Choose an activity type</option>` +
       ALL_CATEGORIES.map(c=>`<option>${c}</option>`).join("");
 
