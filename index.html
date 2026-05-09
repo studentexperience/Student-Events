@@ -25,7 +25,7 @@
       max-width: 1200px;
       margin: 0 auto 18px;
       display: grid;
-      grid-template-columns: 1.5fr 0.9fr 1fr 1fr auto;
+      grid-template-columns: 1.6fr 1fr 1.1fr 1.1fr auto;
       gap: 10px;
       align-items: center;
     }
@@ -98,8 +98,8 @@
     .empty {
       text-align: center;
       color: #444;
-      margin-top: 24px;
-      font-size: 14px;
+      margin-top: 26px;
+      font-size: 15px;
     }
 
     @media (max-width: 900px) {
@@ -114,27 +114,27 @@
 </head>
 
 <body>
-  <h1>Upcoming Student Events</h1>
 
-  <div class="toolbar">
-    <input id="q" type="text" placeholder="Search (event, club, category, venue)…" />
-    <input id="dateFilter" type="date" />
-    <select id="clubFilter"></select>
-    <select id="catFilter"></select>
-    <button id="clearBtn" type="button">Clear</button>
-  </div>
+<h1>Upcoming Student Events</h1>
 
-  <div class="hint">
-    Tip: You can search and filter by date, club, or type of activity.
-  </div>
+<div class="toolbar">
+  <input id="q" type="text" placeholder="🔍 Search by event, club, category, or venue…" />
+  <input id="dateFilter" type="date" title="Pick a date" />
+  <select id="clubFilter"></select>
+  <select id="catFilter"></select>
+  <button id="clearBtn" type="button">Clear</button>
+</div>
 
-  <div class="events-container" id="events"></div>
-  <div class="empty" id="emptyMsg" style="display:none;"></div>
+<div class="hint">
+  Use any combination of search, date, club, or activity type to discover events.
+</div>
+
+<div class="events-container" id="events"></div>
+<div class="empty" id="emptyMsg" style="display:none;"></div>
 
 <script>
   const csvUrl = "website-data.csv";
 
-  // ✅ Master lists (authoritative, alphabetical)
   const ALL_CLUBS = [
     "ACC MC - Undergraduate",
     "ACC SONAM - Graduate",
@@ -196,79 +196,55 @@
   const today = new Date();
   today.setHours(0,0,0,0);
 
-  function escapeHtml(str) {
-    return String(str ?? "")
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
-  }
-
-  function excelSerialToDate(n) {
-    n = Number(n);
-    if (!Number.isFinite(n)) return null;
-    const d = new Date((n - 25569) * 86400000);
+  function excelToDate(n) {
+    const d = new Date((Number(n) - 25569) * 86400000);
     d.setHours(0,0,0,0);
     return d;
   }
 
-  function fillSelect(id, list, label) {
-    const el = document.getElementById(id);
-    el.innerHTML =
-      `<option value="">${label}</option>` +
-      list.map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
-  }
-
   function render() {
-    const q = document.getElementById("q").value.trim().toLowerCase();
-    const club = document.getElementById("clubFilter").value;
-    const cat  = document.getElementById("catFilter").value;
-    const dateVal = document.getElementById("dateFilter").value;
+    const q = qEl.value.trim().toLowerCase();
+    const club = clubFilter.value;
+    const cat = catFilter.value;
+    const dateVal = dateFilter.value;
 
-    let selectedDate = null;
-    if (dateVal) {
-      selectedDate = new Date(dateVal + "T00:00:00");
-      selectedDate.setHours(0,0,0,0);
-    }
+    let selectedDate = dateVal ? new Date(dateVal + "T00:00:00") : null;
 
     const filtered = allEvents
       .filter(e => e.date >= today)
       .filter(e => !club || e.organiser === club)
-      .filter(e => !cat  || e.category === cat)
+      .filter(e => !cat || e.category === cat)
       .filter(e => !selectedDate || e.date.getTime() === selectedDate.getTime())
-      .filter(e => {
-        if (!q) return true;
-        const hay = `${e.name} ${e.organiser} ${e.category} ${e.venue}`.toLowerCase();
-        return hay.includes(q);
-      })
-      .sort((a,b) => (a.date - b.date) || a.name.localeCompare(b.name));
+      .filter(e => !q || `${e.name} ${e.organiser} ${e.category} ${e.venue}`.toLowerCase().includes(q))
+      .sort((a,b) => a.date - b.date);
 
-    const container = document.getElementById("events");
-    const emptyMsg = document.getElementById("emptyMsg");
-    container.innerHTML = "";
+    events.innerHTML = "";
+    emptyMsg.style.display = "none";
 
     if (filtered.length === 0) {
       emptyMsg.style.display = "block";
-      emptyMsg.innerHTML =
-        "✨ Looks like our clubs and societies are taking a short break before the fun begins again 🙂";
+
+      if (club) {
+        emptyMsg.innerHTML = "✨ Looks like our clubs and societies are taking a short break before the fun begins again :-)";
+      } else if (cat) {
+        emptyMsg.innerHTML = "💡 Don't see any relevant event? How about you bring the event, and OSEP would love to support you in planning and execution of the event.";
+      } else {
+        emptyMsg.innerHTML = "✨ Looks like our clubs and societies are taking a short break before the fun begins again :-)";
+      }
       return;
     }
 
-    emptyMsg.style.display = "none";
-
     filtered.forEach(e => {
-      const card = document.createElement("div");
-      card.className = "event-card";
-      card.innerHTML = `
-        <div class="event-title">${escapeHtml(e.name)}</div>
-        <div class="event-meta">📅 ${e.date.toDateString()}</div>
-        <div class="event-meta">⏰ ${escapeHtml(e.startTime)}</div>
-        <div class="event-meta">📍 ${escapeHtml(e.venue)}</div>
-        <div class="event-meta">🏷 ${escapeHtml(e.organiser)}</div>
-        <span class="tag">${escapeHtml(e.category)}</span>
-      `;
-      container.appendChild(card);
+      events.insertAdjacentHTML("beforeend", `
+        <div class="event-card">
+          <div class="event-title">${e.name}</div>
+          <div class="event-meta">📅 ${e.date.toDateString()}</div>
+          <div class="event-meta">⏰ ${e.startTime}</div>
+          <div class="event-meta">📍 ${e.venue}</div>
+          <div class="event-meta">🏷 ${e.organiser}</div>
+          <span class="tag">${e.category}</span>
+        </div>
+      `);
     });
   }
 
@@ -276,33 +252,37 @@
     download: true,
     header: true,
     skipEmptyLines: true,
-    complete: function(res) {
-      allEvents = res.data
-        .map(r => ({
-          organiser: (r["Organiser"] || "").trim(),
-          name: (r["Event Name"] || "").trim(),
-          category: (r["Category of the Event"] || "").trim(),
-          date: excelSerialToDate(r["Date of the Event"]),
-          startTime: (r["Start Time"] || "").trim(),
-          venue: (r["Venue"] || "").trim()
-        }))
-        .filter(e => e.name && e.date);
+    complete(res) {
+      allEvents = res.data.map(r => ({
+        organiser: r["Organiser"] || "",
+        name: r["Event Name"] || "",
+        category: r["Category of the Event"] || "",
+        date: excelToDate(r["Date of the Event"]),
+        startTime: r["Start Time"] || "",
+        venue: r["Venue"] || ""
+      })).filter(e => e.name && e.date);
 
-      fillSelect("clubFilter", ALL_CLUBS, "All Clubs");
-      fillSelect("catFilter", ALL_CATEGORIES, "All Categories");
+      clubFilter.innerHTML = `<option value="">🏷️ Choose a club or society</option>` +
+        ALL_CLUBS.map(c => `<option>${c}</option>`).join("");
 
-      document.getElementById("q").addEventListener("input", render);
-      document.getElementById("dateFilter").addEventListener("change", render);
-      document.getElementById("clubFilter").addEventListener("change", render);
-      document.getElementById("catFilter").addEventListener("change", render);
-      document.getElementById("clearBtn").addEventListener("click", () => {
-        q.value = dateFilter.value = clubFilter.value = catFilter.value = "";
-        render();
-      });
+      catFilter.innerHTML = `<option value="">🎯 Choose an activity type</option>` +
+        ALL_CATEGORIES.map(c => `<option>${c}</option>`).join("");
+
+      qEl.oninput = dateFilter.onchange = clubFilter.onchange = catFilter.onchange = render;
+      clearBtn.onclick = () => { qEl.value = dateFilter.value = clubFilter.value = catFilter.value = ""; render(); };
 
       render();
     }
   });
+
+  const qEl = document.getElementById("q");
+  const dateFilter = document.getElementById("dateFilter");
+  const clubFilter = document.getElementById("clubFilter");
+  const catFilter = document.getElementById("catFilter");
+  const clearBtn = document.getElementById("clearBtn");
+  const events = document.getElementById("events");
+  const emptyMsg = document.getElementById("emptyMsg");
 </script>
+
 </body>
 </html>
