@@ -5,7 +5,7 @@
   <title>Student Events</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- CSV parser (PapaParse) -->
+  <!-- CSV parser -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
   <style>
@@ -45,7 +45,6 @@
     .event-meta {
       font-size: 14px;
       margin: 4px 0;
-      color: #333;
     }
 
     .tag {
@@ -65,8 +64,11 @@
 <div class="events-container" id="events"></div>
 
 <script>
-  // IMPORTANT: CSV must be in the SAME GitHub repo
   const csvUrl = "website-data.csv";
+
+  // Get today's date at midnight (local time)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   Papa.parse(csvUrl, {
     download: true,
@@ -82,6 +84,10 @@
         // Convert Excel serial date to JS date
         const excelDate = Number(event["Date of the Event"]);
         const eventDate = new Date((excelDate - 25569) * 86400000);
+        eventDate.setHours(0, 0, 0, 0);
+
+        // ✅ FILTER: Skip past events
+        if (eventDate < today) return;
 
         const card = document.createElement("div");
         card.className = "event-card";
@@ -97,10 +103,6 @@
 
         container.appendChild(card);
       });
-    },
-
-    error: function (err) {
-      console.error("CSV loading error:", err);
     }
   });
 </script>
