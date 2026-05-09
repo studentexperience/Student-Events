@@ -1,157 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Upcoming Student Events</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8" />
+<title>Student Events</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- ✅ Google Font -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Google Font -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- ✅ PapaParse -->
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<!-- PapaParse -->
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
-  <style>
-    body {
-      font-family: 'Poppins', Arial, sans-serif;
-      background:#f6f6f6;
-      margin:0;
-      padding:20px;
-    }
+<style>
+body{
+  font-family:'Poppins',sans-serif;
+  background:#f6f6f6;
+  margin:0;
+  padding:20px;
+}
 
-    h1 {
-      text-align:center;
-      margin-bottom:16px;
-      font-weight:600;
-    }
+/* ===== HEADER ===== */
+h1{
+  text-align:center;
+  margin-bottom:10px;
+  font-weight:600;
+}
 
-    /* ===== SEARCH BAR ===== */
-    .toolbar {
-      max-width:1200px;
-      margin:0 auto 22px;
-      display:grid;
-      grid-template-columns: 2fr 1fr 1.2fr 1.2fr auto;
-      gap:10px;
-    }
+/* ===== VIEW TOGGLE ===== */
+.view-toggle{
+  max-width:1200px;
+  margin:0 auto 14px;
+  display:flex;
+  justify-content:center;
+  gap:10px;
+}
 
-    .toolbar input,
-    .toolbar select,
-    .toolbar button {
-      padding:10px 12px;
-      border-radius:8px;
-      border:1px solid #d0d0d0;
-      font-size:14px;
-      font-family:'Poppins', sans-serif;
-    }
+.view-toggle button{
+  border:none;
+  padding:8px 16px;
+  border-radius:20px;
+  font-size:14px;
+  cursor:pointer;
+  background:#e5e7eb;
+  font-family:'Poppins',sans-serif;
+}
 
-    .toolbar button {
-      background:#111827;
-      color:white;
-      cursor:pointer;
-    }
+.view-toggle button.active{
+  background:#111827;
+  color:#fff;
+}
 
-    @media (max-width: 900px) {
-      .toolbar { grid-template-columns:1fr 1fr; }
-      .toolbar button { grid-column: span 2; }
-    }
+/* ===== SEARCH BAR ===== */
+.toolbar{
+  max-width:1200px;
+  margin:0 auto 20px;
+  display:grid;
+  grid-template-columns:2fr 1fr 1.2fr 1.2fr auto;
+  gap:10px;
+}
 
-    /* ===== GRID ===== */
-    .events-container {
-      max-width:1200px;
-      margin:auto;
-      display:grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap:20px;
-    }
+.toolbar input,
+.toolbar select,
+.toolbar button{
+  padding:10px 12px;
+  border-radius:8px;
+  border:1px solid #d0d0d0;
+  font-size:14px;
+}
 
-    /* ===== CARD ===== */
-    .event-card {
-      border-radius:16px;
-      overflow:hidden;
-      box-shadow:0 6px 14px rgba(0,0,0,0.12);
-      display:flex;
-      flex-direction:column;
-      min-height:240px;
-    }
+.toolbar button{
+  background:#111827;
+  color:white;
+  cursor:pointer;
+}
 
-    /* ✅ Accent bar */
-    .color-bar {
-      height:40px;
-    }
+@media(max-width:900px){
+  .toolbar{grid-template-columns:1fr 1fr;}
+  .toolbar button{grid-column:span 2;}
+}
 
-    /* ===== CARD BODY ===== */
-    .card-body {
-      padding:12px 14px 14px;
-      flex:1;
-      display:flex;
-      flex-direction:column;
-    }
+/* ===== GRID ===== */
+.events-container{
+  max-width:1200px;
+  margin:auto;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+  gap:18px;
+}
 
-    /* ===== DATE ===== */
-    .date-badge {
-      width:52px;
-      height:52px;
-      border-radius:10px;
-      background:#111827;
-      color:white;
-      display:flex;
-      flex-direction:column;
-      justify-content:center;
-      align-items:center;
-      font-weight:600;
-      margin-top:-26px;
-    }
+/* ===== CARD ===== */
+.event-card{
+  border-radius:16px;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  box-shadow:0 6px 14px rgba(0,0,0,.12);
+}
 
-    .date-badge .day { font-size:18px; line-height:18px; }
-    .date-badge .month {
-      font-size:11px;
-      letter-spacing:1px;
-      text-transform:uppercase;
-    }
+.color-bar{height:40px;}
 
-    /* ===== CONTENT ===== */
-    .event-title {
-      font-size:16px;
-      font-weight:600;
-      margin:8px 0 6px;
-      line-height:1.35;
-    }
+.card-body{
+  padding:12px 14px 14px;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
 
-    .event-meta-group { margin-top:4px; }
+.date-badge{
+  width:50px;height:50px;
+  border-radius:10px;
+  background:#111827;
+  color:#fff;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  font-weight:600;
+  margin-top:-24px;
+}
 
-    .event-meta {
-      font-size:14px;
-      line-height:1.35;
-      color:#333;
-      margin:2px 0;
-    }
+.date-badge .day{font-size:17px;line-height:17px;}
+.date-badge .month{font-size:11px;text-transform:uppercase;letter-spacing:1px;}
 
-    .category {
-      margin-top:auto;
-      font-size:12px;
-      background:rgba(0,0,0,0.08);
-      padding:4px 10px;
-      border-radius:20px;
-      align-self:flex-start;
-    }
+.event-title{
+  font-size:15.5px;
+  font-weight:600;
+  margin:8px 0 4px;
+}
 
-    .empty {
-      text-align:center;
-      margin-top:30px;
-      font-size:15px;
-      color:#444;
-    }
-  </style>
+.event-meta{
+  font-size:14px;
+  margin:2px 0;
+  line-height:1.3;
+}
+
+.category{
+  margin-top:auto;
+  font-size:12px;
+  background:rgba(0,0,0,.08);
+  padding:4px 10px;
+  border-radius:20px;
+  align-self:flex-start;
+}
+
+.empty{
+  text-align:center;
+  margin-top:30px;
+  color:#555;
+}
+</style>
 </head>
 
 <body>
 
-<h1>Upcoming Student Events</h1>
+<h1>Student Events</h1>
 
+<!-- View switch -->
+<div class="view-toggle">
+  <button id="upcomingBtn" class="active">Upcoming Events</button>
+  <button id="pastBtn">Past Events</button>
+</div>
+
+<!-- Filters -->
 <div class="toolbar">
-  <input id="q" placeholder="🔍 Search by event, club, category, venue…" />
+  <input id="q" placeholder="Search by event, club, category, venue…" />
   <input id="dateFilter" type="date" />
   <select id="clubFilter"></select>
   <select id="catFilter"></select>
@@ -162,125 +174,130 @@
 <div class="empty" id="emptyMsg" style="display:none;"></div>
 
 <script>
-  /* ===== DOM ===== */
-  const q = document.getElementById("q");
-  const dateFilter = document.getElementById("dateFilter");
-  const clubFilter = document.getElementById("clubFilter");
-  const catFilter = document.getElementById("catFilter");
-  const clearBtn = document.getElementById("clearBtn");
-  const eventsEl = document.getElementById("events");
-  const emptyMsg = document.getElementById("emptyMsg");
+const csvUrl="website-data.csv";
+const today=new Date(); today.setHours(0,0,0,0);
+let mode="upcoming";
 
-  const csvUrl = "website-data.csv";
-  const today = new Date(); today.setHours(0,0,0,0);
+const PALETTE=[
+ {base:"#F0F7FF",accent:"#D6E6FF"},
+ {base:"#F7F3FF",accent:"#E3DBFF"},
+ {base:"#FFF6EC",accent:"#FFE6CC"},
+ {base:"#F1FAF5",accent:"#D9F2E6"},
+ {base:"#FFF0F3",accent:"#FFD6DE"},
+ {base:"#F5F5F5",accent:"#E1E1E1"}
+];
 
-  const CARD_PALETTE = [
-    { base:"#F0F7FF", accent:"#D6E6FF" },
-    { base:"#F7F3FF", accent:"#E3DBFF" },
-    { base:"#FFF6EC", accent:"#FFE6CC" },
-    { base:"#F1FAF5", accent:"#D9F2E6" },
-    { base:"#FFF0F3", accent:"#FFD6DE" },
-    { base:"#F5F5F5", accent:"#E1E1E1" }
-  ];
+const excelToDate=n=>{
+ const d=new Date((Number(n)-25569)*86400000);
+ d.setHours(0,0,0,0); return d;
+};
 
-  function excelToDate(n){
-    const d = new Date((Number(n)-25569)*86400000);
-    d.setHours(0,0,0,0);
-    return d;
-  }
+let allEvents=[];
 
-  let allEvents = [];
+function render(){
+ const qv=q.value.toLowerCase(),
+       cv=clubFilter.value,
+       tv=catFilter.value,
+       dv=dateFilter.value ? new Date(dateFilter.value+"T00:00:00") : null;
 
-  function render(){
-    const qv = q.value.toLowerCase();
-    const cv = clubFilter.value;
-    const tv = catFilter.value;
-    const dv = dateFilter.value ? new Date(dateFilter.value+"T00:00:00") : null;
+ let filtered=allEvents.filter(e=>{
+   if(mode==="upcoming") return e.date>=today;
+   return e.date<today;
+ });
 
-    const filtered = allEvents
-      .filter(e => e.date >= today)
-      .filter(e => !cv || e.organiser===cv)
-      .filter(e => !tv || e.category===tv)
-      .filter(e => !dv || e.date.getTime()===dv.getTime())
-      .filter(e =>
-        !qv ||
-        `${e.name} ${e.organiser} ${e.category} ${e.venue}`
-        .toLowerCase().includes(qv)
-      )
-      .sort((a,b)=>a.date-b.date);
+ filtered=filtered
+  .filter(e=>!cv||e.organiser===cv)
+  .filter(e=>!tv||e.category===tv)
+  .filter(e=>!dv||e.date.getTime()===dv.getTime())
+  .filter(e=>!qv||`${e.name} ${e.organiser} ${e.category} ${e.venue}`.toLowerCase().includes(qv));
 
-    eventsEl.innerHTML="";
-    emptyMsg.style.display="none";
+ // sorting
+ filtered.sort((a,b)=>{
+   return mode==="upcoming" ? a.date-b.date : b.date-a.date;
+ });
 
-    if(!filtered.length){
-      emptyMsg.style.display="block";
-      emptyMsg.innerHTML =
-        cv
-          ? "✨ Looks like our clubs and societies are taking a short break before the fun begins again :-)"
-          : tv
-          ? "💡 Don't see any relevant event? How about you bring the event and OSEP would love to support you in planning and execution of the event."
-          : "✨ Looks like our clubs and societies are taking a short break before the fun begins again :-)";
-      return;
-    }
+ events.innerHTML="";
+ emptyMsg.style.display="none";
 
-    filtered.forEach((e,i)=>{
-      const { base, accent } = CARD_PALETTE[i % CARD_PALETTE.length];
-      const day = String(e.date.getDate()).padStart(2,"0");
-      const month = e.date.toLocaleString("en-US",{month:"short"});
+ if(!filtered.length){
+   emptyMsg.style.display="block";
+   emptyMsg.innerText="No events to show.";
+   return;
+ }
 
-      const org = e.organiser ? `<div class="event-meta">🎭 ${e.organiser}</div>` : "";
-      const venue = e.venue ? `<div class="event-meta">📍 ${e.venue}</div>` : "";
-      const time = e.time ? `<div class="event-meta">⏰ ${e.time}</div>` : "";
-
-      eventsEl.insertAdjacentHTML("beforeend",`
-        <div class="event-card" style="background:${base}">
-          <div class="color-bar" style="background:${accent}"></div>
-          <div class="card-body">
-            <div class="date-badge">
-              <div class="day">${day}</div>
-              <div class="month">${month}</div>
-            </div>
-            <div class="event-title">${e.name}</div>
-            <div class="event-meta-group">
-              ${org}
-              ${venue}
-              ${time}
-            </div>
-            <div class="category">${e.category}</div>
-          </div>
+ filtered.forEach((e,i)=>{
+   const {base,accent}=PALETTE[i%PALETTE.length];
+   const day=String(e.date.getDate()).padStart(2,"0");
+   const month=e.date.toLocaleString("en-US",{month:"short"});
+   events.insertAdjacentHTML("beforeend",`
+    <div class="event-card" style="background:${base}">
+      <div class="color-bar" style="background:${accent}"></div>
+      <div class="card-body">
+        <div class="date-badge">
+          <div class="day">${day}</div>
+          <div class="month">${month}</div>
         </div>
-      `);
-    });
-  }
+        <div class="event-title">${e.name}</div>
+        ${e.organiser?`<div class="event-meta">🎭 ${e.organiser}</div>`:""}
+        ${e.venue?`<div class="event-meta">📍 ${e.venue}</div>`:""}
+        ${e.time?`<div class="event-meta">⏰ ${e.time}</div>`:""}
+        <div class="category">${e.category}</div>
+      </div>
+    </div>
+   `);
+ });
+}
 
-  Papa.parse(csvUrl,{
-    download:true,
-    header:true,
-    skipEmptyLines:true,
-    complete(res){
-      allEvents = res.data.map(r=>({
-        name:r["Event Name"],
-        organiser:r["Organiser"],
-        category:r["Category of the Event"],
-        venue:r["Venue"]||"",
-        time:r["Start Time"]||"",
-        date:excelToDate(r["Date of the Event"])
-      })).filter(e=>e.name && e.date);
+Papa.parse(csvUrl,{
+ download:true,
+ header:true,
+ skipEmptyLines:true,
+ complete:r=>{
+  allEvents=r.data.map(x=>({
+   name:x["Event Name"],
+   organiser:x["Organiser"],
+   category:x["Category of the Event"],
+   venue:x["Venue"]||"",
+   time:x["Start Time"]||"",
+   date:excelToDate(x["Date of the Event"])
+  })).filter(e=>e.name&&e.date);
 
-      clubFilter.innerHTML =
-        `<option value="">🎭 Choose a club or society</option>` +
-        [...new Set(allEvents.map(e=>e.organiser))].sort().map(c=>`<option>${c}</option>`).join("");
+  clubFilter.innerHTML=`<option value="">Choose club</option>`+
+   [...new Set(allEvents.map(e=>e.organiser))].sort().map(c=>`<option>${c}</option>`).join("");
 
-      catFilter.innerHTML =
-        `<option value="">🎯 Choose an activity type</option>` +
-        [...new Set(allEvents.map(e=>e.category))].sort().map(c=>`<option>${c}</option>`).join("");
+  catFilter.innerHTML=`<option value="">Choose category</option>`+
+   [...new Set(allEvents.map(e=>e.category))].sort().map(c=>`<option>${c}</option>`).join("");
 
-      q.oninput = dateFilter.onchange = clubFilter.onchange = catFilter.onchange = render;
-      clearBtn.onclick = ()=>{ q.value=dateFilter.value=clubFilter.value=catFilter.value=""; render(); };
+  q.oninput=dateFilter.onchange=clubFilter.onchange=catFilter.onchange=render;
+  clearBtn.onclick=()=>{q.value=dateFilter.value=clubFilter.value=catFilter.value="";render();};
 
-      render();
-    }
-  });
+  render();
+ }
+});
+
+upcomingBtn.onclick=()=>{
+ mode="upcoming";
+ upcomingBtn.classList.add("active");
+ pastBtn.classList.remove("active");
+ render();
+};
+
+pastBtn.onclick=()=>{
+ mode="past";
+ pastBtn.classList.add("active");
+ upcomingBtn.classList.remove("active");
+ render();
+};
+
+const q=document.getElementById("q"),
+dateFilter=document.getElementById("dateFilter"),
+clubFilter=document.getElementById("clubFilter"),
+catFilter=document.getElementById("catFilter"),
+clearBtn=document.getElementById("clearBtn"),
+events=document.getElementById("events"),
+emptyMsg=document.getElementById("emptyMsg"),
+upcomingBtn=document.getElementById("upcomingBtn"),
+pastBtn=document.getElementById("pastBtn");
 </script>
 
 </body>
