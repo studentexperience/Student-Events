@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>Student Events</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <!-- ✅ Google Font: Poppins -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,118 +14,148 @@
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <style>
-body {
-  font-family: 'Poppins', sans-serif;
-  background:#f6f6f6;
-  margin:0;
-  padding:20px;
-}
+  body{
+    font-family:'Poppins',sans-serif;
+    background:#f6f6f6;
+    margin:0;
+    padding:20px;
+  }
 
-h1 {
-  text-align:center;
-  font-weight:600;
-  margin-bottom:10px;
-}
+  h1{
+    text-align:center;
+    margin-bottom:10px;
+    font-weight:600;
+  }
 
-/* View toggle */
-.view-toggle {
-  display:flex;
-  justify-content:center;
-  gap:10px;
-  margin-bottom:14px;
-}
+  /* ===== VIEW TOGGLE ===== */
+  .view-toggle{
+    max-width:1200px;
+    margin:0 auto 14px;
+    display:flex;
+    justify-content:center;
+    gap:10px;
+  }
 
-.view-toggle button {
-  padding:8px 16px;
-  border-radius:20px;
-  border:none;
-  cursor:pointer;
-  background:#e5e7eb;
-}
+  .view-toggle button{
+    border:none;
+    padding:8px 16px;
+    border-radius:20px;
+    font-size:14px;
+    cursor:pointer;
+    background:#e5e7eb;
+    font-family:'Poppins',sans-serif;
+  }
 
-.view-toggle button.active {
-  background:#111827;
-  color:white;
-}
+  .view-toggle button.active{
+    background:#111827;
+    color:#fff;
+  }
 
-/* Toolbar */
-.toolbar {
-  max-width:1200px;
-  margin:0 auto 20px;
-  display:grid;
-  grid-template-columns:2fr 1fr 1.2fr 1.2fr auto;
-  gap:10px;
-}
+  /* ===== TOOLBAR ===== */
+  .toolbar{
+    max-width:1200px;
+    margin:0 auto 20px;
+    display:grid;
+    grid-template-columns: 2fr 1fr 1.2fr 1.2fr auto;
+    gap:10px;
+  }
 
-.toolbar input, .toolbar select, .toolbar button {
-  padding:10px;
-  border-radius:8px;
-  border:1px solid #ccc;
-}
+  .toolbar input,
+  .toolbar select,
+  .toolbar button{
+    padding:10px 12px;
+    border-radius:8px;
+    border:1px solid #d0d0d0;
+    font-size:14px;
+    font-family:'Poppins',sans-serif;
+    background:#fff;
+  }
 
-.toolbar button {
-  background:#111827;
-  color:white;
-  cursor:pointer;
-}
+  .toolbar button{
+    background:#111827;
+    color:#fff;
+    cursor:pointer;
+    border:1px solid #111827;
+  }
 
-/* Grid */
-.events-container {
-  max-width:1200px;
-  margin:auto;
-  display:grid;
-  grid-template-columns:repeat(auto-fill, minmax(250px,1fr));
-  gap:18px;
-}
+  @media(max-width:900px){
+    .toolbar{grid-template-columns:1fr 1fr;}
+    .toolbar button{grid-column:span 2;}
+  }
 
-/* Card */
-.event-card {
-  border-radius:16px;
-  overflow:hidden;
-  display:flex;
-  flex-direction:column;
-  box-shadow:0 6px 14px rgba(0,0,0,.12);
-}
+  /* ===== GRID ===== */
+  .events-container{
+    max-width:1200px;
+    margin:auto;
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+    gap:18px;
+  }
 
-.color-bar { height:40px; }
+  /* ===== CARD ===== */
+  .event-card{
+    border-radius:16px;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    box-shadow:0 6px 14px rgba(0,0,0,.12);
+  }
 
-.card-body {
-  padding:12px 14px;
-  display:flex;
-  flex-direction:column;
-  flex:1;
-}
+  /* Accent bar */
+  .color-bar{ height:40px; }
 
-.date-badge {
-  width:50px;
-  height:50px;
-  border-radius:10px;
-  background:#111827;
-  color:white;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  font-weight:600;
-  margin-top:-24px;
-}
+  /* Body fills card */
+  .card-body{
+    padding:12px 14px 14px;
+    flex:1;
+    display:flex;
+    flex-direction:column;
+  }
 
-.event-title { font-weight:600; margin:8px 0 4px; }
-.event-meta { font-size:14px; margin:2px 0; }
+  /* Date badge (Day + Month) */
+  .date-badge{
+    width:50px; height:50px;
+    border-radius:10px;
+    background:#111827;
+    color:#fff;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    font-weight:600;
+    margin-top:-24px;
+  }
+  .date-badge .day{ font-size:17px; line-height:17px; }
+  .date-badge .month{ font-size:11px; letter-spacing:1px; text-transform:uppercase; }
 
-.category {
-  margin-top:auto;
-  font-size:12px;
-  background:rgba(0,0,0,.08);
-  padding:4px 10px;
-  border-radius:20px;
-  align-self:flex-start;
-}
+  .event-title{
+    font-size:15.5px;
+    font-weight:600;
+    margin:8px 0 4px;
+  }
 
-.empty {
-  text-align:center;
-  margin-top:30px;
-}
+  .event-meta{
+    font-size:14px;
+    margin:2px 0;
+    line-height:1.3;
+    color:#333;
+  }
+
+  .category{
+    margin-top:auto;
+    font-size:12px;
+    background:rgba(0,0,0,.08);
+    padding:4px 10px;
+    border-radius:20px;
+    align-self:flex-start;
+  }
+
+  .empty{
+    text-align:center;
+    margin-top:30px;
+    color:#555;
+    font-size:15px;
+  }
 </style>
 </head>
 
@@ -139,7 +169,7 @@ h1 {
 </div>
 
 <div class="toolbar">
-  <input id="q" placeholder="Search by event, club, category…" />
+  <input id="q" placeholder="Search by event, club, category, venue…" />
   <input id="dateFilter" type="date" />
   <select id="clubFilter"></select>
   <select id="catFilter"></select>
@@ -147,92 +177,222 @@ h1 {
 </div>
 
 <div class="events-container" id="events"></div>
-<div class="empty" id="emptyMsg" style="display:none;">No events to show.</div>
+<div class="empty" id="emptyMsg" style="display:none;"></div>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-
-  console.log("✅ DOM loaded, Papa:", typeof Papa);
 
   const csvUrl = "website-data.csv";
   const today = new Date(); today.setHours(0,0,0,0);
   let mode = "upcoming";
   let allEvents = [];
 
+  // ✅ Inclusive pastel palette (base + accent)
   const PALETTE = [
     {base:"#F0F7FF",accent:"#D6E6FF"},
+    {base:"#F7F3FF",accent:"#E3DBFF"},
     {base:"#FFF6EC",accent:"#FFE6CC"},
     {base:"#F1FAF5",accent:"#D9F2E6"},
-    {base:"#F7F3FF",accent:"#E3DBFF"}
+    {base:"#FFF0F3",accent:"#FFD6DE"},
+    {base:"#F5F5F5",accent:"#E1E1E1"}
   ];
 
+  // ✅ Master lists (alphabetical)
+  const ALL_CLUBS = [
+    "ACC MC - Undergraduate",
+    "ACC SONAM - Graduate",
+    "ACC SONAM - Undergraduate",
+    "ACCs FAS",
+    "Activity Club IED",
+    "AKU Athletics Club",
+    "AKU Chess Club",
+    "AKU Graduate Education Student Society (AGESS)",
+    "AKU Journalism Club",
+    "AKU Majlis",
+    "AKU MUN",
+    "AKU Photography Club",
+    "Arts and Culture Committee (AAC) (AKU-FAS)",
+    "Arts and Culture Committee (AAC) (AKU-IED)",
+    "Arts and Culture Committee (AAC) (AKU-SONAM) Graduate",
+    "Arts and Culture Committee (AAC) (AKU-SONAM) Undergraduate",
+    "Arts and Culture Committee (ACC) (AKU-MC)",
+    "Aurora",
+    "Class Representative",
+    "Club for Theatrics (ACT)",
+    "Entrepreneurial Society (AES)",
+    "Explorers Club",
+    "FALAH (FAS)",
+    "FALAH (MBBS)",
+    "FALAH (SONAM)",
+    "Music Society",
+    "OSEP Internal",
+    "Public Speaking Forum (PSF)",
+    "Publication and Literary Society (APLS) (FAS)",
+    "Publication and Literary Society (APLS) (MBBS)",
+    "Publication and Literary Society (APLS) (SONAM)",
+    "Rowing Club (ARC)",
+    "Society for Arts and Culture",
+    "Society of Climate Conservation and Health (SoCCH)",
+    "Sports Society",
+    "Student Research Forum (SRF) (FAS)",
+    "Student Research Forum (SRF) (MBBS)",
+    "Student Research Forum (SRF) (SONAM)",
+    "SRF-FAS Conference",
+    "Synergy (FAS)",
+    "Synergy (MBBS)",
+    "Synergy (SONAM)"
+  ];
+
+  const ALL_CATEGORIES = [
+    "Competition",
+    "Meeting",
+    "Orientation",
+    "Other",
+    "Recreational/Social",
+    "Sports",
+    "Welfare",
+    "Workshop/Session"
+  ];
+
+  // DOM refs
+  const q = document.getElementById("q");
+  const dateFilter = document.getElementById("dateFilter");
+  const clubFilter = document.getElementById("clubFilter");
+  const catFilter = document.getElementById("catFilter");
+  const clearBtn = document.getElementById("clearBtn");
+  const eventsEl = document.getElementById("events");
+  const emptyMsg = document.getElementById("emptyMsg");
+  const upcomingBtn = document.getElementById("upcomingBtn");
+  const pastBtn = document.getElementById("pastBtn");
+
+  // Helpers
   const excelToDate = v => {
     const d = new Date((Number(v) - 25569) * 86400000);
     d.setHours(0,0,0,0);
     return d;
   };
 
-  const q = document.getElementById("q");
-  const dateFilter = document.getElementById("dateFilter");
-  const clubFilter = document.getElementById("clubFilter");
-  const catFilter = document.getElementById("catFilter");
-  const clearBtn = document.getElementById("clearBtn");
-  const events = document.getElementById("events");
-  const emptyMsg = document.getElementById("emptyMsg");
-  const upcomingBtn = document.getElementById("upcomingBtn");
-  const pastBtn = document.getElementById("pastBtn");
+  function buildDropdown(selectEl, placeholder, list) {
+    selectEl.innerHTML =
+      `<option value="">${placeholder}</option>` +
+      list.map(v => `<option value="${v}">${v}</option>`).join("");
+  }
 
   function render() {
-    let list = allEvents.filter(e =>
-      mode === "upcoming" ? e.date >= today : e.date < today
-    );
+    const qv = q.value.trim().toLowerCase();
+    const cv = clubFilter.value;
+    const tv = catFilter.value;
+    const dv = dateFilter.value ? new Date(dateFilter.value + "T00:00:00") : null;
+
+    let list = allEvents.filter(e => mode === "upcoming" ? e.date >= today : e.date < today);
+
+    // filters
+    list = list
+      .filter(e => !cv || e.organiser === cv)
+      .filter(e => !tv || e.category === tv)
+      .filter(e => !dv || e.date.getTime() === dv.getTime())
+      .filter(e => !qv || `${e.name} ${e.organiser} ${e.category} ${e.venue}`.toLowerCase().includes(qv));
+
+    // sorting
+    list.sort((a,b) => mode === "upcoming" ? a.date - b.date : b.date - a.date);
+
+    // empty state messages
+    eventsEl.innerHTML = "";
+    emptyMsg.style.display = "none";
 
     if (!list.length) {
-      emptyMsg.style.display="block";
-      events.innerHTML="";
+      emptyMsg.style.display = "block";
+      if (cv) {
+        emptyMsg.textContent = "✨ Looks like our clubs and societies are taking a short break before the fun begins again :-)";
+      } else if (tv) {
+        emptyMsg.textContent = "💡 Don't see any relevant event? How about you bring the event and OSEP would love to support you in planning and execution of the event.";
+      } else {
+        emptyMsg.textContent = "No events to show.";
+      }
       return;
     }
 
-    emptyMsg.style.display="none";
-    list.sort((a,b)=> mode==="upcoming" ? a.date-b.date : b.date-a.date);
+    // render cards
+    list.forEach((e, i) => {
+      const { base, accent } = PALETTE[i % PALETTE.length];
+      const day = String(e.date.getDate()).padStart(2,"0");
+      const month = e.date.toLocaleString("en-US", { month: "short" });
 
-    events.innerHTML="";
-    list.forEach((e,i)=>{
-      const {base,accent} = PALETTE[i%PALETTE.length];
-      events.innerHTML += `
+      const orgHTML   = e.organiser ? `<div class="event-meta">🎭 ${e.organiser}</div>` : "";
+      const venueHTML = e.venue ? `<div class="event-meta">📍 ${e.venue}</div>` : "";
+      const timeHTML  = e.time ? `<div class="event-meta">⏰ ${e.time}</div>` : "";
+
+      eventsEl.insertAdjacentHTML("beforeend", `
         <div class="event-card" style="background:${base}">
           <div class="color-bar" style="background:${accent}"></div>
           <div class="card-body">
-            <div class="date-badge">${e.date.getDate()}</div>
+            <div class="date-badge">
+              <div class="day">${day}</div>
+              <div class="month">${month}</div>
+            </div>
             <div class="event-title">${e.name}</div>
-            <div class="event-meta">🎭 ${e.organiser}</div>
+            ${orgHTML}
+            ${venueHTML}
+            ${timeHTML}
             <div class="category">${e.category}</div>
           </div>
-        </div>`;
+        </div>
+      `);
     });
   }
 
-  Papa.parse(csvUrl,{
-    download:true,
-    header:true,
-    skipEmptyLines:true,
-    complete:r=>{
-      allEvents = r.data.map(x=>({
-        name:x["Event Name"],
-        organiser:x["Organiser"],
-        category:x["Category of the Event"],
-        date:excelToDate(x["Date of the Event"])
-      })).filter(e=>e.name && e.date);
+  // Load CSV
+  Papa.parse(csvUrl, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: r => {
+      allEvents = r.data.map(x => ({
+        name: x["Event Name"],
+        organiser: x["Organiser"],
+        category: x["Category of the Event"],
+        venue: (x["Venue"] || "").trim(),
+        time: (x["Start Time"] || "").trim(),
+        date: excelToDate(x["Date of the Event"])
+      })).filter(e => e.name && e.date);
 
-      clubFilter.innerHTML="<option value=''>All clubs</option>";
-      catFilter.innerHTML="<option value=''>All categories</option>";
+      // dropdowns from master lists (alphabetical) + keep any “new” values that appear in CSV
+      const clubsFromData = [...new Set(allEvents.map(e => e.organiser).filter(Boolean))];
+      const catsFromData  = [...new Set(allEvents.map(e => e.category).filter(Boolean))];
+
+      const mergedClubs = [...new Set([...ALL_CLUBS, ...clubsFromData])].sort();
+      const mergedCats  = [...new Set([...ALL_CATEGORIES, ...catsFromData])].sort();
+
+      buildDropdown(clubFilter, "🎭 Choose a club or society", mergedClubs);
+      buildDropdown(catFilter, "🎯 Choose an activity type", mergedCats);
+
+      // wire events
+      q.oninput = dateFilter.onchange = clubFilter.onchange = catFilter.onchange = render;
+      clearBtn.onclick = () => {
+        q.value = "";
+        dateFilter.value = "";
+        clubFilter.value = "";
+        catFilter.value = "";
+        render();
+      };
+
+      upcomingBtn.onclick = () => {
+        mode = "upcoming";
+        upcomingBtn.classList.add("active");
+        pastBtn.classList.remove("active");
+        render();
+      };
+
+      pastBtn.onclick = () => {
+        mode = "past";
+        pastBtn.classList.add("active");
+        upcomingBtn.classList.remove("active");
+        render();
+      };
 
       render();
     }
   });
-
-  upcomingBtn.onclick=()=>{mode="upcoming"; upcomingBtn.classList.add("active"); pastBtn.classList.remove("active"); render();}
-  pastBtn.onclick=()=>{mode="past"; pastBtn.classList.add("active"); upcomingBtn.classList.remove("active"); render();}
 
 });
 </script>
