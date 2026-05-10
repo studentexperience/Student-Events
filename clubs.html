@@ -510,21 +510,16 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* ── Google Drive URL converter ── */
-  // Converts any Google Drive share link to a direct-embeddable image URL
   function driveUrl(raw){
     if(!raw) return "";
     raw = raw.trim();
-    // Already a direct URL or non-Drive link — use as-is
     if(!raw.includes("drive.google.com")) return raw;
-    // Extract file ID from formats:
-    //   /file/d/FILE_ID/view
-    //   /open?id=FILE_ID
-    //   /uc?id=FILE_ID
     const matchFile = raw.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
     const matchOpen = raw.match(/[?&]id=([a-zA-Z0-9_-]+)/);
     const id = matchFile?.[1] || matchOpen?.[1];
     if(!id) return "";
-    return `https://drive.google.com/uc?export=view&id=${id}`;
+    // thumbnail endpoint is cross-origin safe and works for direct embedding
+    return `https://drive.google.com/thumbnail?id=${id}&sz=w400`;
   }
   const PALETTE = [
     { bg:"#F0F7FF", bar:"#4f7cff", icon:"🎓" },
