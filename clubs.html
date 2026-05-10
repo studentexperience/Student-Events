@@ -509,7 +509,23 @@ document.addEventListener("DOMContentLoaded", () => {
       sideNav.classList.remove("open");
   });
 
-  /* ── Palette ── */
+  /* ── Google Drive URL converter ── */
+  // Converts any Google Drive share link to a direct-embeddable image URL
+  function driveUrl(raw){
+    if(!raw) return "";
+    raw = raw.trim();
+    // Already a direct URL or non-Drive link — use as-is
+    if(!raw.includes("drive.google.com")) return raw;
+    // Extract file ID from formats:
+    //   /file/d/FILE_ID/view
+    //   /open?id=FILE_ID
+    //   /uc?id=FILE_ID
+    const matchFile = raw.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    const matchOpen = raw.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    const id = matchFile?.[1] || matchOpen?.[1];
+    if(!id) return "";
+    return `https://drive.google.com/uc?export=view&id=${id}`;
+  }
   const PALETTE = [
     { bg:"#F0F7FF", bar:"#4f7cff", icon:"🎓" },
     { bg:"#F7F3FF", bar:"#7c5cbf", icon:"🎭" },
@@ -606,6 +622,13 @@ document.addEventListener("DOMContentLoaded", () => {
     list.forEach((c, i) => {
       const pal  = PALETTE[i % PALETTE.length];
       const icon = getIcon(c.name);
+      const avatarHtml = c.logo
+        ? `<div class="club-avatar" style="background:#fff; padding:10px;">
+             <img src="${c.logo}" alt="${esc(c.name)} logo"
+               style="width:100%;height:100%;object-fit:contain;border-radius:8px;"
+               onerror="this.parentElement.innerHTML='${icon}';this.parentElement.style.fontSize='40px';this.parentElement.style.padding='0';" />
+           </div>`
+        : `<div class="club-avatar" style="background:${pal.bg}">${icon}</div>`;
 
       // Compact events text (strip numbers & bullets for preview)
       const eventsPreview = c.events
@@ -623,7 +646,7 @@ document.addEventListener("DOMContentLoaded", () => {
       clubsGrid.insertAdjacentHTML("beforeend", `
         <article class="club-card" data-idx="${allClubs.indexOf(c)}" style="background:${pal.bg}" tabindex="0" role="button" aria-label="View ${esc(c.name)} details">
           <div class="top-bar" style="background:${pal.bar}"></div>
-          <div class="club-avatar" style="background:${pal.bg}">${icon}</div>
+          ${avatarHtml}
           <div class="club-body">
             <div class="club-name">${esc(c.name)}</div>
             <div class="club-desc">${esc(c.description)}</div>
@@ -649,7 +672,13 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ── Modal ── */
   function openModal(c, pal){
     modalBar.style.background      = pal.bar;
-    modalIcon.textContent          = getIcon(c.name);
+    if(c.logo){
+      modalIcon.innerHTML = `<img src="${c.logo}" alt="${c.name} logo"
+        style="width:56px;height:56px;object-fit:contain;border-radius:10px;background:#fff;padding:4px;"
+        onerror="this.parentElement.textContent='${getIcon(c.name)}'" />`;
+    } else {
+      modalIcon.textContent = getIcon(c.name);
+    }
     modalTitle.textContent         = c.name;
     modalEmail.textContent         = c.email || "";
     modalEmail.href                = c.email ? `mailto:${c.email}` : "#";
@@ -708,6 +737,7 @@ document.addEventListener("DOMContentLoaded", () => {
           coConvenor:  (r["Co-Convenor"]     || "").trim(),
           secretary:   (r["General Secretary"]|| "").trim(),
           treasurer:   (r["Treasurer"]       || "").trim(),
+          logo:        driveUrl(r["Logo"]    || ""),
         }))
         .filter(c => c.name);
 
