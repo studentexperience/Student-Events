@@ -754,23 +754,29 @@ document.addEventListener("DOMContentLoaded", () => {
   function cleanText(str){
     return (str || "")
       .trim()
-      .replace(/\u00e2\u0080\u0099/g, "'")   // â€™ → '
-      .replace(/\u00e2\u0080\u0098/g, "'")   // â€˜ → '
-      .replace(/\u00e2\u0080\u009c/g, '"')   // â€œ → "
-      .replace(/\u00e2\u0080\u009d/g, '"')   // â€ → "
-      .replace(/\u00e2\u0080\u0093/g, '–')   // â€" → –
-      .replace(/\u00e2\u0080\u0094/g, '—')   // â€" → —
-      .replace(/\ufffd/g, "'")               // replacement char → '
-      .replace(/[^\x00-\x7F\u00A0-\u024F]/g, (ch) => {
-        // Keep common extended Latin; replace other unrecognised chars with '
-        return ch || "'";
-      });
+      .replace(/\xd5/g, "'")
+      .replace(/\xd1/g, "–")
+      .replace(/\xd2/g, "\u201C")
+      .replace(/\xd3/g, "\u201D")
+      .replace(/\u00e2\u0080\u0099/g, "'")
+      .replace(/\u00e2\u0080\u0098/g, "'")
+      .replace(/\u00e2\u0080\u009c/g, '"')
+      .replace(/\u00e2\u0080\u009d/g, '"')
+      .replace(/\u00e2\u0080\u0093/g, '–')
+      .replace(/\u00e2\u0080\u0094/g, '—')
+      .replace(/\ufffd/g, "'");
   }
   Papa.parse("clubs-data.csv", {
     download: true,
     header: true,
     skipEmptyLines: true,
+    encoding: "UTF-8",
+    transformHeader: h => h.trim(),
     complete: (res) => {
+      if(!res.data || res.data.length === 0){
+        pageSubtitle.textContent = "No club data found. Check the CSV file.";
+        return;
+      }
       allClubs = res.data
         .map(r => ({
           name:        (r["Society Name"]      || "").trim(),
@@ -806,8 +812,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       render();
     },
-    error: () => {
-      pageSubtitle.textContent = "Could not load clubs data.";
+    error: (err) => {
+      pageSubtitle.textContent = `Could not load clubs data: ${err.message || "unknown error"}`;
     }
   });
 
