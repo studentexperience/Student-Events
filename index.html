@@ -697,129 +697,95 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ------------------------------------------------------------------ */
   /*  AI-powered cover image:                                            */
-  /*  1. Claude reads the event title & picks a search keyword           */
-  /*  2. We search Wikimedia Commons (free, no API key, CORS-friendly)   */
-  /*  3. First suitable image is swapped in; graceful fallback on error  */
+  /*  1. Claude writes a detailed image prompt for the event             */
+  /*  2. Pollinations.ai generates an actual AI image from that prompt  */
+  /*     (free, no API key, returns a real image URL)                   */
   /* ------------------------------------------------------------------ */
 
-  const imgCache = {}; // keyword cache  { eventTitle -> keyword }
-  const urlCache = {}; // image URL cache { keyword   -> imageUrl }
+  const imgCache = {}; // { cacheKey -> imageUrl }
 
   async function fetchAICoverImage(cardId, eventTitle, category, fallbackColor){
     const cacheKey = eventTitle.toLowerCase().trim();
 
     try {
-      /* ── Step 1: Ask Claude for the best search keyword ── */
-      let keyword;
+      /* ── Step 1: Ask Claude for a vivid image generation prompt ── */
+      let imageUrl;
       if(imgCache[cacheKey]){
-        keyword = imgCache[cacheKey];
+        imageUrl = imgCache[cacheKey];
       } else {
         const prompt =
-          `You help a university student-events website choose cover photos. ` +
-          `Event title: "${eventTitle}". Category: "${category || "general"}". ` +
-          `Give ONE 2-3 word English search phrase that describes a visually rich, ` +
-          `education-related photo for this event (e.g. "science lab students", ` +
-          `"chess tournament", "music concert stage", "sports field university"). ` +
-          `Reply with ONLY the phrase, no punctuation, no quotes.`;
+          `You are helping a university student-events website auto-generate cover images. ` +
+          `Write a SHORT image generation prompt (max 15 words) for this event: ` +
+          `Title: "${eventTitle}", Category: "${category || "general"}". ` +
+          `The image must look like a real photograph, be visually rich, university/campus-themed, ` +
+          `and directly reflect what the event is about. ` +
+          `Examples: ` +
+          `"students competing in a chess tournament in a university hall", ` +
+          `"university rowing team training on a river at sunrise", ` +
+          `"students performing on a lit stage at a music concert". ` +
+          `Reply with ONLY the prompt, nothing else.`;
 
         const res = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             model: "claude-sonnet-4-20250514",
-            max_tokens: 20,
+            max_tokens: 60,
             messages: [{ role: "user", content: prompt }]
           })
         });
 
-        const data = await res.json();
-        keyword = (data.content?.[0]?.text || "university campus students")
-          .trim().replace(/['".,\n]/g, "").substring(0, 60);
-        imgCache[cacheKey] = keyword;
+        const data    = await res.json();
+        const aiPrompt = (data.content?.[0]?.text || `${eventTitle} university campus event`)
+          .trim().replace(/['"]/g, "").substring(0, 200);
+
+        // Pollinations.ai: free AI image generation, no key, returns image directly
+        // width=800&height=420 matches our card cover dimensions
+        imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(aiPrompt + ", photorealistic, bright lighting, high quality")}?width=800&height=420&nologo=true&seed=${hashStr(cacheKey)}`;
+        imgCache[cacheKey] = imageUrl;
       }
 
-      /* ── Step 2: Search Wikimedia Commons for a photo ── */
-      let imageUrl;
-      if(urlCache[keyword]){
-        imageUrl = urlCache[keyword];
-      } else {
-        // Wikimedia opensearch → get page title → get image URL
-        const searchUrl =
-          `https://en.wikipedia.org/w/api.php?action=query&list=search` +
-          `&srsearch=${encodeURIComponent(keyword)}&srlimit=5&srnamespace=6` +
-          `&format=json&origin=*`;
-
-        const searchRes  = await fetch(searchUrl);
-        const searchData = await searchRes.json();
-        const hits = searchData?.query?.search || [];
-
-        // Pick the first result that has an image page title
-        let picTitle = null;
-        for(const hit of hits){
-          if(hit.title && hit.title.startsWith("File:")){
-            picTitle = hit.title;
-            break;
-          }
-        }
-
-        if(picTitle){
-          // Resolve the actual file URL via imageinfo API
-          const infoUrl =
-            `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(picTitle)}` +
-            `&prop=imageinfo&iiprop=url&iiurlwidth=800&format=json&origin=*`;
-
-          const infoRes  = await fetch(infoUrl);
-          const infoData = await infoRes.json();
-          const pages    = Object.values(infoData?.query?.pages || {});
-          imageUrl = pages[0]?.imageinfo?.[0]?.thumburl || null;
-        }
-
-        // Fallback: use picsum with a deterministic seed derived from keyword
-        if(!imageUrl){
-          const seed = Math.abs([...keyword].reduce((a,c) => a + c.charCodeAt(0), 0)) % 1000;
-          imageUrl = `https://picsum.photos/seed/${seed}/800/420`;
-        }
-
-        urlCache[keyword] = imageUrl;
-      }
-
-      /* ── Step 3: Swap shimmer placeholder → real image ── */
-      const placeholder = document.getElementById(cardId);
-      if(!placeholder) return;
-
-      const img    = new Image();
-      img.onload   = () => {
-        const el       = document.createElement("img");
-        el.className   = "cover-img";
-        el.src         = imageUrl;
-        el.alt         = eventTitle;
-        el.loading     = "lazy";
-        placeholder.replaceWith(el);
-      };
-      img.onerror  = () => {
-        // Picsum guaranteed fallback
-        const seed  = Math.abs([...eventTitle].reduce((a,c) => a + c.charCodeAt(0), 0)) % 1000;
-        const el    = document.createElement("img");
-        el.className= "cover-img";
-        el.src      = `https://picsum.photos/seed/${seed}/800/420`;
-        el.alt      = eventTitle;
-        placeholder.replaceWith(el);
-      };
-      img.src = imageUrl;
+      /* ── Step 2: Inject image into card ── */
+      swapImage(cardId, imageUrl, eventTitle, cacheKey);
 
     } catch(err){
-      // Last-resort: Picsum seeded by title
-      try {
-        const placeholder = document.getElementById(cardId);
-        if(!placeholder) return;
-        const seed  = Math.abs([...eventTitle].reduce((a,c) => a + c.charCodeAt(0), 0)) % 1000;
-        const el    = document.createElement("img");
-        el.className= "cover-img";
-        el.src      = `https://picsum.photos/seed/${seed}/800/420`;
-        el.alt      = eventTitle;
-        placeholder.replaceWith(el);
-      } catch(_){}
+      // If Claude API fails, generate directly from event title
+      const fallbackPrompt = `${eventTitle} ${category || ""} university campus event students`;
+      const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fallbackPrompt + ", photorealistic, high quality")}?width=800&height=420&nologo=true&seed=${hashStr(cacheKey)}`;
+      swapImage(cardId, imageUrl, eventTitle, cacheKey);
     }
+  }
+
+  function swapImage(cardId, imageUrl, altText, cacheKey){
+    const placeholder = document.getElementById(cardId);
+    if(!placeholder) return;
+
+    const img      = new Image();
+    img.onload     = () => {
+      const el     = document.createElement("img");
+      el.className = "cover-img";
+      el.src       = imageUrl;
+      el.alt       = altText;
+      placeholder.replaceWith(el);
+    };
+    img.onerror    = () => {
+      // Last resort: seeded Picsum
+      const el     = document.createElement("img");
+      el.className = "cover-img";
+      el.src       = `https://picsum.photos/seed/${hashStr(cacheKey) % 500}/800/420`;
+      el.alt       = altText;
+      placeholder.replaceWith(el);
+    };
+    img.src = imageUrl;
+  }
+
+  // Simple deterministic hash → integer (for consistent seeds)
+  function hashStr(str){
+    let h = 0;
+    for(let i = 0; i < str.length; i++){
+      h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+    }
+    return Math.abs(h);
   }
 
   // Load CSV
