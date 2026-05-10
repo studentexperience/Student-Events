@@ -696,72 +696,129 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ------------------------------------------------------------------ */
-  /*  AI-powered cover image: Claude picks the best search keyword,      */
-  /*  then we pull a relevant photo from Unsplash's free source API.     */
+  /*  AI-powered cover image:                                            */
+  /*  1. Claude reads the event title & picks a search keyword           */
+  /*  2. We search Wikimedia Commons (free, no API key, CORS-friendly)   */
+  /*  3. First suitable image is swapped in; graceful fallback on error  */
   /* ------------------------------------------------------------------ */
 
-  // Simple in-memory cache so the same event title is never looked up twice
-  const imgCache = {};
+  const imgCache = {}; // keyword cache  { eventTitle -> keyword }
+  const urlCache = {}; // image URL cache { keyword   -> imageUrl }
 
   async function fetchAICoverImage(cardId, eventTitle, category, fallbackColor){
     const cacheKey = eventTitle.toLowerCase().trim();
 
     try {
-      // 1️⃣  Ask Claude for the best Unsplash search keyword
+      /* ── Step 1: Ask Claude for the best search keyword ── */
       let keyword;
       if(imgCache[cacheKey]){
         keyword = imgCache[cacheKey];
       } else {
         const prompt =
-          `You are helping a university student-events website pick cover photos. ` +
-          `For the event titled "${eventTitle}" (category: ${category || "general"}), ` +
-          `suggest ONE short Unsplash search keyword (2–4 words) that would return a ` +
-          `visually appealing, education- or campus-related photo. ` +
-          `The keyword must relate to the event theme but stay appropriate for a university context. ` +
-          `Reply with ONLY the keyword, nothing else.`;
+          `You help a university student-events website choose cover photos. ` +
+          `Event title: "${eventTitle}". Category: "${category || "general"}". ` +
+          `Give ONE 2-3 word English search phrase that describes a visually rich, ` +
+          `education-related photo for this event (e.g. "science lab students", ` +
+          `"chess tournament", "music concert stage", "sports field university"). ` +
+          `Reply with ONLY the phrase, no punctuation, no quotes.`;
 
         const res = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             model: "claude-sonnet-4-20250514",
-            max_tokens: 30,
+            max_tokens: 20,
             messages: [{ role: "user", content: prompt }]
           })
         });
 
         const data = await res.json();
-        keyword = (data.content?.[0]?.text || "university campus").trim().replace(/['"]/g, "");
+        keyword = (data.content?.[0]?.text || "university campus students")
+          .trim().replace(/['".,\n]/g, "").substring(0, 60);
         imgCache[cacheKey] = keyword;
       }
 
-      // 2️⃣  Fetch a photo from Unsplash Source (no API key needed)
-      //     800×420 keeps aspect ratio close to our 192px-tall cover
-      const imgUrl = `https://source.unsplash.com/800x420/?${encodeURIComponent(keyword + ",education")}`;
+      /* ── Step 2: Search Wikimedia Commons for a photo ── */
+      let imageUrl;
+      if(urlCache[keyword]){
+        imageUrl = urlCache[keyword];
+      } else {
+        // Wikimedia opensearch → get page title → get image URL
+        const searchUrl =
+          `https://en.wikipedia.org/w/api.php?action=query&list=search` +
+          `&srsearch=${encodeURIComponent(keyword)}&srlimit=5&srnamespace=6` +
+          `&format=json&origin=*`;
 
-      // 3️⃣  Swap the shimmer placeholder for the real photo
+        const searchRes  = await fetch(searchUrl);
+        const searchData = await searchRes.json();
+        const hits = searchData?.query?.search || [];
+
+        // Pick the first result that has an image page title
+        let picTitle = null;
+        for(const hit of hits){
+          if(hit.title && hit.title.startsWith("File:")){
+            picTitle = hit.title;
+            break;
+          }
+        }
+
+        if(picTitle){
+          // Resolve the actual file URL via imageinfo API
+          const infoUrl =
+            `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(picTitle)}` +
+            `&prop=imageinfo&iiprop=url&iiurlwidth=800&format=json&origin=*`;
+
+          const infoRes  = await fetch(infoUrl);
+          const infoData = await infoRes.json();
+          const pages    = Object.values(infoData?.query?.pages || {});
+          imageUrl = pages[0]?.imageinfo?.[0]?.thumburl || null;
+        }
+
+        // Fallback: use picsum with a deterministic seed derived from keyword
+        if(!imageUrl){
+          const seed = Math.abs([...keyword].reduce((a,c) => a + c.charCodeAt(0), 0)) % 1000;
+          imageUrl = `https://picsum.photos/seed/${seed}/800/420`;
+        }
+
+        urlCache[keyword] = imageUrl;
+      }
+
+      /* ── Step 3: Swap shimmer placeholder → real image ── */
       const placeholder = document.getElementById(cardId);
       if(!placeholder) return;
 
-      const img = new Image();
-      img.onload = () => {
-        const newImg = document.createElement("img");
-        newImg.className = "cover-img";
-        newImg.src = imgUrl;
-        newImg.alt = eventTitle;
-        newImg.loading = "lazy";
-        placeholder.replaceWith(newImg);
+      const img    = new Image();
+      img.onload   = () => {
+        const el       = document.createElement("img");
+        el.className   = "cover-img";
+        el.src         = imageUrl;
+        el.alt         = eventTitle;
+        el.loading     = "lazy";
+        placeholder.replaceWith(el);
       };
-      img.onerror = () => {
-        // If Unsplash fails, just remove the shimmer class gracefully
-        placeholder.classList.remove("cover-shimmer");
+      img.onerror  = () => {
+        // Picsum guaranteed fallback
+        const seed  = Math.abs([...eventTitle].reduce((a,c) => a + c.charCodeAt(0), 0)) % 1000;
+        const el    = document.createElement("img");
+        el.className= "cover-img";
+        el.src      = `https://picsum.photos/seed/${seed}/800/420`;
+        el.alt      = eventTitle;
+        placeholder.replaceWith(el);
       };
-      img.src = imgUrl;
+      img.src = imageUrl;
 
-    } catch(_){
-      // Silently fall back to the coloured placeholder
-      const placeholder = document.getElementById(cardId);
-      if(placeholder) placeholder.classList.remove("cover-shimmer");
+    } catch(err){
+      // Last-resort: Picsum seeded by title
+      try {
+        const placeholder = document.getElementById(cardId);
+        if(!placeholder) return;
+        const seed  = Math.abs([...eventTitle].reduce((a,c) => a + c.charCodeAt(0), 0)) % 1000;
+        const el    = document.createElement("img");
+        el.className= "cover-img";
+        el.src      = `https://picsum.photos/seed/${seed}/800/420`;
+        el.alt      = eventTitle;
+        placeholder.replaceWith(el);
+      } catch(_){}
     }
   }
 
