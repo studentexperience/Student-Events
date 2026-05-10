@@ -17,11 +17,10 @@
 :root{
   --ink:#111827;
   --bg:#f3f4f6;
-  --panel:#ffffff;
+  --panel:#fff;
   --border:#e5e7eb;
   --shadow:0 10px 22px rgba(0,0,0,.14);
 }
-
 *{ box-sizing:border-box; }
 
 body{
@@ -31,7 +30,7 @@ body{
   color:var(--ink);
 }
 
-/* ===== Header ===== */
+/* Header */
 .topbar{
   height:56px;
   background:#fff;
@@ -42,14 +41,14 @@ body{
   font-weight:600;
 }
 
-/* ===== Layout ===== */
+/* Layout */
 .shell{
   display:grid;
   grid-template-columns:180px 1fr;
   min-height:calc(100vh - 56px);
 }
 
-/* ===== Side Nav (unchanged) ===== */
+/* Nav */
 .nav{
   background:#fff;
   border-right:1px solid var(--border);
@@ -68,7 +67,7 @@ body{
   font-weight:600;
 }
 
-/* ===== Content ===== */
+/* Content */
 .content{ padding:22px; }
 .page-title{
   font-size:28px;
@@ -76,14 +75,14 @@ body{
   margin-bottom:18px;
 }
 
-/* ===== Page grid ===== */
+/* Page grid */
 .page-grid{
   display:grid;
   grid-template-columns:320px 1fr;
   gap:22px;
 }
 
-/* ===== Filters (UNCHANGED) ===== */
+/* Filters */
 .filters{
   background:#fff;
   border-radius:16px;
@@ -91,6 +90,7 @@ body{
   box-shadow:var(--shadow);
 }
 .filters h3{ margin-bottom:16px; }
+
 .field{ margin-bottom:16px; }
 .field label{
   display:block;
@@ -126,33 +126,31 @@ body{
   color:#fff;
 }
 
-/* ===== Cards Grid (WIDTH ↑ ~1.5×) ===== */
+/* Cards grid ✅ FIXED FOR 4 ON PC */
 .cards{
   display:grid;
-  grid-template-columns:repeat(auto-fill, minmax(360px, 1fr));
-  gap:28px;
+  grid-template-columns:repeat(4, minmax(300px,1fr));
+  gap:24px;
 }
 
-/* ===== Event Card ===== */
+/* Card */
 .card{
   background:#fff;
   border-radius:22px;
   overflow:hidden;
   box-shadow:var(--shadow);
+  min-height:420px; /* ~1.2x height */
   display:flex;
   flex-direction:column;
-  min-height:420px; /* HEIGHT ↑ ~1.2× */
 }
 
-/* ✅ Cover image space */
+/* Cover */
 .card-cover{
   height:160px;
   background:linear-gradient(135deg,#dbeafe,#e0e7ff);
-  background-size:cover;
-  background-position:center;
 }
 
-/* Card body */
+/* Body */
 .card-body{
   padding:22px 20px 18px;
   display:flex;
@@ -160,21 +158,20 @@ body{
   flex:1;
 }
 
-/* Event title */
+/* Title */
 .card-title{
   font-size:18px;
   font-weight:700;
-  line-height:1.4;
-  margin-bottom:18px; /* two line space */
+  margin-bottom:18px;
 }
 
-/* Meta info */
+/* Meta */
 .card-meta{
   font-size:15px;
   margin:6px 0;
 }
 
-/* Organizer banner */
+/* Organizer */
 .organizer{
   margin-top:auto;
   padding:12px 14px;
@@ -184,13 +181,13 @@ body{
   font-weight:600;
 }
 
-/* ===== Responsive ===== */
+/* Responsive */
 @media(max-width:1400px){
-  .cards{ grid-template-columns:repeat(auto-fill, minmax(320px,1fr)); }
+  .cards{ grid-template-columns:repeat(3,1fr); }
 }
 @media(max-width:1100px){
   .page-grid{ grid-template-columns:1fr; }
-  .cards{ grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); }
+  .cards{ grid-template-columns:repeat(2,1fr); }
 }
 @media(max-width:700px){
   .shell{ grid-template-columns:1fr; }
@@ -205,35 +202,35 @@ body{
 <header class="topbar">Campus Life</header>
 
 <div class="shell">
-  <nav class="nav">
-    <a href="#">Home</a>
-    <a href="#" class="active">Events</a>
-    <a href="#">Clubs</a>
-    <a href="#">News</a>
-    <a href="#">Forms</a>
-  </nav>
+<nav class="nav">
+  <a href="#">Home</a>
+  <a href="#" class="active">Events</a>
+  <a href="#">Clubs</a>
+  <a href="#">News</a>
+  <a href="#">Forms</a>
+</nav>
 
-  <main class="content">
-    <div class="page-title">Events</div>
+<main class="content">
+<div class="page-title">Events</div>
 
-    <div class="page-grid">
-      <aside class="filters">
-        <h3>Search Events</h3>
+<div class="page-grid">
+  <aside class="filters">
+    <h3>Search Events</h3>
 
-        <div class="toggle">
-          <button id="upcomingBtn" class="active">Upcoming</button>
-          <button id="pastBtn">Past</button>
-        </div>
-
-        <div class="field"><label>Search</label><input id="q"></div>
-        <div class="field"><label>Date</label><input id="dateFilter" type="date"></div>
-        <div class="field"><label>Club</label><select id="clubFilter"></select></div>
-        <div class="field"><label>Category</label><select id="catFilter"></select></div>
-      </aside>
-
-      <section class="cards" id="events"></section>
+    <div class="toggle">
+      <button id="upcomingBtn" class="active">Upcoming</button>
+      <button id="pastBtn">Past</button>
     </div>
-  </main>
+
+    <div class="field"><label>Search</label><input id="q"></div>
+    <div class="field"><label>Date</label><input id="dateFilter" type="date"></div>
+    <div class="field"><label>Club</label><select id="clubFilter"></select></div>
+    <div class="field"><label>Category</label><select id="catFilter"></select></div>
+  </aside>
+
+  <section class="cards" id="events"></section>
+</div>
+</main>
 </div>
 
 <script>
@@ -241,11 +238,17 @@ document.addEventListener("DOMContentLoaded",()=>{
 
   const csvUrl="website-data.csv";
   const today=new Date(); today.setHours(0,0,0,0);
-  let mode="upcoming", allEvents=[];
 
-  const eventsEl=document.getElementById("events");
+  let mode="upcoming";
+  let allEvents=[];
+
+  const q=document.getElementById("q");
+  const dateFilter=document.getElementById("dateFilter");
+  const clubFilter=document.getElementById("clubFilter");
+  const catFilter=document.getElementById("catFilter");
   const upcomingBtn=document.getElementById("upcomingBtn");
   const pastBtn=document.getElementById("pastBtn");
+  const eventsEl=document.getElementById("events");
 
   function excelToDate(v){
     const d=new Date((Number(v)-25569)*86400000);
@@ -253,9 +256,22 @@ document.addEventListener("DOMContentLoaded",()=>{
     return d;
   }
 
+  function sameDay(a,b){ return a && b && a.getTime()===b.getTime(); }
+
   function render(){
-    let list=allEvents.filter(e=> mode==="upcoming"? e.date>=today : e.date<today);
-    list.sort((a,b)=> mode==="upcoming"? a.date-b.date : b.date-a.date);
+    const qv=q.value.toLowerCase();
+    const cv=clubFilter.value;
+    const tv=catFilter.value;
+    const dv=dateFilter.value?new Date(dateFilter.value+"T00:00:00"):null;
+
+    let list=allEvents
+      .filter(e=>mode==="upcoming"?e.date>=today:e.date<today)
+      .filter(e=>!qv || `${e.name} ${e.organiser} ${e.venue} ${e.time}`.toLowerCase().includes(qv))
+      .filter(e=>!cv || e.organiser===cv)
+      .filter(e=>!tv || e.category===tv)
+      .filter(e=>!dv || sameDay(e.date,dv));
+
+    list.sort((a,b)=>mode==="upcoming"?a.date-b.date:b.date-a.date);
 
     eventsEl.innerHTML="";
     list.forEach(e=>{
@@ -284,18 +300,34 @@ document.addEventListener("DOMContentLoaded",()=>{
         organiser:r["Organiser"],
         venue:r["Venue"],
         time:r["Start Time"],
+        category:r["Category of the Event"],
         date:excelToDate(r["Date of the Event"])
-      })).filter(e=>e.name && e.date);
+      }));
+      const clubs=[...new Set(allEvents.map(e=>e.organiser).filter(Boolean))];
+      const cats=[...new Set(allEvents.map(e=>e.category).filter(Boolean))];
+      clubFilter.innerHTML='<option value="">All Clubs</option>'+clubs.map(c=>`<option>${c}</option>`).join('');
+      catFilter.innerHTML='<option value="">All Categories</option>'+cats.map(c=>`<option>${c}</option>`).join('');
       render();
     }
   });
 
-  upcomingBtn.onclick=()=>{ mode="upcoming"; upcomingBtn.classList.add("active"); pastBtn.classList.remove("active"); render(); }
-  pastBtn.onclick=()=>{ mode="past"; pastBtn.classList.add("active"); upcomingBtn.classList.remove("active"); render(); }
+  q.oninput=dateFilter.onchange=clubFilter.onchange=catFilter.onchange=render;
+
+  upcomingBtn.onclick=()=>{
+    mode="upcoming";
+    upcomingBtn.classList.add("active");
+    pastBtn.classList.remove("active");
+    render();
+  };
+  pastBtn.onclick=()=>{
+    mode="past";
+    pastBtn.classList.add("active");
+    upcomingBtn.classList.remove("active");
+    render();
+  };
 
 });
 </script>
 
 </body>
 </html>
-``
