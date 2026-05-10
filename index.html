@@ -1,298 +1,1083 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Campus Life · Events</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<!DOCTYPE html> 
 
-<!-- Google Font -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="ttps://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<html lang="en"> 
 
-<!-- PapaParse -->
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<head> 
 
-<style>
-*{ box-sizing:border-box; }
+  <meta charset="UTF-8" /> 
 
-:root{
-  --ink:#111827;
-  --border:#e5e7eb;
-  --panel:#ffffff;
-  --bg:#f3f4f6;
-  --shadow:0 8px 18px rgba(0,0,0,.12);
-}
+  <meta name="viewport" content="width=device-width, initial-scale=1" /> 
 
-body{
-  margin:0;
-  font-family:'Poppins',sans-serif;
-  background:var(--bg);
-  color:var(--ink);
-}
+  <title>Campus Life · Events</title> 
 
-/* ===== Top Bar ===== */
-.topbar{
-  height:56px;
-  background:#fff;
-  border-bottom:1px solid var(--border);
-  display:flex;
-  align-items:center;
-  padding:0 18px;
-  font-weight:600;
-}
+ 
 
-/* ===== Shell ===== */
-.shell{
-  display:grid;
-  grid-template-columns:180px 1fr;
-  min-height:calc(100vh - 56px);
-}
+  <!-- Poppins --> 
 
-/* ===== Left Nav ===== */
-.nav{
-  background:#fff;
-  border-right:1px solid var(--border);
-  padding:14px 10px;
-}
+  <link rel="preconnect" href="https://fonts.googleapis.com"> 
 
-.nav a{
-  display:block;
-  padding:10px 12px;
-  margin:4px 0;
-  border-radius:10px;
-  text-decoration:none;
-  font-size:14px;
-  color:#111;
-}
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> 
 
-.nav a:hover{ background:#f3f4f6; }
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet"> 
 
-.nav a.active{
-  background:#eef2ff;
-  font-weight:600;
-}
+ 
 
-/* ===== Content ===== */
-.content{
-  padding:24px;
-}
+  <!-- PapaParse --> 
 
-.page-title{
-  font-size:28px;
-  font-weight:700;
-  margin-bottom:18px;
-}
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script> 
 
-/* ===== Page Grid ===== */
-.page-grid{
-  display:grid;
-  grid-template-columns:320px 1fr;   /* ✅ FIX: fixed sidebar width */
-  gap:22px;
-  align-items:start;
-}
+ 
 
-/* ===== Filters ===== */
-.filters{
-  background:#fff;
-  border-radius:16px;
-  padding:18px;
-  box-shadow:var(--shadow);
-}
+  <style> 
 
-.filters h3{
-  margin:0 0 16px;
-  font-size:16px;
-  font-weight:600;
-}
+    :root{ 
 
-.toggle{
-  display:flex;
-  gap:10px;
-  margin-bottom:18px;
-}
+      --ink:#111827; 
 
-.toggle button{
-  flex:1;
-  border:none;
-  border-radius:999px;
-  padding:10px;
-  font-weight:600;
-  background:#e5e7eb;
-  cursor:pointer;
-}
+      --muted:#6b7280; 
 
-.toggle button.active{
-  background:#111827;
-  color:#fff;
-}
+      --border:#e5e7eb; 
 
-.field{
-  margin-bottom:16px;
-}
+      --bg:#f3f4f6; 
 
-.field label{
-  display:block;
-  font-size:13px;
-  font-weight:600;
-  margin-bottom:6px;
-}
+      --panel:#ffffff; 
 
-.field input,
-.field select{
-  width:100%;
-  padding:10px 12px;
-  border-radius:10px;
-  border:1px solid #d1d5db;
-  font-family:'Poppins',sans-serif;
-  font-size:14px;
-}
+      --shadow:0 6px 14px rgba(0,0,0,.10); 
 
-.clear-btn{
-  width:100%;
-  padding:10px;
-  border-radius:10px;
-  background:#111827;
-  color:#fff;
-  border:none;
-  font-weight:600;
-  cursor:pointer;
-}
+ 
 
-/* ===== Cards Grid ===== */
-.cards{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);  /* ✅ 4 cards on PC */
-  gap:22px;
-}
+      /* inclusive pastel palette */ 
 
-/* Responsive */
-@media(max-width:1400px){ .cards{ grid-template-columns:repeat(3,1fr);} }
-@media(max-width:1100px){
-  .page-grid{ grid-template-columns:1fr; }
-  .cards{ grid-template-columns:repeat(2,1fr); }
-}
-@media(max-width:700px){
-  .shell{ grid-template-columns:1fr; }
-  .nav{ display:none; }
-  .cards{ grid-template-columns:1fr; }
-}
+      --b1:#F0F7FF; --a1:#D6E6FF; 
 
-/* ===== Card ===== */
-.card{
-  border-radius:18px;
-  overflow:hidden;
-  box-shadow:var(--shadow);
-  min-height:320px;
-  background:#fff;
-}
+      --b2:#F7F3FF; --a2:#E3DBFF; 
 
-.bar{ height:48px; }
+      --b3:#FFF6EC; --a3:#FFE6CC; 
 
-.body{
-  padding:18px;
-  display:flex;
-  flex-direction:column;
-  height:100%;
-}
+      --b4:#F1FAF5; --a4:#D9F2E6; 
 
-.date-badge{
-  width:56px;
-  height:56px;
-  border-radius:12px;
-  background:#111827;
-  color:#fff;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  font-weight:700;
-  margin-top:-30px;
-}
+      --b5:#FFF0F3; --a5:#FFD6DE; 
 
-.date-badge .day{ font-size:19px; }
-.date-badge .month{ font-size:11px; text-transform:uppercase; }
+      --b6:#F5F5F5; --a6:#E1E1E1; 
 
-.title{
-  font-size:16.5px;
-  font-weight:700;
-  margin:10px 0 6px;
-}
+    } 
 
-.meta{
-  font-size:14.5px;
-  margin:3px 0;
-}
+ 
 
-.chip{
-  margin-top:auto;
-  font-size:12.5px;
-  padding:6px 12px;
-  border-radius:999px;
-  background:rgba(0,0,0,.08);
-  width:fit-content;
-}
-</style>
-</head>
+    *{ box-sizing:border-box; } 
 
-<body>
+    body{ 
 
-<header class="topbar">Campus Life</header>
+      margin:0; 
 
-<div class="shell">
-  <nav class="nav">
-    <a href="#">Home</a>
-    <a href="#" class="active">Events</a> <!-- ✅ FIX: active tab -->
-    <a href="#">Clubs</a>
-    <a href="#">News</a>
-    <a href="#">Forms</a>
-  </nav>
+      font-family:'Poppins',sans-serif; 
 
-  <main class="content">
-    <div class="page-title">Events</div>
+      background:var(--bg); 
 
-    <div class="page-grid">
-      <aside class="filters">
-        <h3>Search Events</h3>
+      color:var(--ink); 
 
-        <div class="toggle">
-          <button class="active">Upcoming</button>
-          <button>Past</button>
-        </div>
+    } 
 
-        <div class="field">
-          <label>Search</label>
-          <input placeholder="Search…" />
-        </div>
+ 
 
-        <div class="field">
-          <label>Date</label>
-          <input type="date" />
-        </div>
+    /* ===== Top header ===== */ 
 
-        <div class="field">
-          <label>Club</label>
-          <select>
-            <option>All Clubs</option>
-          </select>
-        </div>
+    .topbar{ 
 
-        <div class="field">
-          <label>Category</label>
-          <select>
-            <option>All Categories</option>
-          </select>
-        </div>
+      height:56px; 
 
-        <button class="clear-btn">Clear</button>
-      </aside>
+      background:var(--panel); 
 
-      <section class="cards">
-        <!-- Cards rendered by JS (unchanged logic) -->
-      </section>
-    </div>
-  </main>
-</div>
+      border-bottom:1px solid var(--border); 
 
-</body>
-</html>
+      display:flex; 
+
+      align-items:center; 
+
+      padding:0 18px; 
+
+      gap:12px; 
+
+    } 
+
+    .brand{ 
+
+      font-weight:600; 
+
+      letter-spacing:.2px; 
+
+    } 
+
+ 
+
+    /* ===== Main layout: left nav + content ===== */ 
+
+    .shell{ 
+
+      display:grid; 
+
+      grid-template-columns: 180px 1fr; 
+
+      min-height: calc(100vh - 56px); 
+
+    } 
+
+ 
+
+    /* Left navigation */ 
+
+    .nav{ 
+
+      background:var(--panel); 
+
+      border-right:1px solid var(--border); 
+
+      padding:14px 10px; 
+
+    } 
+
+    .nav a{ 
+
+      display:block; 
+
+      padding:10px 12px; 
+
+      margin:4px 0; 
+
+      border-radius:10px; 
+
+      color:#111; 
+
+      text-decoration:none; 
+
+      font-size:14px; 
+
+    } 
+
+    .nav a:hover{ background:#f3f4f6; } 
+
+    .nav a.active{ 
+
+      background:#eef2ff; 
+
+      color:#1f2a64; 
+
+      font-weight:600; 
+
+    } 
+
+ 
+
+    /* Content area */ 
+
+    .content{ 
+
+      padding:22px; 
+
+    } 
+
+ 
+
+    .page-title{ 
+
+      font-size:28px; 
+
+      font-weight:700; 
+
+      margin:6px 0 18px; 
+
+    } 
+
+ 
+
+    /* ===== Two-column content: filters + cards ===== */ 
+
+    .page-grid{ 
+
+      display:grid; 
+
+      grid-template-columns: 320px 1fr; 
+
+      gap:18px; 
+
+      align-items:start; 
+
+    } 
+
+ 
+
+    /* Filter panel */ 
+
+    .filters{ 
+
+      background:var(--panel); 
+
+      border:1px solid var(--border); 
+
+      border-radius:14px; 
+
+      box-shadow: var(--shadow); 
+
+      padding:16px; 
+
+      position:sticky; 
+
+      top:16px; 
+
+    } 
+
+ 
+
+    .filter-title{ 
+
+      font-size:14px; 
+
+      font-weight:600; 
+
+      margin:2px 0 14px; 
+
+      color:#111; 
+
+    } 
+
+ 
+
+    .field{ 
+
+      margin:0 0 14px; 
+
+    } 
+
+    .field label{ 
+
+      display:block; 
+
+      font-size:13px; 
+
+      color:#111; 
+
+      font-weight:600; 
+
+      margin-bottom:6px; 
+
+    } 
+
+    .field input, 
+
+    .field select{ 
+
+      width:100%; 
+
+      padding:10px 12px; 
+
+      border-radius:10px; 
+
+      border:1px solid #d1d5db; 
+
+      font-family:'Poppins',sans-serif; 
+
+      font-size:14px; 
+
+      background:#fff; 
+
+    } 
+
+ 
+
+    .btn-row{ 
+
+      display:flex; 
+
+      gap:10px; 
+
+      margin-top:4px; 
+
+    } 
+
+    .btn{ 
+
+      width:100%; 
+
+      padding:10px 12px; 
+
+      border-radius:10px; 
+
+      border:1px solid var(--ink); 
+
+      background:var(--ink); 
+
+      color:#fff; 
+
+      font-weight:600; 
+
+      cursor:pointer; 
+
+      font-family:'Poppins',sans-serif; 
+
+      font-size:14px; 
+
+    } 
+
+    .btn.secondary{ 
+
+      background:#fff; 
+
+      color:var(--ink); 
+
+      border:1px solid #d1d5db; 
+
+      font-weight:600; 
+
+    } 
+
+ 
+
+    /* Toggle (Upcoming / Past) */ 
+
+    .toggle{ 
+
+      display:flex; 
+
+      gap:10px; 
+
+      margin:6px 0 14px; 
+
+    } 
+
+    .pill{ 
+
+      flex:1; 
+
+      border:none; 
+
+      border-radius:999px; 
+
+      padding:8px 10px; 
+
+      cursor:pointer; 
+
+      background:#e5e7eb; 
+
+      font-family:'Poppins',sans-serif; 
+
+      font-weight:600; 
+
+      font-size:13px; 
+
+    } 
+
+    .pill.active{ 
+
+      background:var(--ink); 
+
+      color:#fff; 
+
+    } 
+
+ 
+
+    /* Cards grid */ 
+
+    .cards{ 
+
+      display:grid; 
+
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
+
+      gap:18px; 
+
+    } 
+
+ 
+
+    .empty{ 
+
+      background:var(--panel); 
+
+      border:1px solid var(--border); 
+
+      border-radius:14px; 
+
+      padding:18px; 
+
+      color:#444; 
+
+      box-shadow: var(--shadow); 
+
+      font-size:14px; 
+
+    } 
+
+ 
+
+    /* Card visual */ 
+
+    .card{ 
+
+      border-radius:16px; 
+
+      overflow:hidden; 
+
+      box-shadow: var(--shadow); 
+
+      display:flex; 
+
+      flex-direction:column; 
+
+    } 
+
+    .bar{ height:40px; } 
+
+    .body{ 
+
+      padding:12px 14px 14px; 
+
+      flex:1; 
+
+      display:flex; 
+
+      flex-direction:column; 
+
+    } 
+
+ 
+
+    .date-badge{ 
+
+      width:50px;height:50px; 
+
+      border-radius:10px; 
+
+      background:var(--ink); 
+
+      color:#fff; 
+
+      display:flex; 
+
+      flex-direction:column; 
+
+      justify-content:center; 
+
+      align-items:center; 
+
+      font-weight:700; 
+
+      margin-top:-24px; 
+
+    } 
+
+    .date-badge .day{ font-size:17px; line-height:17px; } 
+
+    .date-badge .month{ font-size:11px; letter-spacing:1px; text-transform:uppercase; } 
+
+ 
+
+    .title{ 
+
+      font-size:15.5px; 
+
+      font-weight:700; 
+
+      margin:8px 0 4px; 
+
+      line-height:1.35; 
+
+    } 
+
+    .meta{ 
+
+      font-size:14px; 
+
+      margin:2px 0; 
+
+      line-height:1.3; 
+
+      color:#222; 
+
+    } 
+
+    .chip{ 
+
+      margin-top:auto; 
+
+      font-size:12px; 
+
+      background:rgba(0,0,0,.08); 
+
+      padding:4px 10px; 
+
+      border-radius:999px; 
+
+      align-self:flex-start; 
+
+    } 
+
+ 
+
+    /* Responsive */ 
+
+    @media (max-width: 1100px){ 
+
+      .page-grid{ grid-template-columns: 300px 1fr; } 
+
+    } 
+
+    @media (max-width: 900px){ 
+
+      .shell{ grid-template-columns: 1fr; } 
+
+      .nav{ display:none; } /* keep it simple on mobile */ 
+
+      .content{ padding:16px; } 
+
+      .page-grid{ grid-template-columns: 1fr; } 
+
+      .filters{ position:relative; top:auto; } 
+
+      .cards{ grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); } 
+
+    } 
+
+  </style> 
+
+</head> 
+
+ 
+
+<body> 
+
+  <header class="topbar"> 
+
+    <div class="brand">Campus Life</div> 
+
+  </header> 
+
+ 
+
+  <div class="shell"> 
+
+    <!-- Left navigation --> 
+
+    <nav class="nav"> 
+
+      <a href="#" >Home</a> 
+
+      <a href="#" class="active">Events</a> 
+
+      <a href="#">Clubs</a> 
+
+      <a href="#">News</a> 
+
+      <a href="#">Forms</a> 
+
+    </nav> 
+
+ 
+
+    <!-- Main content --> 
+
+    <main class="content"> 
+
+      <div class="page-title">Events</div> 
+
+ 
+
+      <div class="page-grid"> 
+
+        <!-- Filters --> 
+
+        <aside class="filters"> 
+
+          <div class="filter-title">Search Events</div> 
+
+ 
+
+          <div class="toggle"> 
+
+            <button id="upcomingBtn" class="pill active" type="button">Upcoming</button> 
+
+            <button id="pastBtn" class="pill" type="button">Past</button> 
+
+          </div> 
+
+ 
+
+          <div class="field"> 
+
+            <label for="q">Search</label> 
+
+            <input id="q" type="text" placeholder="Search…" /> 
+
+          </div> 
+
+ 
+
+          <div class="field"> 
+
+            <label for="dateFilter">Date</label> 
+
+            <input id="dateFilter" type="date" /> 
+
+          </div> 
+
+ 
+
+          <div class="field"> 
+
+            <label for="clubFilter">Club</label> 
+
+            <select id="clubFilter"></select> 
+
+          </div> 
+
+ 
+
+          <div class="field"> 
+
+            <label for="catFilter">Category</label> 
+
+            <select id="catFilter"></select> 
+
+          </div> 
+
+ 
+
+          <div class="btn-row"> 
+
+            <button id="clearBtn" class="btn secondary" type="button">Clear</button> 
+
+          </div> 
+
+        </aside> 
+
+ 
+
+        <!-- Cards --> 
+
+        <section> 
+
+          <div id="emptyMsg" class="empty" style="display:none;"></div> 
+
+          <div id="events" class="cards"></div> 
+
+        </section> 
+
+      </div> 
+
+    </main> 
+
+  </div> 
+
+ 
+
+<script> 
+
+document.addEventListener("DOMContentLoaded", () => { 
+
+ 
+
+  // CSV is in repo root and contains Organiser, Event Name, Category of the Event, Date of the Event, Start Time, Venue, etc. [1](https://aku4-my.sharepoint.com/personal/waqas_haider_aku_edu/_layouts/15/Doc.aspx?sourcedoc=%7B4CE49DF1-1EEC-40FB-9646-28C83EA06EC4%7D&file=website-data.csv&action=default&mobileredirect=true&DefaultItemOpen=1) 
+
+  const csvUrl = "website-data.csv"; 
+
+ 
+
+  const today = new Date(); 
+
+  today.setHours(0,0,0,0); 
+
+ 
+
+  let mode = "upcoming"; // or "past" 
+
+  let allEvents = []; 
+
+ 
+
+  const PALETTE = [ 
+
+    {base:getCss('--b1'), accent:getCss('--a1')}, 
+
+    {base:getCss('--b2'), accent:getCss('--a2')}, 
+
+    {base:getCss('--b3'), accent:getCss('--a3')}, 
+
+    {base:getCss('--b4'), accent:getCss('--a4')}, 
+
+    {base:getCss('--b5'), accent:getCss('--a5')}, 
+
+    {base:getCss('--b6'), accent:getCss('--a6')}, 
+
+  ]; 
+
+ 
+
+  // Master lists (so dropdowns include clubs/categories even if no upcoming events) 
+
+  const ALL_CLUBS = [ 
+
+    "ACC MC - Undergraduate","ACC SONAM - Graduate","ACC SONAM - Undergraduate","ACCs FAS","Activity Club IED", 
+
+    "AKU Athletics Club","AKU Chess Club","AKU Graduate Education Student Society (AGESS)","AKU Journalism Club", 
+
+    "AKU Majlis","AKU MUN","AKU Photography Club","Arts and Culture Committee (AAC) (AKU-FAS)", 
+
+    "Arts and Culture Committee (AAC) (AKU-IED)","Arts and Culture Committee (AAC) (AKU-SONAM) Graduate", 
+
+    "Arts and Culture Committee (AAC) (AKU-SONAM) Undergraduate","Arts and Culture Committee (ACC) (AKU-MC)", 
+
+    "Aurora","Class Representative","Club for Theatrics (ACT)","Entrepreneurial Society (AES)","Explorers Club", 
+
+    "FALAH (FAS)","FALAH (MBBS)","FALAH (SONAM)","Music Society","OSEP Internal","Public Speaking Forum (PSF)", 
+
+    "Publication and Literary Society (APLS) (FAS)","Publication and Literary Society (APLS) (MBBS)", 
+
+    "Publication and Literary Society (APLS) (SONAM)","Rowing Club (ARC)","Society for Arts and Culture", 
+
+    "Society of Climate Conservation and Health (SoCCH)","Sports Society","Student Research Forum (SRF) (FAS)", 
+
+    "Student Research Forum (SRF) (MBBS)","Student Research Forum (SRF) (SONAM)","SRF-FAS Conference", 
+
+    "Synergy (FAS)","Synergy (MBBS)","Synergy (SONAM)" 
+
+  ].slice().sort(); 
+
+ 
+
+  const ALL_CATEGORIES = [ 
+
+    "Competition","Meeting","Orientation","Other","Recreational/Social","Sports","Welfare","Workshop/Session" 
+
+  ].slice().sort(); 
+
+ 
+
+  // DOM refs 
+
+  const q = document.getElementById("q"); 
+
+  const dateFilter = document.getElementById("dateFilter"); 
+
+  const clubFilter = document.getElementById("clubFilter"); 
+
+  const catFilter = document.getElementById("catFilter"); 
+
+  const clearBtn = document.getElementById("clearBtn"); 
+
+  const eventsEl = document.getElementById("events"); 
+
+  const emptyMsg = document.getElementById("emptyMsg"); 
+
+  const upcomingBtn = document.getElementById("upcomingBtn"); 
+
+  const pastBtn = document.getElementById("pastBtn"); 
+
+ 
+
+  // Excel serial date -> JS date 
+
+  function excelToDate(v){ 
+
+    const d = new Date((Number(v) - 25569) * 86400000); 
+
+    d.setHours(0,0,0,0); 
+
+    return d; 
+
+  } 
+
+ 
+
+  function buildDropdown(el, placeholder, list){ 
+
+    el.innerHTML = `<option value="">${placeholder}</option>` + 
+
+      list.map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join(""); 
+
+  } 
+
+ 
+
+  function escapeHtml(str){ 
+
+    return String(str ?? "") 
+
+      .replaceAll("&","&amp;") 
+
+      .replaceAll("<","&lt;") 
+
+      .replaceAll(">","&gt;") 
+
+      .replaceAll('"',"&quot;") 
+
+      .replaceAll("'","&#039;"); 
+
+  } 
+
+ 
+
+  function getCss(varName){ 
+
+    return getComputedStyle(document.documentElement).getPropertyValue(varName).trim(); 
+
+  } 
+
+ 
+
+  function sameDay(d1, d2){ return d1 && d2 && d1.getTime() === d2.getTime(); } 
+
+ 
+
+  function render(){ 
+
+    const qv = q.value.trim().toLowerCase(); 
+
+    const cv = clubFilter.value; 
+
+    const tv = catFilter.value; 
+
+    const dv = dateFilter.value ? new Date(dateFilter.value + "T00:00:00") : null; 
+
+ 
+
+    let list = allEvents.filter(e => mode === "upcoming" ? e.date >= today : e.date < today); 
+
+ 
+
+    list = list 
+
+      .filter(e => !cv || e.organiser === cv) 
+
+      .filter(e => !tv || e.category === tv) 
+
+      .filter(e => !dv || sameDay(e.date, dv)) 
+
+      .filter(e => !qv || `${e.name} ${e.organiser} ${e.category} ${e.venue} ${e.time}`.toLowerCase().includes(qv)); 
+
+ 
+
+    // sort 
+
+    list.sort((a,b) => mode === "upcoming" ? a.date - b.date : b.date - a.date); 
+
+ 
+
+    // render 
+
+    eventsEl.innerHTML = ""; 
+
+    emptyMsg.style.display = "none"; 
+
+ 
+
+    if(!list.length){ 
+
+      emptyMsg.style.display = "block"; 
+
+      if (cv){ 
+
+        emptyMsg.textContent = "✨ Looks like our clubs and societies are taking a short break before the fun begins again :-)"; 
+
+      } else if (tv){ 
+
+        emptyMsg.textContent = "💡 Don't see any relevant event? How about you bring the event and OSEP would love to support you in planning and execution of the event."; 
+
+      } else { 
+
+        emptyMsg.textContent = mode === "upcoming" ? "No upcoming events to show." : "No past events to show."; 
+
+      } 
+
+      return; 
+
+    } 
+
+ 
+
+    list.forEach((e,i) => { 
+
+      const {base, accent} = PALETTE[i % PALETTE.length]; 
+
+      const day = String(e.date.getDate()).padStart(2,"0"); 
+
+      const month = e.date.toLocaleString("en-US", {month:"short"}); 
+
+ 
+
+      // Hide icons if missing data 
+
+      const orgLine   = e.organiser ? `<div class="meta">🎭 ${escapeHtml(e.organiser)}</div>` : ""; 
+
+      const venueLine = e.venue ? `<div class="meta">📍 ${escapeHtml(e.venue)}</div>` : ""; 
+
+      const timeLine  = e.time ? `<div class="meta">⏰ ${escapeHtml(e.time)}</div>` : ""; 
+
+ 
+
+      eventsEl.insertAdjacentHTML("beforeend", ` 
+
+        <article class="card" style="background:${base}"> 
+
+          <div class="bar" style="background:${accent}"></div> 
+
+          <div class="body"> 
+
+            <div class="date-badge"> 
+
+              <div class="day">${day}</div> 
+
+              <div class="month">${month}</div> 
+
+            </div> 
+
+ 
+
+            <div class="title">${escapeHtml(e.name)}</div> 
+
+ 
+
+            ${orgLine} 
+
+            ${venueLine} 
+
+            ${timeLine} 
+
+ 
+
+            <div class="chip">${escapeHtml(e.category)}</div> 
+
+          </div> 
+
+        </article> 
+
+      `); 
+
+    }); 
+
+  } 
+
+ 
+
+  // load CSV 
+
+  Papa.parse(csvUrl, { 
+
+    download:true, 
+
+    header:true, 
+
+    skipEmptyLines:true, 
+
+    complete: (res) => { 
+
+      allEvents = res.data.map(r => ({ 
+
+        organiser: (r["Organiser"] || "").trim(), 
+
+        name: (r["Event Name"] || "").trim(), 
+
+        category: (r["Category of the Event"] || "").trim(), 
+
+        venue: (r["Venue"] || "").trim(), 
+
+        time: (r["Start Time"] || "").trim(), 
+
+        date: excelToDate(r["Date of the Event"]) 
+
+      })).filter(e => e.name && e.date); 
+
+ 
+
+      // Merge master lists with any new values in the CSV (future-proof) 
+
+      const clubsFromData = [...new Set(allEvents.map(e => e.organiser).filter(Boolean))]; 
+
+      const catsFromData  = [...new Set(allEvents.map(e => e.category).filter(Boolean))]; 
+
+ 
+
+      const mergedClubs = [...new Set([...ALL_CLUBS, ...clubsFromData])].sort(); 
+
+      const mergedCats  = [...new Set([...ALL_CATEGORIES, ...catsFromData])].sort(); 
+
+ 
+
+      buildDropdown(clubFilter, "All Clubs", mergedClubs); 
+
+      buildDropdown(catFilter, "All Categories", mergedCats); 
+
+ 
+
+      // wire events 
+
+      q.addEventListener("input", render); 
+
+      dateFilter.addEventListener("change", render); 
+
+      clubFilter.addEventListener("change", render); 
+
+      catFilter.addEventListener("change", render); 
+
+ 
+
+      clearBtn.addEventListener("click", () => { 
+
+        q.value = ""; 
+
+        dateFilter.value = ""; 
+
+        clubFilter.value = ""; 
+
+        catFilter.value = ""; 
+
+        render(); 
+
+      }); 
+
+ 
+
+      upcomingBtn.addEventListener("click", () => { 
+
+        mode = "upcoming"; 
+
+        upcomingBtn.classList.add("active"); 
+
+        pastBtn.classList.remove("active"); 
+
+        render(); 
+
+      }); 
+
+ 
+
+      pastBtn.addEventListener("click", () => { 
+
+        mode = "past"; 
+
+        pastBtn.classList.add("active"); 
+
+        upcomingBtn.classList.remove("active"); 
+
+        render(); 
+
+      }); 
+
+ 
+
+      render(); 
+
+    } 
+
+  }); 
+
+ 
+
+}); 
+
+</script> 
+
+</body> 
+
+</html> 
+
+ 
