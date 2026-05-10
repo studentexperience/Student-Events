@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Campus Life · Events</title>
 
-<!-- Poppins -->
+<!-- Google Font -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -17,13 +17,13 @@
 :root{
   --ink:#111827;
   --bg:#f3f4f6;
-  --panel:#ffffff;
+  --panel:#fff;
   --border:#e5e7eb;
-  --shadow:0 10px 24px rgba(0,0,0,.14);
+  --shadow:0 10px 22px rgba(0,0,0,.14);
 }
 
-/* Reset */
 *{ box-sizing:border-box; }
+
 body{
   margin:0;
   font-family:'Poppins',sans-serif;
@@ -31,7 +31,7 @@ body{
   color:var(--ink);
 }
 
-/* Header */
+/* ===== Header ===== */
 .topbar{
   height:56px;
   background:#fff;
@@ -42,14 +42,13 @@ body{
   font-weight:600;
 }
 
-/* Layout */
+/* ===== Layout ===== */
 .shell{
   display:grid;
   grid-template-columns:180px 1fr;
   min-height:calc(100vh - 56px);
 }
 
-/* Side nav */
 .nav{
   background:#fff;
   border-right:1px solid var(--border);
@@ -58,33 +57,32 @@ body{
 .nav a{
   display:block;
   padding:10px 12px;
-  margin:4px 0;
   border-radius:10px;
+  margin:4px 0;
   text-decoration:none;
   color:#111;
-  font-size:14px;
 }
 .nav a.active{
   background:#eef2ff;
   font-weight:600;
 }
 
-/* Content */
 .content{ padding:22px; }
+
 .page-title{
   font-size:28px;
   font-weight:700;
   margin-bottom:18px;
 }
 
-/* Grid */
+/* ===== Grid ===== */
 .page-grid{
   display:grid;
   grid-template-columns:320px 1fr;
   gap:22px;
 }
 
-/* Filters */
+/* ===== Filters ===== */
 .filters{
   background:#fff;
   border-radius:16px;
@@ -92,15 +90,15 @@ body{
   box-shadow:var(--shadow);
 }
 .filters h3{
-  margin-bottom:16px;
   font-size:16px;
-  font-weight:600;
+  margin-bottom:16px;
 }
+
 .field{ margin-bottom:16px; }
 .field label{
+  display:block;
   font-size:13px;
   font-weight:600;
-  display:block;
   margin-bottom:6px;
 }
 .field input,
@@ -112,25 +110,44 @@ body{
   font-family:'Poppins',sans-serif;
 }
 
-/* Cards grid */
+.toggle{
+  display:flex;
+  gap:10px;
+  margin-bottom:18px;
+}
+.toggle button{
+  flex:1;
+  border:none;
+  border-radius:999px;
+  padding:10px;
+  font-weight:600;
+  cursor:pointer;
+  background:#e5e7eb;
+}
+.toggle button.active{
+  background:#111827;
+  color:#fff;
+}
+
+/* ===== Cards Grid ===== */
 .cards{
   display:grid;
   grid-template-columns:repeat(4,1fr);
   gap:24px;
 }
 
-/* ✅ BIG CARD */
+/* ===== Event Card (1.5× larger) ===== */
 .card{
   background:#fff;
   border-radius:22px;
   overflow:hidden;
   box-shadow:var(--shadow);
+  min-height:480px;
   display:flex;
   flex-direction:column;
-  min-height:480px; /* ~1.5× larger */
 }
 
-/* ✅ COVER IMAGE SPACE */
+/* Cover image space */
 .card-cover{
   height:180px;
   background:linear-gradient(135deg,#dbeafe,#e0e7ff);
@@ -146,14 +163,15 @@ body{
   flex:1;
 }
 
-/* Title */
+/* Event title */
 .card-title{
   font-size:18px;
   font-weight:700;
-  margin-bottom:18px; /* two-line space */
+  line-height:1.4;
+  margin-bottom:18px; /* Two-line spacing */
 }
 
-/* Meta */
+/* Meta info */
 .card-meta{
   font-size:15px;
   margin:6px 0;
@@ -170,15 +188,15 @@ body{
 }
 
 /* Responsive */
-@media(max-width:1400px){ .cards{ grid-template-columns:repeat(3,1fr);} }
+@media(max-width:1400px){ .cards{grid-template-columns:repeat(3,1fr);} }
 @media(max-width:1100px){
-  .page-grid{ grid-template-columns:1fr; }
-  .cards{ grid-template-columns:repeat(2,1fr); }
+  .page-grid{grid-template-columns:1fr;}
+  .cards{grid-template-columns:repeat(2,1fr);}
 }
 @media(max-width:700px){
-  .shell{ grid-template-columns:1fr; }
-  .nav{ display:none; }
-  .cards{ grid-template-columns:1fr; }
+  .shell{grid-template-columns:1fr;}
+  .nav{display:none;}
+  .cards{grid-template-columns:1fr;}
 }
 </style>
 </head>
@@ -188,58 +206,106 @@ body{
 <header class="topbar">Campus Life</header>
 
 <div class="shell">
-<nav class="nav">
-  <a href="#">Home</a>
-  <a href="#" class="active">Events</a>
-  <a href="#">Clubs</a>
-  <a href="#">News</a>
-  <a href="#">Forms</a>
-</nav>
+  <nav class="nav">
+    #Home</a>
+    #Events</a>
+    #Clubs</a>
+    #News</a>
+    #Forms</a>
+  </nav>
 
-<main class="content">
-<div class="page-title">Events</div>
+  <main class="content">
+    <div class="page-title">Events</div>
 
-<div class="page-grid">
-  <aside class="filters">
-    <h3>Search Events</h3>
-    <div class="field"><label>Search</label><input/></div>
-    <div class="field"><label>Date</label><input type="date"/></div>
-    <div class="field"><label>Club</label><select></select></div>
-    <div class="field"><label>Category</label><select></select></div>
-  </aside>
+    <div class="page-grid">
+      <aside class="filters">
+        <h3>Search Events</h3>
 
-  <section class="cards" id="events"></section>
-</div>
-</main>
+        <div class="toggle">
+          <button id="upcomingBtn" class="active">Upcoming</button>
+          <button id="pastBtn">Past</button>
+        </div>
+
+        <div class="field"><label>Search</label><input id="q"/></div>
+        <div class="field"><label>Date</label><input id="dateFilter" type="date"/></div>
+        <div class="field"><label>Club</label><select id="clubFilter"></select></div>
+        <div class="field"><label>Category</label><select id="catFilter"></select></div>
+      </aside>
+
+      <section class="cards" id="events"></section>
+    </div>
+  </main>
 </div>
 
 <script>
 document.addEventListener("DOMContentLoaded",()=>{
-  const eventsEl=document.getElementById("events");
 
-  // Example rendering (your CSV logic plugs in here unchanged)
-  const sample = {
-    name:"FAS Gala 3.0",
-    date:"Sun May 10 2026",
-    time:"6:30 PM",
-    venue:"SRC Poolside",
-    organiser:"Synergy (FAS)"
+  const csvUrl="website-data.csv";
+  const today=new Date(); today.setHours(0,0,0,0);
+  let mode="upcoming";
+  let allEvents=[];
+
+  const eventsEl=document.getElementById("events");
+  const upcomingBtn=document.getElementById("upcomingBtn");
+  const pastBtn=document.getElementById("pastBtn");
+
+  function excelToDate(v){
+    const d=new Date((Number(v)-25569)*86400000);
+    d.setHours(0,0,0,0);
+    return d;
+  }
+
+  function render(){
+    let list=allEvents.filter(e=> mode==="upcoming" ? e.date>=today : e.date<today);
+    list.sort((a,b)=> mode==="upcoming"?a.date-b.date:b.date-a.date);
+
+    eventsEl.innerHTML="";
+
+    list.forEach(e=>{
+      eventsEl.insertAdjacentHTML("beforeend",`
+        <article class="card">
+          <div class="card-cover"></div>
+          <div class="card-body">
+            <div class="card-title">${e.name}</div>
+            <div class="card-meta">📅 ${e.date.toDateString()}</div>
+            ${e.time?`<div class="card-meta">⏰ ${e.time}</div>`:""}
+            ${e.venue?`<div class="card-meta">📍 ${e.venue}</div>`:""}
+            <div class="organizer">🎭 ${e.organiser}</div>
+          </div>
+        </article>
+      `);
+    });
+  }
+
+  Papa.parse(csvUrl,{
+    download:true,
+    header:true,
+    skipEmptyLines:true,
+    complete:(res)=>{
+      allEvents=res.data.map(r=>({
+        name:r["Event Name"],
+        organiser:r["Organiser"],
+        venue:r["Venue"],
+        time:r["Start Time"],
+        date:excelToDate(r["Date of the Event"])
+      })).filter(e=>e.name && e.date);
+      render();
+    }
+  });
+
+  upcomingBtn.onclick=()=>{
+    mode="upcoming";
+    upcomingBtn.classList.add("active");
+    pastBtn.classList.remove("active");
+    render();
+  };
+  pastBtn.onclick=()=>{
+    mode="past";
+    pastBtn.classList.add("active");
+    upcomingBtn.classList.remove("active");
+    render();
   };
 
-  eventsEl.innerHTML = `
-    <article class="card">
-      <div class="card-cover"></div>
-      <div class="card-body">
-        <div class="card-title">${sample.name}</div>
-
-        <div class="card-meta">📅 ${sample.date}</div>
-        <div class="card-meta">⏰ ${sample.time}</div>
-        <div class="card-meta">📍 ${sample.venue}</div>
-
-        <div class="organizer">🎭 ${sample.organiser}</div>
-      </div>
-    </article>
-  `;
 });
 </script>
 
