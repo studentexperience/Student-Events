@@ -591,6 +591,97 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalLeadership    = document.getElementById("modalLeadership");
   const modalClose   = document.getElementById("modalClose");
 
+  /* ── Logo colour extraction via Canvas ── */
+
+  // Cache so we don't re-sample the same logo URL twice
+  const colorCache = {};
+
+  // Returns Promise<{bar: string, bg: string}> — dominant color as bar + pastel bg tint
+  function extractColors(imgUrl){
+    if(colorCache[imgUrl]) return Promise.resolve(colorCache[imgUrl]);
+
+    return new Promise((resolve) => {
+      const img   = new Image();
+      img.crossOrigin = "anonymous";
+
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          // Sample at small size for speed
+          canvas.width  = 50;
+          canvas.height = 50;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, 50, 50);
+
+          const data = ctx.getImageData(0, 0, 50, 50).data;
+
+          // Collect non-white, non-transparent pixels and find dominant hue
+          let rSum = 0, gSum = 0, bSum = 0, count = 0;
+          for(let i = 0; i < data.length; i += 4){
+            const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+            if(a < 80) continue;                     // skip transparent
+            if(r > 235 && g > 235 && b > 235) continue; // skip near-white
+            if(r < 20  && g < 20  && b < 20)  continue; // skip near-black
+            rSum += r; gSum += g; bSum += b; count++;
+          }
+
+          let colors;
+          if(count < 30){
+            // Fallback for logos that are mostly white/black
+            colors = { bar: "#4f7cff", bg: "#F0F7FF" };
+          } else {
+            const r = Math.round(rSum / count);
+            const g = Math.round(gSum / count);
+            const b = Math.round(bSum / count);
+            // Saturate the bar color for vibrancy
+            const bar = saturate(r, g, b, 1.4);
+            // Very light pastel bg: mix dominant color with white at 10%
+            const bg  = `rgba(${r},${g},${b},0.10)`;
+            colors = { bar, bg };
+          }
+
+          colorCache[imgUrl] = colors;
+          resolve(colors);
+        } catch(_){
+          resolve({ bar: "#4f7cff", bg: "#F0F7FF" });
+        }
+      };
+
+      img.onerror = () => resolve({ bar: "#4f7cff", bg: "#F0F7FF" });
+      img.src = imgUrl;
+    });
+  }
+
+  // Boost saturation of an RGB color by a factor
+  function saturate(r, g, b, factor){
+    // Convert to HSL, boost S, convert back
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r,g,b), min = Math.min(r,g,b);
+    let h, s, l = (max + min) / 2;
+    if(max === min){ h = s = 0; }
+    else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch(max){
+        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+        case g: h = ((b - r) / d + 2) / 6; break;
+        case b: h = ((r - g) / d + 4) / 6; break;
+      }
+    }
+    s = Math.min(1, s * factor);
+    l = Math.min(0.52, Math.max(0.38, l)); // keep it mid-tone, not too dark/light
+    return hslToHex(h, s, l);
+  }
+
+  function hslToHex(h, s, l){
+    const f = (n) => {
+      const k = (n + h * 12) % 12;
+      const a = s * Math.min(l, 1 - l);
+      return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))));
+    };
+    return `#${[f(0),f(8),f(4)].map(v => v.toString(16).padStart(2,"0")).join("")}`;
+  }
+
   /* ── Render ── */
   function render(){
     const q  = searchQ.value.trim().toLowerCase();
@@ -615,32 +706,38 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     list.forEach((c, i) => {
-      const pal  = PALETTE[i % PALETTE.length];
-      const icon = getIcon(c.name);
+      const pal      = PALETTE[i % PALETTE.length];
+      const icon     = getIcon(c.name);
+      const cardId   = `club-card-${i}`;
+
+      // Logo avatar — white pill so logo always stands out against any bg color
       const avatarHtml = c.logo
-        ? `<div class="club-avatar" style="background:#fff; padding:10px;">
-             <img src="${c.logo}" alt="${esc(c.name)} logo"
+        ? `<div class="club-avatar" style="background:#ffffff;">
+             <img
+               src="${c.logo}"
+               alt="${esc(c.name)} logo"
+               data-card="${cardId}"
                style="width:100%;height:100%;object-fit:contain;border-radius:8px;"
-               onerror="this.parentElement.innerHTML='${icon}';this.parentElement.style.fontSize='40px';this.parentElement.style.padding='0';" />
+               onerror="this.parentElement.innerHTML='${icon}';this.parentElement.style.fontSize='40px';" />
            </div>`
         : `<div class="club-avatar" style="background:${pal.bg}">${icon}</div>`;
 
-      // Compact events text (strip numbers & bullets for preview)
+      // Compact events preview
       const eventsPreview = c.events
         ? c.events.replace(/^\s*[\d\-\*\.]+\s*/gm, "").split("\n")
             .filter(Boolean).slice(0, 3).join(" · ")
         : "";
 
       const leaderHtml = [
-        c.convenor    ? `<div class="leadership-item"><span class="leadership-role">Convenor:</span><span class="leadership-name">${esc(c.convenor.split("\n")[0])}</span></div>` : "",
-        c.coConvenor  ? `<div class="leadership-item"><span class="leadership-role">Co-Convenor:</span><span class="leadership-name">${esc(c.coConvenor.split("\n")[0])}</span></div>` : "",
-        c.secretary   ? `<div class="leadership-item"><span class="leadership-role">Secretary:</span><span class="leadership-name">${esc(c.secretary.split("\n")[0])}</span></div>` : "",
-        c.treasurer   ? `<div class="leadership-item"><span class="leadership-role">Treasurer:</span><span class="leadership-name">${esc(c.treasurer.split("\n")[0])}</span></div>` : "",
+        c.convenor   ? `<div class="leadership-item"><span class="leadership-role">Convenor:</span><span class="leadership-name">${esc(c.convenor.split("\n")[0])}</span></div>` : "",
+        c.coConvenor ? `<div class="leadership-item"><span class="leadership-role">Co-Convenor:</span><span class="leadership-name">${esc(c.coConvenor.split("\n")[0])}</span></div>` : "",
+        c.secretary  ? `<div class="leadership-item"><span class="leadership-role">Secretary:</span><span class="leadership-name">${esc(c.secretary.split("\n")[0])}</span></div>` : "",
+        c.treasurer  ? `<div class="leadership-item"><span class="leadership-role">Treasurer:</span><span class="leadership-name">${esc(c.treasurer.split("\n")[0])}</span></div>` : "",
       ].join("");
 
       clubsGrid.insertAdjacentHTML("beforeend", `
-        <article class="club-card" data-idx="${allClubs.indexOf(c)}" style="background:${pal.bg}" tabindex="0" role="button" aria-label="View ${esc(c.name)} details">
-          <div class="top-bar" style="background:${pal.bar}"></div>
+        <article class="club-card" id="${cardId}" data-idx="${allClubs.indexOf(c)}" style="background:${pal.bg}" tabindex="0" role="button" aria-label="View ${esc(c.name)} details">
+          <div class="top-bar" id="${cardId}-bar" style="background:${pal.bar}"></div>
           ${avatarHtml}
           <div class="club-body">
             <div class="club-name">${esc(c.name)}</div>
@@ -654,6 +751,26 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         </article>
       `);
+
+      // After logo is in the DOM, extract its colors and apply to the card
+      if(c.logo){
+        const imgEl = clubsGrid.querySelector(`img[data-card="${cardId}"]`);
+        if(imgEl){
+          const applyColors = () => {
+            extractColors(c.logo).then(({ bar, bg }) => {
+              const cardEl = document.getElementById(cardId);
+              const barEl  = document.getElementById(`${cardId}-bar`);
+              if(cardEl) cardEl.style.background = bg;
+              if(barEl)  barEl.style.background  = bar;
+              // also store for modal
+              c._bar = bar; c._bg = bg;
+            });
+          };
+          // If already loaded (cached), fire immediately; else wait for onload
+          if(imgEl.complete && imgEl.naturalWidth > 0) applyColors();
+          else imgEl.addEventListener("load", applyColors);
+        }
+      }
     });
 
     // Attach click → open modal
@@ -666,7 +783,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ── Modal ── */
   function openModal(c, pal){
-    modalBar.style.background      = pal.bar;
+    // Use extracted color if available, otherwise fall back to palette
+    const bar = c._bar || pal.bar;
+    modalBar.style.background = bar;
     if(c.logo){
       modalIcon.innerHTML = `<img src="${c.logo}" alt="${c.name} logo"
         style="width:56px;height:56px;object-fit:contain;border-radius:10px;background:#fff;padding:4px;"
