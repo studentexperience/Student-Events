@@ -2,397 +2,354 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Student Events</title>
+<title>Campus Life – Events</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<!-- ✅ Google Font: Poppins -->
+<!-- Google Font -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-<!-- ✅ PapaParse -->
+<!-- PapaParse -->
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <style>
-  body{
-    font-family:'Poppins',sans-serif;
-    background:#f6f6f6;
-    margin:0;
-    padding:20px;
-  }
+/* ========== GLOBAL ========== */
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: #f4f6f8;
+}
 
-  h1{
-    text-align:center;
-    margin-bottom:10px;
-    font-weight:600;
-  }
+/* ========== TOP BAR ========== */
+.topbar {
+  height: 56px;
+  background: #ffffff;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 24px;
+}
 
-  /* ===== VIEW TOGGLE ===== */
-  .view-toggle{
-    max-width:1200px;
-    margin:0 auto 14px;
-    display:flex;
-    justify-content:center;
-    gap:10px;
-  }
+.topbar .title {
+  font-size: 18px;
+  font-weight: 600;
+}
 
-  .view-toggle button{
-    border:none;
-    padding:8px 16px;
-    border-radius:20px;
-    font-size:14px;
-    cursor:pointer;
-    background:#e5e7eb;
-    font-family:'Poppins',sans-serif;
-  }
+.topbar .global-search {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
 
-  .view-toggle button.active{
-    background:#111827;
-    color:#fff;
-  }
+.topbar .global-search input {
+  width: 420px;
+  max-width: 100%;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
 
-  /* ===== TOOLBAR ===== */
-  .toolbar{
-    max-width:1200px;
-    margin:0 auto 20px;
-    display:grid;
-    grid-template-columns: 2fr 1fr 1.2fr 1.2fr auto;
-    gap:10px;
-  }
+/* ========== LAYOUT ========== */
+.app {
+  display: flex;
+  height: calc(100vh - 56px);
+}
 
-  .toolbar input,
-  .toolbar select,
-  .toolbar button{
-    padding:10px 12px;
-    border-radius:8px;
-    border:1px solid #d0d0d0;
-    font-size:14px;
-    font-family:'Poppins',sans-serif;
-    background:#fff;
-  }
+/* Left Nav */
+.sidebar {
+  width: 72px;
+  background: #ffffff;
+  border-right: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 12px;
+  gap: 18px;
+}
 
-  .toolbar button{
-    background:#111827;
-    color:#fff;
-    cursor:pointer;
-    border:1px solid #111827;
-  }
+.sidebar .nav-item {
+  width: 100%;
+  text-align: center;
+  font-size: 11px;
+  color: #555;
+  cursor: pointer;
+  padding: 8px 0;
+}
 
-  @media(max-width:900px){
-    .toolbar{grid-template-columns:1fr 1fr;}
-    .toolbar button{grid-column:span 2;}
-  }
+.sidebar .nav-item.active {
+  background: #eef2ff;
+  color: #1f2a65;
+  font-weight: 600;
+  border-left: 4px solid #1f2a65;
+}
 
-  /* ===== GRID ===== */
-  .events-container{
-    max-width:1200px;
-    margin:auto;
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
-    gap:18px;
-  }
+/* Main content */
+.main {
+  flex: 1;
+  padding: 20px 24px;
+  overflow-y: auto;
+}
 
-  /* ===== CARD ===== */
-  .event-card{
-    border-radius:16px;
-    overflow:hidden;
-    display:flex;
-    flex-direction:column;
-    box-shadow:0 6px 14px rgba(0,0,0,.12);
-  }
+/* ========== PAGE HEADER ========== */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
 
-  /* Accent bar */
-  .color-bar{ height:40px; }
+.page-header h2 {
+  font-size: 28px;
+  font-weight: 600;
+}
 
-  /* Body fills card */
-  .card-body{
-    padding:12px 14px 14px;
-    flex:1;
-    display:flex;
-    flex-direction:column;
-  }
+.page-header button {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid #1f2a65;
+  background: #ffffff;
+  cursor: pointer;
+}
 
-  /* Date badge (Day + Month) */
-  .date-badge{
-    width:50px; height:50px;
-    border-radius:10px;
-    background:#111827;
-    color:#fff;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-    font-weight:600;
-    margin-top:-24px;
-  }
-  .date-badge .day{ font-size:17px; line-height:17px; }
-  .date-badge .month{ font-size:11px; letter-spacing:1px; text-transform:uppercase; }
+/* ========== CONTENT GRID ========== */
+.content {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 24px;
+}
 
-  .event-title{
-    font-size:15.5px;
-    font-weight:600;
-    margin:8px 0 4px;
-  }
+/* ========== FILTER PANEL ========== */
+.filters {
+  background: #ffffff;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
-  .event-meta{
-    font-size:14px;
-    margin:2px 0;
-    line-height:1.3;
-    color:#333;
-  }
+.filters label {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
 
-  .category{
-    margin-top:auto;
-    font-size:12px;
-    background:rgba(0,0,0,.08);
-    padding:4px 10px;
-    border-radius:20px;
-    align-self:flex-start;
-  }
+.filters input,
+.filters select {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
 
-  .empty{
-    text-align:center;
-    margin-top:30px;
-    color:#555;
-    font-size:15px;
+/* ========== EVENT GRID ========== */
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+/* ========== EVENT CARD ========== */
+.event-card {
+  background: #ffffff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+  display: flex;
+  flex-direction: column;
+}
+
+.event-image {
+  height: 140px;
+  background: #dde3ea; /* placeholder image color */
+}
+
+.event-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.event-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.event-meta {
+  font-size: 13px;
+  color: #444;
+}
+
+.event-organizer {
+  margin-top: auto;
+  padding: 8px 14px;
+  background: #f1f3f6;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media(max-width: 900px) {
+  .content {
+    grid-template-columns: 1fr;
   }
+  .sidebar {
+    display: none;
+  }
+}
 </style>
 </head>
 
 <body>
 
-<h1>Student Events</h1>
-
-<div class="view-toggle">
-  <button id="upcomingBtn" class="active">Upcoming Events</button>
-  <button id="pastBtn">Past Events</button>
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="title">Campus Life</div>
+  <div class="global-search">
+    <input placeholder="Search events, clubs, topics…" />
+  </div>
 </div>
 
-<div class="toolbar">
-  <input id="q" placeholder="Search by event, club, category, venue…" />
-  <input id="dateFilter" type="date" />
-  <select id="clubFilter"></select>
-  <select id="catFilter"></select>
-  <button id="clearBtn">Clear</button>
-</div>
+<div class="app">
 
-<div class="events-container" id="events"></div>
-<div class="empty" id="emptyMsg" style="display:none;"></div>
+  <!-- LEFT NAV -->
+  <div class="sidebar">
+    <div class="nav-item">Home</div>
+    <div class="nav-item active">Events</div>
+    <div class="nav-item">Clubs</div>
+    <div class="nav-item">News</div>
+    <div class="nav-item">Forms</div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <div class="page-header">
+      <h2>Events</h2>
+      <button id="togglePast">Show Past Events</button>
+    </div>
+
+    <div class="content">
+
+      <!-- FILTERS -->
+      <div class="filters">
+        <div>
+          <label>Search Events</label>
+          <input id="searchInput" placeholder="Search…" />
+        </div>
+        <div>
+          <label>Date</label>
+          <input id="dateInput" type="date" />
+        </div>
+        <div>
+          <label>Club</label>
+          <select id="clubSelect"></select>
+        </div>
+        <div>
+          <label>Category</label>
+          <select id="categorySelect"></select>
+        </div>
+      </div>
+
+      <!-- EVENTS -->
+      <div class="events-grid" id="events"></div>
+
+    </div>
+  </div>
+</div>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
   const csvUrl = "website-data.csv";
   const today = new Date(); today.setHours(0,0,0,0);
-  let mode = "upcoming";
+  let showPast = false;
   let allEvents = [];
 
-  // ✅ Inclusive pastel palette (base + accent)
-  const PALETTE = [
-    {base:"#F0F7FF",accent:"#D6E6FF"},
-    {base:"#F7F3FF",accent:"#E3DBFF"},
-    {base:"#FFF6EC",accent:"#FFE6CC"},
-    {base:"#F1FAF5",accent:"#D9F2E6"},
-    {base:"#FFF0F3",accent:"#FFD6DE"},
-    {base:"#F5F5F5",accent:"#E1E1E1"}
-  ];
-
-  // ✅ Master lists (alphabetical)
-  const ALL_CLUBS = [
-    "ACC MC - Undergraduate",
-    "ACC SONAM - Graduate",
-    "ACC SONAM - Undergraduate",
-    "ACCs FAS",
-    "Activity Club IED",
-    "AKU Athletics Club",
-    "AKU Chess Club",
-    "AKU Graduate Education Student Society (AGESS)",
-    "AKU Journalism Club",
-    "AKU Majlis",
-    "AKU MUN",
-    "AKU Photography Club",
-    "Arts and Culture Committee (AAC) (AKU-FAS)",
-    "Arts and Culture Committee (AAC) (AKU-IED)",
-    "Arts and Culture Committee (AAC) (AKU-SONAM) Graduate",
-    "Arts and Culture Committee (AAC) (AKU-SONAM) Undergraduate",
-    "Arts and Culture Committee (ACC) (AKU-MC)",
-    "Aurora",
-    "Class Representative",
-    "Club for Theatrics (ACT)",
-    "Entrepreneurial Society (AES)",
-    "Explorers Club",
-    "FALAH (FAS)",
-    "FALAH (MBBS)",
-    "FALAH (SONAM)",
-    "Music Society",
-    "OSEP Internal",
-    "Public Speaking Forum (PSF)",
-    "Publication and Literary Society (APLS) (FAS)",
-    "Publication and Literary Society (APLS) (MBBS)",
-    "Publication and Literary Society (APLS) (SONAM)",
-    "Rowing Club (ARC)",
-    "Society for Arts and Culture",
-    "Society of Climate Conservation and Health (SoCCH)",
-    "Sports Society",
-    "Student Research Forum (SRF) (FAS)",
-    "Student Research Forum (SRF) (MBBS)",
-    "Student Research Forum (SRF) (SONAM)",
-    "SRF-FAS Conference",
-    "Synergy (FAS)",
-    "Synergy (MBBS)",
-    "Synergy (SONAM)"
-  ];
-
-  const ALL_CATEGORIES = [
-    "Competition",
-    "Meeting",
-    "Orientation",
-    "Other",
-    "Recreational/Social",
-    "Sports",
-    "Welfare",
-    "Workshop/Session"
-  ];
-
-  // DOM refs
-  const q = document.getElementById("q");
-  const dateFilter = document.getElementById("dateFilter");
-  const clubFilter = document.getElementById("clubFilter");
-  const catFilter = document.getElementById("catFilter");
-  const clearBtn = document.getElementById("clearBtn");
+  const searchInput = document.getElementById("searchInput");
+  const dateInput = document.getElementById("dateInput");
+  const clubSelect = document.getElementById("clubSelect");
+  const categorySelect = document.getElementById("categorySelect");
   const eventsEl = document.getElementById("events");
-  const emptyMsg = document.getElementById("emptyMsg");
-  const upcomingBtn = document.getElementById("upcomingBtn");
-  const pastBtn = document.getElementById("pastBtn");
+  const toggleBtn = document.getElementById("togglePast");
 
-  // Helpers
-  const excelToDate = v => {
-    const d = new Date((Number(v) - 25569) * 86400000);
+  const excelToDate = n => {
+    const d = new Date((Number(n)-25569)*86400000);
     d.setHours(0,0,0,0);
     return d;
   };
 
-  function buildDropdown(selectEl, placeholder, list) {
-    selectEl.innerHTML =
-      `<option value="">${placeholder}</option>` +
-      list.map(v => `<option value="${v}">${v}</option>`).join("");
-  }
-
   function render() {
-    const qv = q.value.trim().toLowerCase();
-    const cv = clubFilter.value;
-    const tv = catFilter.value;
-    const dv = dateFilter.value ? new Date(dateFilter.value + "T00:00:00") : null;
+    let list = allEvents.filter(e =>
+      showPast ? e.date < today : e.date >= today
+    );
 
-    let list = allEvents.filter(e => mode === "upcoming" ? e.date >= today : e.date < today);
+    const q = searchInput.value.toLowerCase();
+    const dv = dateInput.value ? new Date(dateInput.value+"T00:00:00") : null;
 
-    // filters
-    list = list
-      .filter(e => !cv || e.organiser === cv)
-      .filter(e => !tv || e.category === tv)
-      .filter(e => !dv || e.date.getTime() === dv.getTime())
-      .filter(e => !qv || `${e.name} ${e.organiser} ${e.category} ${e.venue}`.toLowerCase().includes(qv));
+    list = list.filter(e =>
+      (!q || `${e.name} ${e.organiser}`.toLowerCase().includes(q)) &&
+      (!clubSelect.value || e.organiser === clubSelect.value) &&
+      (!categorySelect.value || e.category === categorySelect.value) &&
+      (!dv || e.date.getTime() === dv.getTime())
+    );
 
-    // sorting
-    list.sort((a,b) => mode === "upcoming" ? a.date - b.date : b.date - a.date);
+    list.sort((a,b)=> showPast ? b.date-a.date : a.date-b.date);
 
-    // empty state messages
     eventsEl.innerHTML = "";
-    emptyMsg.style.display = "none";
 
-    if (!list.length) {
-      emptyMsg.style.display = "block";
-      if (cv) {
-        emptyMsg.textContent = "✨ Looks like our clubs and societies are taking a short break before the fun begins again :-)";
-      } else if (tv) {
-        emptyMsg.textContent = "💡 Don't see any relevant event? How about you bring the event and OSEP would love to support you in planning and execution of the event.";
-      } else {
-        emptyMsg.textContent = "No events to show.";
-      }
-      return;
-    }
-
-    // render cards
-    list.forEach((e, i) => {
-      const { base, accent } = PALETTE[i % PALETTE.length];
-      const day = String(e.date.getDate()).padStart(2,"0");
-      const month = e.date.toLocaleString("en-US", { month: "short" });
-
-      const orgHTML   = e.organiser ? `<div class="event-meta">🎭 ${e.organiser}</div>` : "";
-      const venueHTML = e.venue ? `<div class="event-meta">📍 ${e.venue}</div>` : "";
-      const timeHTML  = e.time ? `<div class="event-meta">⏰ ${e.time}</div>` : "";
-
+    list.forEach(e => {
       eventsEl.insertAdjacentHTML("beforeend", `
-        <div class="event-card" style="background:${base}">
-          <div class="color-bar" style="background:${accent}"></div>
-          <div class="card-body">
-            <div class="date-badge">
-              <div class="day">${day}</div>
-              <div class="month">${month}</div>
-            </div>
+        <div class="event-card">
+          <div class="event-image"></div>
+          <div class="event-body">
             <div class="event-title">${e.name}</div>
-            ${orgHTML}
-            ${venueHTML}
-            ${timeHTML}
-            <div class="category">${e.category}</div>
+            <div class="event-meta">📅 ${e.date.toDateString()}</div>
+            ${e.time?`<div class="event-meta">⏰ ${e.time}</div>`:""}
+            ${e.venue?`<div class="event-meta">📍 ${e.venue}</div>`:""}
           </div>
+          <div class="event-organizer">🎭 ${e.organiser}</div>
         </div>
       `);
     });
   }
 
-  // Load CSV
-  Papa.parse(csvUrl, {
-    download: true,
-    header: true,
-    skipEmptyLines: true,
-    complete: r => {
-      allEvents = r.data.map(x => ({
-        name: x["Event Name"],
-        organiser: x["Organiser"],
-        category: x["Category of the Event"],
-        venue: (x["Venue"] || "").trim(),
-        time: (x["Start Time"] || "").trim(),
-        date: excelToDate(x["Date of the Event"])
-      })).filter(e => e.name && e.date);
+  Papa.parse(csvUrl,{
+    download:true,
+    header:true,
+    skipEmptyLines:true,
+    complete:r=>{
+      allEvents = r.data.map(x=>({
+        name:x["Event Name"],
+        organiser:x["Organiser"],
+        category:x["Category of the Event"],
+        venue:x["Venue"]||"",
+        time:x["Start Time"]||"",
+        date:excelToDate(x["Date of the Event"])
+      })).filter(e=>e.name && e.date);
 
-      // dropdowns from master lists (alphabetical) + keep any “new” values that appear in CSV
-      const clubsFromData = [...new Set(allEvents.map(e => e.organiser).filter(Boolean))];
-      const catsFromData  = [...new Set(allEvents.map(e => e.category).filter(Boolean))];
+      clubSelect.innerHTML = "<option value=''>All Clubs</option>" +
+        [...new Set(allEvents.map(e=>e.organiser))].sort().map(c=>`<option>${c}</option>`).join("");
 
-      const mergedClubs = [...new Set([...ALL_CLUBS, ...clubsFromData])].sort();
-      const mergedCats  = [...new Set([...ALL_CATEGORIES, ...catsFromData])].sort();
-
-      buildDropdown(clubFilter, "🎭 Choose a club or society", mergedClubs);
-      buildDropdown(catFilter, "🎯 Choose an activity type", mergedCats);
-
-      // wire events
-      q.oninput = dateFilter.onchange = clubFilter.onchange = catFilter.onchange = render;
-      clearBtn.onclick = () => {
-        q.value = "";
-        dateFilter.value = "";
-        clubFilter.value = "";
-        catFilter.value = "";
-        render();
-      };
-
-      upcomingBtn.onclick = () => {
-        mode = "upcoming";
-        upcomingBtn.classList.add("active");
-        pastBtn.classList.remove("active");
-        render();
-      };
-
-      pastBtn.onclick = () => {
-        mode = "past";
-        pastBtn.classList.add("active");
-        upcomingBtn.classList.remove("active");
-        render();
-      };
+      categorySelect.innerHTML = "<option value=''>All Categories</option>" +
+        [...new Set(allEvents.map(e=>e.category))].sort().map(c=>`<option>${c}</option>`).join("");
 
       render();
     }
   });
+
+  [searchInput, dateInput, clubSelect, categorySelect].forEach(el=>{
+    el.addEventListener("input", render);
+  });
+
+  toggleBtn.onclick = () => {
+    showPast = !showPast;
+    toggleBtn.textContent = showPast ? "Show Upcoming Events" : "Show Past Events";
+    render();
+  };
 
 });
 </script>
