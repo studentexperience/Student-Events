@@ -255,6 +255,30 @@
       opacity:0.55;
     }
 
+    /* Animated shimmer while AI fetches the image */
+    @keyframes shimmer {
+      0%   { background-position: -800px 0; }
+      100% { background-position:  800px 0; }
+    }
+    .cover-shimmer {
+      opacity: 1 !important;
+      background-image: linear-gradient(
+        90deg,
+        rgba(255,255,255,0)   0%,
+        rgba(255,255,255,0.45) 50%,
+        rgba(255,255,255,0)   100%
+      ) !important;
+      background-size: 800px 100% !important;
+      animation: shimmer 1.6s infinite linear;
+      position: relative;
+    }
+    .cover-shimmer .shimmer-icon {
+      position: relative;
+      z-index: 1;
+      font-size: 36px;
+      opacity: 0.5;
+    }
+
     /* Body: 1.2× padding (original ~12px 14px 14px → ~14px 17px 17px) */
     .body{
       padding:14px 17px 17px;
@@ -632,43 +656,113 @@ document.addEventListener("DOMContentLoaded", () => {
     list.forEach((e, i) => {
       const {base, accent} = PALETTE[i % PALETTE.length];
       const bannerColor    = BANNER_COLORS[i % BANNER_COLORS.length];
+      const cardId         = `card-${Date.now()}-${i}`;
 
-      // Cover image: use e.image if available, otherwise show a coloured placeholder
-      const coverHtml = e.image
-        ? `<img class="cover-img" src="${escapeHtml(e.image)}" alt="${escapeHtml(e.name)}" loading="lazy" />`
-        : `<div class="cover-placeholder" style="background:${accent};">🎓</div>`;
-
-      // Meta lines (only rendered when data exists)
+      // Meta lines
       const dateLine  = e.date  ? `<div class="meta"><span class="meta-icon">📅</span>${escapeHtml(formatDate(e.date))}</div>` : "";
       const timeLine  = e.time  ? `<div class="meta"><span class="meta-icon">⏰</span>${escapeHtml(e.time)}</div>` : "";
       const venueLine = e.venue ? `<div class="meta"><span class="meta-icon">📍</span>${escapeHtml(e.venue)}</div>` : "";
-
-      // Organizer banner (only rendered when organiser data exists)
       const bannerHtml = e.organiser
         ? `<div class="organizer-banner" style="background:${bannerColor};">🎭 ${escapeHtml(e.organiser)}</div>`
         : "";
 
+      // Cover: real image → use it; missing → shimmer placeholder, then AI fills it
+      const coverHtml = e.image
+        ? `<img class="cover-img" src="${escapeHtml(e.image)}" alt="${escapeHtml(e.name)}" loading="lazy" />`
+        : `<div class="cover-placeholder cover-shimmer" id="${cardId}" style="background:${accent};" data-title="${escapeHtml(e.name)}" data-category="${escapeHtml(e.category)}">
+             <span class="shimmer-icon">🎓</span>
+           </div>`;
+
       eventsEl.insertAdjacentHTML("beforeend", `
         <article class="card" style="background:${base}">
-
           ${coverHtml}
-
           <div class="body">
             <div class="title">${escapeHtml(e.name)}</div>
-
             <div class="title-gap"></div>
-
             ${dateLine}
             ${timeLine}
             ${venueLine}
-
             <div class="chip">${escapeHtml(e.category)}</div>
           </div>
-
           ${bannerHtml}
         </article>
       `);
+
+      // For cards without an image, trigger AI keyword lookup then Unsplash fetch
+      if(!e.image){
+        fetchAICoverImage(cardId, e.name, e.category, accent);
+      }
     });
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  AI-powered cover image: Claude picks the best search keyword,      */
+  /*  then we pull a relevant photo from Unsplash's free source API.     */
+  /* ------------------------------------------------------------------ */
+
+  // Simple in-memory cache so the same event title is never looked up twice
+  const imgCache = {};
+
+  async function fetchAICoverImage(cardId, eventTitle, category, fallbackColor){
+    const cacheKey = eventTitle.toLowerCase().trim();
+
+    try {
+      // 1️⃣  Ask Claude for the best Unsplash search keyword
+      let keyword;
+      if(imgCache[cacheKey]){
+        keyword = imgCache[cacheKey];
+      } else {
+        const prompt =
+          `You are helping a university student-events website pick cover photos. ` +
+          `For the event titled "${eventTitle}" (category: ${category || "general"}), ` +
+          `suggest ONE short Unsplash search keyword (2–4 words) that would return a ` +
+          `visually appealing, education- or campus-related photo. ` +
+          `The keyword must relate to the event theme but stay appropriate for a university context. ` +
+          `Reply with ONLY the keyword, nothing else.`;
+
+        const res = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 30,
+            messages: [{ role: "user", content: prompt }]
+          })
+        });
+
+        const data = await res.json();
+        keyword = (data.content?.[0]?.text || "university campus").trim().replace(/['"]/g, "");
+        imgCache[cacheKey] = keyword;
+      }
+
+      // 2️⃣  Fetch a photo from Unsplash Source (no API key needed)
+      //     800×420 keeps aspect ratio close to our 192px-tall cover
+      const imgUrl = `https://source.unsplash.com/800x420/?${encodeURIComponent(keyword + ",education")}`;
+
+      // 3️⃣  Swap the shimmer placeholder for the real photo
+      const placeholder = document.getElementById(cardId);
+      if(!placeholder) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const newImg = document.createElement("img");
+        newImg.className = "cover-img";
+        newImg.src = imgUrl;
+        newImg.alt = eventTitle;
+        newImg.loading = "lazy";
+        placeholder.replaceWith(newImg);
+      };
+      img.onerror = () => {
+        // If Unsplash fails, just remove the shimmer class gracefully
+        placeholder.classList.remove("cover-shimmer");
+      };
+      img.src = imgUrl;
+
+    } catch(_){
+      // Silently fall back to the coloured placeholder
+      const placeholder = document.getElementById(cardId);
+      if(placeholder) placeholder.classList.remove("cover-shimmer");
+    }
   }
 
   // Load CSV
