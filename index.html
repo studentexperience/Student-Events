@@ -6,12 +6,12 @@
 <title>Campus Life · Events</title>
 
 <!-- Google Font -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+https://fonts.googleapis.com
+https://fonts.gstatic.com
+https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap
 
 <!-- PapaParse -->
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.jsscript>
 
 <style>
 :root{
@@ -126,7 +126,20 @@ body{
   color:#fff;
 }
 
-/* Cards grid ✅ FIXED FOR 4 ON PC */
+/* ✅ Clear button restored */
+.clear-btn{
+  width:100%;
+  padding:10px;
+  border-radius:10px;
+  border:none;
+  background:#111827;
+  color:#fff;
+  font-weight:600;
+  cursor:pointer;
+  margin-top:6px;
+}
+
+/* Cards grid */
 .cards{
   display:grid;
   grid-template-columns:repeat(4, minmax(300px,1fr));
@@ -139,7 +152,7 @@ body{
   border-radius:22px;
   overflow:hidden;
   box-shadow:var(--shadow);
-  min-height:420px; /* ~1.2x height */
+  min-height:420px;
   display:flex;
   flex-direction:column;
 }
@@ -203,11 +216,11 @@ body{
 
 <div class="shell">
 <nav class="nav">
-  <a href="#">Home</a>
-  <a href="#" class="active">Events</a>
-  <a href="#">Clubs</a>
-  <a href="#">News</a>
-  <a href="#">Forms</a>
+  #Home</a>
+  #Events</a>
+  #Clubs</a>
+  #News</a>
+  #Forms</a>
 </nav>
 
 <main class="content">
@@ -226,6 +239,9 @@ body{
     <div class="field"><label>Date</label><input id="dateFilter" type="date"></div>
     <div class="field"><label>Club</label><select id="clubFilter"></select></div>
     <div class="field"><label>Category</label><select id="catFilter"></select></div>
+
+    <!-- ✅ Clear button restored -->
+    <button id="clearBtn" class="clear-btn">Clear</button>
   </aside>
 
   <section class="cards" id="events"></section>
@@ -238,14 +254,13 @@ document.addEventListener("DOMContentLoaded",()=>{
 
   const csvUrl="website-data.csv";
   const today=new Date(); today.setHours(0,0,0,0);
-
-  let mode="upcoming";
-  let allEvents=[];
+  let mode="upcoming", allEvents=[];
 
   const q=document.getElementById("q");
   const dateFilter=document.getElementById("dateFilter");
   const clubFilter=document.getElementById("clubFilter");
   const catFilter=document.getElementById("catFilter");
+  const clearBtn=document.getElementById("clearBtn");
   const upcomingBtn=document.getElementById("upcomingBtn");
   const pastBtn=document.getElementById("pastBtn");
   const eventsEl=document.getElementById("events");
@@ -312,6 +327,15 @@ document.addEventListener("DOMContentLoaded",()=>{
   });
 
   q.oninput=dateFilter.onchange=clubFilter.onchange=catFilter.onchange=render;
+
+  /* ✅ Clear button logic restored */
+  clearBtn.onclick=()=>{
+    q.value="";
+    dateFilter.value="";
+    clubFilter.value="";
+    catFilter.value="";
+    render();
+  };
 
   upcomingBtn.onclick=()=>{
     mode="upcoming";
