@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Campus Life · Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --ink: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --bg: #f3f4f6;
+      --panel: #ffffff;
+      --shadow: 0 4px 16px rgba(0,0,0,.08);
+      --accent: #2563eb;
+      --accent-light: #eff6ff;
+      --danger: #dc2626;
+      --danger-light: #fef2f2;
+      --success: #16a34a;
+      --success-light: #f0fdf4;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    /* ── LOGIN SCREEN ── */
+    .login-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+    }
+    .login-box {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 24px 60px rgba(0,0,0,.2);
+    }
+    .login-logo {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+    .login-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 32px;
+    }
+    .login-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--ink);
+    }
+    .login-input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      margin-bottom: 16px;
+      outline: none;
+      transition: border .15s;
+    }
+    .login-input:focus { border-color: var(--accent); }
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .login-btn:hover { background: #1d4ed8; }
+    .login-btn:disabled { background: #93c5fd; cursor: not-allowed; }
+    .login-msg {
+      margin-top: 14px;
+      font-size: 13px;
+      text-align: center;
+      min-height: 20px;
+    }
+    .login-msg.error { color: var(--danger); }
+    .login-msg.success { color: var(--success); }
+
+    /* ── ADMIN SHELL ── */
+    .admin-shell { display: none; }
+    .admin-shell.visible { display: flex; flex-direction: column; min-height: 100vh; }
+
+    .topbar {
+      height: 56px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+    .topbar-brand { font-weight: 700; font-size: 16px; }
+    .topbar-badge {
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      letter-spacing: .4px;
+    }
+    .topbar-user {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .logout-btn {
+      padding: 7px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: white;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--danger);
+    }
+    .logout-btn:hover { background: var(--danger-light); }
+
+    .admin-body {
+      display: flex;
+      flex: 1;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 220px;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      padding: 20px 12px;
+      flex-shrink: 0;
+    }
+    .sidebar-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--muted);
+      padding: 0 10px;
+      margin-bottom: 8px;
+      margin-top: 20px;
+    }
+    .sidebar-label:first-child { margin-top: 0; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--ink);
+      transition: background .12s;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      font-family: 'Poppins', sans-serif;
+    }
+    .nav-item:hover { background: var(--bg); }
+    .nav-item.active {
+      background: var(--accent-light);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .nav-icon { font-size: 16px; }
+
+    /* ── MAIN CONTENT ── */
+    .main {
+      flex: 1;
+      padding: 28px;
+      overflow-y: auto;
+    }
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .section-title {
+      font-size: 22px;
+      font-weight: 700;
+    }
+    .section-subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all .15s;
+    }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-danger { background: var(--danger-light); color: var(--danger); border: 1px solid #fca5a5; }
+    .btn-danger:hover { background: #fee2e2; }
+    .btn-secondary { background: white; color: var(--ink); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--bg); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      padding: 14px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0,0,0,.15);
+      z-index: 999;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all .3s ease;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { background: var(--success); color: white; }
+    .toast.error { background: var(--danger); color: white; }
+
+    /* ── DATA TABLE ── */
+    .table-wrap {
+      background: white;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .table-toolbar {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .table-search {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      outline: none;
+    }
+    .table-search:focus { border-color: var(--accent); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th {
+      background: var(--bg);
+      padding: 11px 16px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f3f4f6;
+      vertical-align: middle;
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafafa; }
+    .td-actions { display: flex; gap: 8px; white-space: nowrap; }
+
+    .logo-thumb {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+      border-radius: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+    }
+
+    /* ── MODAL / DRAWER ── */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.4);
+      z-index: 400;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: white;
+      border-radius: 18px;
+      width: 100%;
+      max-width: 620px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 60px rgba(0,0,0,.2);
+    }
+    .modal-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-title { font-size: 17px; font-weight: 700; }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--muted);
+      padding: 0;
+      line-height: 1;
+    }
+    .modal-body { padding: 20px 24px 24px; }
+
+    /* ── FORM ── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .form-grid .full { grid-column: 1 / -1; }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink);
+      letter-spacing: .2px;
+    }
+    .field input,
+    .field textarea,
+    .field select {
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      outline: none;
+      transition: border .15s;
+      background: white;
+    }
+    .field input:focus,
+    .field textarea:focus,
+    .field select:focus { border-color: var(--accent); }
+    .field textarea { resize: vertical; min-height: 80px; }
+
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── IMAGE UPLOAD ── */
+    .upload-area {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border .15s, background .15s;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .upload-area:hover { border-color: var(--accent); background: var(--accent-light); }
+    .upload-area input { display: none; }
+    .upload-preview {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin: 10px auto 0;
+      display: block;
+    }
+
+    /* ── STATS CARDS ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+    .stat-label { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+    .stat-value { font-size: 32px; font-weight: 700; margin: 6px 0 2px; }
+    .stat-sub { font-size: 12px; color: var(--muted); }
+
+    /* ── ADMINS ── */
+    .admin-list {
+      background: white;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+    .admin-item {
+      display: flex;
+      align-items: center;
+      padding: 14px 20px;
+      border-bottom: 1px solid #f3f4f6;
+      gap: 14px;
+    }
+    .admin-item:last-child { border-bottom: none; }
+    .admin-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .admin-email { font-size: 14px; font-weight: 500; }
+    .admin-date { font-size: 12px; color: var(--muted); }
+    .admin-actions { margin-left: auto; }
+
+    /* ── ADD ADMIN FORM ── */
+    .add-admin-form {
+      background: white;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+    .add-admin-form .field { flex: 1; }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--muted);
+    }
+    .empty-state-icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-state-text { font-size: 14px; }
+
+    /* ── CONFIRM DIALOG ── */
+    .confirm-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 600;
+      align-items: center;
+      justify-content: center;
+    }
+    .confirm-backdrop.open { display: flex; }
+    .confirm-box {
+      background: white;
+      border-radius: 16px;
+      padding: 28px;
+      max-width: 380px;
+      width: 100%;
+      box-shadow: 0 24px 60px rgba(0,0,0,.2);
+      text-align: center;
+    }
+    .confirm-icon { font-size: 36px; margin-bottom: 12px; }
+    .confirm-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .confirm-msg { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+    .confirm-actions { display: flex; gap: 10px; justify-content: center; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main { padding: 16px; }
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ LOGIN SCREEN ══ -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">🎓 Campus Life</div>
+    <div class="login-sub">Admin Panel — Authorised Access Only</div>
+    <label class="login-label" for="loginEmail">Email</label>
+    <input class="login-input" id="loginEmail" type="email" placeholder="your@email.com" />
+    <label class="login-label" for="loginPassword">Password</label>
+    <input class="login-input" id="loginPassword" type="password" placeholder="••••••••" />
+    <button class="login-btn" id="loginBtn" onclick="handleLogin()">Sign In</button>
+    <div class="login-msg" id="loginMsg"></div>
+  </div>
+</div>
+
+<!-- ══ ADMIN SHELL ══ -->
+<div class="admin-shell" id="adminShell">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-brand">Campus Life</div>
+    <div class="topbar-badge">ADMIN</div>
+    <div class="topbar-user">
+      <span id="userEmail"></span>
+      <button class="logout-btn" onclick="handleLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="admin-body">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-label">Overview</div>
+      <button class="nav-item active" onclick="showSection('dashboard', this)">
+        <span class="nav-icon">📊</span> Dashboard
+      </button>
+
+      <div class="sidebar-label">Content</div>
+      <button class="nav-item" onclick="showSection('clubs', this)">
+        <span class="nav-icon">🎭</span> Clubs
+      </button>
+      <button class="nav-item" onclick="showSection('events', this)">
+        <span class="nav-icon">📅</span> Events
+      </button>
+
+      <div class="sidebar-label">Settings</div>
+      <button class="nav-item" onclick="showSection('admins', this)">
+        <span class="nav-icon">👤</span> Admins
+      </button>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+
+      <!-- ── DASHBOARD ── -->
+      <div class="section active" id="section-dashboard">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Dashboard</div>
+            <div class="section-subtitle">Overview of your campus content</div>
+          </div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Clubs</div>
+            <div class="stat-value" id="statClubs">—</div>
+            <div class="stat-sub">Registered societies</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Events</div>
+            <div class="stat-value" id="statEvents">—</div>
+            <div class="stat-sub">In the database</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Upcoming Events</div>
+            <div class="stat-value" id="statUpcoming">—</div>
+            <div class="stat-sub">From today onwards</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Admins</div>
+            <div class="stat-value" id="statAdmins">—</div>
+            <div class="stat-sub">Authorised users</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CLUBS ── -->
+      <div class="section" id="section-clubs">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Clubs &amp; Societies</div>
+            <div class="section-subtitle">Manage all registered clubs</div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-secondary" onclick="importClubsCSV()">📥 Import CSV</button>
+            <button class="btn btn-primary" onclick="openClubModal()">+ Add Club</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <input class="table-search" placeholder="🔍 Search clubs…" oninput="filterTable('clubs-table', this.value)" />
+          </div>
+          <table id="clubs-table">
+            <thead>
+              <tr>
+                <th>Logo</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Convenor</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="clubs-tbody">
+              <tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-text">Loading clubs…</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── EVENTS ── -->
+      <div class="section" id="section-events">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Events</div>
+            <div class="section-subtitle">Manage all campus events</div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-secondary" onclick="importEventsCSV()">📥 Import CSV</button>
+            <button class="btn btn-primary" onclick="openEventModal()">+ Add Event</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <input class="table-search" placeholder="🔍 Search events…" oninput="filterTable('events-table', this.value)" />
+          </div>
+          <table id="events-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Organiser</th>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Venue</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="events-tbody">
+              <tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-text">Loading events…</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── ADMINS ── -->
+      <div class="section" id="section-admins">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Admins</div>
+            <div class="section-subtitle">Manage who can access this panel</div>
+          </div>
+        </div>
+        <div class="admin-list" id="admins-list">
+          <div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-text">Loading…</div></div>
+        </div>
+        <div class="add-admin-form">
+          <div class="field">
+            <label>Add New Admin by Email</label>
+            <input type="email" id="newAdminEmail" placeholder="colleague@aku.edu" />
+          </div>
+          <button class="btn btn-primary" onclick="addAdmin()">Add Admin</button>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:10px;">
+          ⚠️ New admins must sign up at <strong>your site URL/admin.html</strong> with the same email to set their password.
+        </p>
+      </div>
+
+    </div><!-- /main -->
+  </div><!-- /admin-body -->
+</div><!-- /admin-shell -->
+
+<!-- ══ CLUB MODAL ══ -->
+<div class="modal-backdrop" id="clubModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="clubModalTitle">Add Club</div>
+      <button class="modal-close" onclick="closeModal('clubModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="clubId" />
+      <div class="form-grid">
+        <div class="field full">
+          <label>Club Name *</label>
+          <input id="clubName" type="text" placeholder="AKU Chess Club" />
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input id="clubEmail" type="email" placeholder="club@aku.edu" />
+        </div>
+        <div class="field">
+          <label>Convenor</label>
+          <input id="clubConvenor" type="text" />
+        </div>
+        <div class="field">
+          <label>Co-Convenor</label>
+          <input id="clubCoConvenor" type="text" />
+        </div>
+        <div class="field">
+          <label>General Secretary</label>
+          <input id="clubSecretary" type="text" />
+        </div>
+        <div class="field">
+          <label>Treasurer</label>
+          <input id="clubTreasurer" type="text" />
+        </div>
+        <div class="field full">
+          <label>Description</label>
+          <textarea id="clubDescription" rows="4"></textarea>
+        </div>
+        <div class="field full">
+          <label>Signature Events</label>
+          <textarea id="clubEvents" rows="3" placeholder="One event per line"></textarea>
+        </div>
+        <div class="field full">
+          <label>Logo</label>
+          <div class="upload-area" onclick="document.getElementById('clubLogoFile').click()">
+            <input type="file" id="clubLogoFile" accept="image/*" onchange="previewLogo(this)" />
+            <div id="clubLogoPreviewWrap">
+              📸 Click to upload logo image
+            </div>
+          </div>
+          <input type="text" id="clubLogoUrl" placeholder="Or paste image URL / Google Drive link" style="margin-top:8px;" />
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="closeModal('clubModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveClub()">Save Club</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EVENT MODAL ══ -->
+<div class="modal-backdrop" id="eventModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="eventModalTitle">Add Event</div>
+      <button class="modal-close" onclick="closeModal('eventModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="eventId" />
+      <div class="form-grid">
+        <div class="field full">
+          <label>Event Name *</label>
+          <input id="eventName" type="text" placeholder="Annual Science Fair" />
+        </div>
+        <div class="field">
+          <label>Organiser</label>
+          <input id="eventOrganiser" type="text" />
+        </div>
+        <div class="field">
+          <label>Category</label>
+          <select id="eventCategory">
+            <option value="">Select…</option>
+            <option>Competition</option>
+            <option>Meeting</option>
+            <option>Orientation</option>
+            <option>Recreational/Social</option>
+            <option>Sports</option>
+            <option>Welfare</option>
+            <option>Workshop/Session</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Date</label>
+          <input id="eventDate" type="date" />
+        </div>
+        <div class="field">
+          <label>Start Time</label>
+          <input id="eventTime" type="time" />
+        </div>
+        <div class="field full">
+          <label>Venue</label>
+          <input id="eventVenue" type="text" placeholder="AKU Main Auditorium" />
+        </div>
+        <div class="field full">
+          <label>Cover Image</label>
+          <div class="upload-area" onclick="document.getElementById('eventImageFile').click()">
+            <input type="file" id="eventImageFile" accept="image/*" onchange="previewEventImage(this)" />
+            <div id="eventImagePreviewWrap">
+              📸 Click to upload cover image
+            </div>
+          </div>
+          <input type="text" id="eventImageUrl" placeholder="Or paste image URL" style="margin-top:8px;" />
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="closeModal('eventModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveEvent()">Save Event</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CSV IMPORT MODAL ══ -->
+<div class="modal-backdrop" id="csvModal">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header">
+      <div class="modal-title" id="csvModalTitle">Import CSV</div>
+      <button class="modal-close" onclick="closeModal('csvModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;" id="csvModalDesc"></p>
+      <div class="upload-area" onclick="document.getElementById('csvFile').click()">
+        <input type="file" id="csvFile" accept=".csv" onchange="handleCSVUpload(this)" />
+        📄 Click to select your CSV file
+      </div>
+      <div id="csvStatus" style="margin-top:14px;font-size:13px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CONFIRM DIALOG ══ -->
+<div class="confirm-backdrop" id="confirmDialog">
+  <div class="confirm-box">
+    <div class="confirm-icon">⚠️</div>
+    <div class="confirm-title" id="confirmTitle">Are you sure?</div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-actions">
+      <button class="btn btn-secondary" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" id="confirmOkBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script>
+/* ══ SUPABASE INIT ══ */
+const SUPABASE_URL = "https://dgzuqvffnbfybngoadse.supabase.co";
+const SUPABASE_KEY = "sb_publishable_77t5gCD7M620CzcMwESN-A_oAuqz6B8";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let csvImportTarget = null; // 'clubs' or 'events'
+
+/* ══ AUTH ══ */
+async function handleLogin(){
+  const email    = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  const msg      = document.getElementById("loginMsg");
+  const btn      = document.getElementById("loginBtn");
+
+  if(!email || !password){ msg.textContent = "Please enter email and password."; msg.className = "login-msg error"; return; }
+
+  btn.disabled = true;
+  btn.textContent = "Signing in…";
+  msg.textContent = "";
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+  if(error){
+    msg.textContent = error.message;
+    msg.className = "login-msg error";
+    btn.disabled = false;
+    btn.textContent = "Sign In";
+    return;
+  }
+
+  // Check if this email is in the admins table
+  const { data: adminRow } = await sb.from("admins").select("email").eq("email", email).single();
+  if(!adminRow){
+    await sb.auth.signOut();
+    msg.textContent = "Access denied. Your email is not an authorised admin.";
+    msg.className = "login-msg error";
+    btn.disabled = false;
+    btn.textContent = "Sign In";
+    return;
+  }
+
+  currentUser = data.user;
+  showAdminPanel();
+}
+
+async function handleLogout(){
+  await sb.auth.signOut();
+  currentUser = null;
+  document.getElementById("adminShell").classList.remove("visible");
+  document.getElementById("loginScreen").style.display = "flex";
+  document.getElementById("loginPassword").value = "";
+}
+
+async function checkSession(){
+  const { data: { session } } = await sb.auth.getSession();
+  if(session){
+    const { data: adminRow } = await sb.from("admins").select("email").eq("email", session.user.email).single();
+    if(adminRow){
+      currentUser = session.user;
+      showAdminPanel();
+    }
+  }
+}
+
+function showAdminPanel(){
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("adminShell").classList.add("visible");
+  document.getElementById("userEmail").textContent = currentUser.email;
+  loadDashboard();
+  loadClubs();
+  loadEvents();
+  loadAdmins();
+}
+
+/* ══ NAVIGATION ══ */
+function showSection(name, btn){
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
+  document.getElementById(`section-${name}`).classList.add("active");
+  btn.classList.add("active");
+}
+
+/* ══ TOAST ══ */
+function showToast(msg, type = "success"){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove("show"), 3000);
+}
+
+/* ══ DASHBOARD ══ */
+async function loadDashboard(){
+  const [{ count: clubCount }, { count: eventCount }, { count: adminCount }, { data: upcomingData }] = await Promise.all([
+    sb.from("clubs").select("*", { count: "exact", head: true }),
+    sb.from("events").select("*", { count: "exact", head: true }),
+    sb.from("admins").select("*", { count: "exact", head: true }),
+    sb.from("events").select("event_date").gte("event_date", new Date().toISOString().split("T")[0]),
+  ]);
+  document.getElementById("statClubs").textContent    = clubCount ?? "—";
+  document.getElementById("statEvents").textContent   = eventCount ?? "—";
+  document.getElementById("statAdmins").textContent   = adminCount ?? "—";
+  document.getElementById("statUpcoming").textContent = upcomingData?.length ?? "—";
+}
+
+/* ══ CLUBS ══ */
+let allClubs = [];
+
+async function loadClubs(){
+  const { data, error } = await sb.from("clubs").select("*").order("name");
+  if(error){ showToast("Failed to load clubs", "error"); return; }
+  allClubs = data || [];
+  renderClubs(allClubs);
+}
+
+function renderClubs(list){
+  const tbody = document.getElementById("clubs-tbody");
+  if(!list.length){
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">🎭</div><div class="empty-state-text">No clubs yet. Add one above.</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(c => `
+    <tr>
+      <td>${c.logo_url ? `<img class="logo-thumb" src="${esc(c.logo_url)}" onerror="this.style.display='none'" />` : "—"}</td>
+      <td title="${esc(c.name)}">${esc(c.name)}</td>
+      <td title="${esc(c.email||'')}">${esc(c.email || "—")}</td>
+      <td>${esc(c.convenor || "—")}</td>
+      <td><div class="td-actions">
+        <button class="btn btn-secondary btn-sm" onclick="openClubModal('${c.id}')">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDelete('club','${c.id}','${esc(c.name)}')">🗑️ Delete</button>
+      </div></td>
+    </tr>
+  `).join("");
+}
+
+function openClubModal(id = null){
+  document.getElementById("clubModalTitle").textContent = id ? "Edit Club" : "Add Club";
+  document.getElementById("clubId").value        = id || "";
+  document.getElementById("clubLogoPreviewWrap").innerHTML = "📸 Click to upload logo image";
+
+  if(id){
+    const c = allClubs.find(x => x.id === id);
+    if(!c) return;
+    document.getElementById("clubName").value        = c.name || "";
+    document.getElementById("clubEmail").value       = c.email || "";
+    document.getElementById("clubConvenor").value    = c.convenor || "";
+    document.getElementById("clubCoConvenor").value  = c.co_convenor || "";
+    document.getElementById("clubSecretary").value   = c.secretary || "";
+    document.getElementById("clubTreasurer").value   = c.treasurer || "";
+    document.getElementById("clubDescription").value = c.description || "";
+    document.getElementById("clubEvents").value      = c.events || "";
+    document.getElementById("clubLogoUrl").value     = c.logo_url || "";
+    if(c.logo_url) document.getElementById("clubLogoPreviewWrap").innerHTML = `<img src="${esc(c.logo_url)}" class="upload-preview" />`;
+  } else {
+    ["clubName","clubEmail","clubConvenor","clubCoConvenor","clubSecretary","clubTreasurer","clubDescription","clubEvents","clubLogoUrl"].forEach(id => document.getElementById(id).value = "");
+  }
+  document.getElementById("clubModal").classList.add("open");
+}
+
+async function saveClub(){
+  const id   = document.getElementById("clubId").value;
+  const name = document.getElementById("clubName").value.trim();
+  if(!name){ showToast("Club name is required", "error"); return; }
+
+  // Handle file upload if a file was selected
+  let logoUrl = document.getElementById("clubLogoUrl").value.trim();
+  const fileInput = document.getElementById("clubLogoFile");
+  if(fileInput.files[0]){
+    logoUrl = await uploadImage(fileInput.files[0], "logos");
+    if(!logoUrl) return;
+  }
+
+  const payload = {
+    name,
+    email:       document.getElementById("clubEmail").value.trim(),
+    convenor:    document.getElementById("clubConvenor").value.trim(),
+    co_convenor: document.getElementById("clubCoConvenor").value.trim(),
+    secretary:   document.getElementById("clubSecretary").value.trim(),
+    treasurer:   document.getElementById("clubTreasurer").value.trim(),
+    description: document.getElementById("clubDescription").value.trim(),
+    events:      document.getElementById("clubEvents").value.trim(),
+    logo_url:    logoUrl,
+    updated_at:  new Date().toISOString(),
+  };
+
+  let error;
+  if(id){
+    ({ error } = await sb.from("clubs").update(payload).eq("id", id));
+  } else {
+    ({ error } = await sb.from("clubs").insert(payload));
+  }
+
+  if(error){ showToast("Save failed: " + error.message, "error"); return; }
+  showToast(id ? "Club updated!" : "Club added!");
+  closeModal("clubModal");
+  loadClubs();
+  loadDashboard();
+}
+
+/* ══ EVENTS ══ */
+let allEvents = [];
+
+async function loadEvents(){
+  const { data, error } = await sb.from("events").select("*").order("event_date", { ascending: false });
+  if(error){ showToast("Failed to load events", "error"); return; }
+  allEvents = data || [];
+  renderEvents(allEvents);
+}
+
+function renderEvents(list){
+  const tbody = document.getElementById("events-tbody");
+  if(!list.length){
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">No events yet. Add one above.</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(e => `
+    <tr>
+      <td title="${esc(e.name)}">${esc(e.name)}</td>
+      <td>${esc(e.organiser || "—")}</td>
+      <td>${e.event_date ? new Date(e.event_date).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "—"}</td>
+      <td>${esc(e.category || "—")}</td>
+      <td title="${esc(e.venue||'')}">${esc(e.venue || "—")}</td>
+      <td><div class="td-actions">
+        <button class="btn btn-secondary btn-sm" onclick="openEventModal('${e.id}')">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDelete('event','${e.id}','${esc(e.name)}')">🗑️ Delete</button>
+      </div></td>
+    </tr>
+  `).join("");
+}
+
+function openEventModal(id = null){
+  document.getElementById("eventModalTitle").textContent = id ? "Edit Event" : "Add Event";
+  document.getElementById("eventId").value = id || "";
+  document.getElementById("eventImagePreviewWrap").innerHTML = "📸 Click to upload cover image";
+
+  if(id){
+    const e = allEvents.find(x => x.id === id);
+    if(!e) return;
+    document.getElementById("eventName").value      = e.name || "";
+    document.getElementById("eventOrganiser").value = e.organiser || "";
+    document.getElementById("eventCategory").value  = e.category || "";
+    document.getElementById("eventDate").value      = e.event_date || "";
+    document.getElementById("eventTime").value      = e.start_time || "";
+    document.getElementById("eventVenue").value     = e.venue || "";
+    document.getElementById("eventImageUrl").value  = e.cover_image || "";
+    if(e.cover_image) document.getElementById("eventImagePreviewWrap").innerHTML = `<img src="${esc(e.cover_image)}" class="upload-preview" />`;
+  } else {
+    ["eventName","eventOrganiser","eventDate","eventTime","eventVenue","eventImageUrl"].forEach(id => document.getElementById(id).value = "");
+    document.getElementById("eventCategory").value = "";
+  }
+  document.getElementById("eventModal").classList.add("open");
+}
+
+async function saveEvent(){
+  const id   = document.getElementById("eventId").value;
+  const name = document.getElementById("eventName").value.trim();
+  if(!name){ showToast("Event name is required", "error"); return; }
+
+  let imageUrl = document.getElementById("eventImageUrl").value.trim();
+  const fileInput = document.getElementById("eventImageFile");
+  if(fileInput.files[0]){
+    imageUrl = await uploadImage(fileInput.files[0], "events");
+    if(!imageUrl) return;
+  }
+
+  const payload = {
+    name,
+    organiser:   document.getElementById("eventOrganiser").value.trim(),
+    category:    document.getElementById("eventCategory").value,
+    event_date:  document.getElementById("eventDate").value || null,
+    start_time:  document.getElementById("eventTime").value || null,
+    venue:       document.getElementById("eventVenue").value.trim(),
+    cover_image: imageUrl,
+    updated_at:  new Date().toISOString(),
+  };
+
+  let error;
+  if(id){
+    ({ error } = await sb.from("events").update(payload).eq("id", id));
+  } else {
+    ({ error } = await sb.from("events").insert(payload));
+  }
+
+  if(error){ showToast("Save failed: " + error.message, "error"); return; }
+  showToast(id ? "Event updated!" : "Event added!");
+  closeModal("eventModal");
+  loadEvents();
+  loadDashboard();
+}
+
+/* ══ ADMINS ══ */
+let allAdmins = [];
+
+async function loadAdmins(){
+  const { data, error } = await sb.from("admins").select("*").order("created_at");
+  if(error){ return; }
+  allAdmins = data || [];
+  renderAdmins(allAdmins);
+}
+
+function renderAdmins(list){
+  const el = document.getElementById("admins-list");
+  if(!list.length){
+    el.innerHTML = `<div class="empty-state"><div class="empty-state-icon">👤</div><div class="empty-state-text">No admins found.</div></div>`;
+    return;
+  }
+  el.innerHTML = list.map(a => `
+    <div class="admin-item">
+      <div class="admin-avatar">${a.email[0].toUpperCase()}</div>
+      <div>
+        <div class="admin-email">${esc(a.email)}</div>
+        <div class="admin-date">Added ${new Date(a.created_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</div>
+      </div>
+      ${a.email !== currentUser.email ? `
+      <div class="admin-actions">
+        <button class="btn btn-danger btn-sm" onclick="confirmDelete('admin','${a.id}','${esc(a.email)}')">Remove</button>
+      </div>` : `<div class="admin-actions"><span style="font-size:12px;color:var(--muted);">You</span></div>`}
+    </div>
+  `).join("");
+}
+
+async function addAdmin(){
+  const email = document.getElementById("newAdminEmail").value.trim();
+  if(!email){ showToast("Enter an email address", "error"); return; }
+  const { error } = await sb.from("admins").insert({ email });
+  if(error){ showToast("Failed: " + error.message, "error"); return; }
+  showToast("Admin added! They must sign up to set their password.");
+  document.getElementById("newAdminEmail").value = "";
+  loadAdmins();
+  loadDashboard();
+}
+
+/* ══ DELETE / CONFIRM ══ */
+function confirmDelete(type, id, name){
+  document.getElementById("confirmTitle").textContent = `Delete ${type}?`;
+  document.getElementById("confirmMsg").textContent   = `"${name}" will be permanently deleted. This cannot be undone.`;
+  document.getElementById("confirmOkBtn").onclick = () => doDelete(type, id);
+  document.getElementById("confirmDialog").classList.add("open");
+}
+
+async function doDelete(type, id){
+  closeConfirm();
+  let error;
+  if(type === "club")  ({ error } = await sb.from("clubs").delete().eq("id", id));
+  if(type === "event") ({ error } = await sb.from("events").delete().eq("id", id));
+  if(type === "admin") ({ error } = await sb.from("admins").delete().eq("id", id));
+  if(error){ showToast("Delete failed: " + error.message, "error"); return; }
+  showToast("Deleted successfully.");
+  if(type === "club")  { loadClubs();  loadDashboard(); }
+  if(type === "event") { loadEvents(); loadDashboard(); }
+  if(type === "admin") { loadAdmins(); loadDashboard(); }
+}
+
+function closeConfirm(){
+  document.getElementById("confirmDialog").classList.remove("open");
+}
+
+/* ══ IMAGE UPLOAD ══ */
+async function uploadImage(file, folder){
+  const ext      = file.name.split(".").pop();
+  const filename = `${folder}/${Date.now()}.${ext}`;
+  const { error } = await sb.storage.from("campus-images").upload(filename, file, { upsert: true });
+  if(error){ showToast("Image upload failed: " + error.message, "error"); return null; }
+  const { data } = sb.storage.from("campus-images").getPublicUrl(filename);
+  return data.publicUrl;
+}
+
+function previewLogo(input){
+  if(!input.files[0]) return;
+  const url = URL.createObjectURL(input.files[0]);
+  document.getElementById("clubLogoPreviewWrap").innerHTML = `<img src="${url}" class="upload-preview" />`;
+}
+
+function previewEventImage(input){
+  if(!input.files[0]) return;
+  const url = URL.createObjectURL(input.files[0]);
+  document.getElementById("eventImagePreviewWrap").innerHTML = `<img src="${url}" class="upload-preview" />`;
+}
+
+/* ══ CSV IMPORT ══ */
+function importClubsCSV(){
+  csvImportTarget = "clubs";
+  document.getElementById("csvModalTitle").textContent = "Import Clubs CSV";
+  document.getElementById("csvModalDesc").textContent  = "Upload your clubs-data.csv. Columns: Society Name, Email, Description, Signature Events, Convenor, Co-Convenor, General Secretary, Treasurer, Logo";
+  document.getElementById("csvStatus").innerHTML = "";
+  document.getElementById("csvFile").value = "";
+  document.getElementById("csvModal").classList.add("open");
+}
+
+function importEventsCSV(){
+  csvImportTarget = "events";
+  document.getElementById("csvModalTitle").textContent = "Import Events CSV";
+  document.getElementById("csvModalDesc").textContent  = "Upload your website-data.csv. Columns: Event Name, Organiser, Category of the Event, Date of the Event, Start Time, Venue";
+  document.getElementById("csvStatus").innerHTML = "";
+  document.getElementById("csvFile").value = "";
+  document.getElementById("csvModal").classList.add("open");
+}
+
+function handleCSVUpload(input){
+  if(!input.files[0]) return;
+  const statusEl = document.getElementById("csvStatus");
+  statusEl.innerHTML = "⏳ Parsing CSV…";
+
+  Papa.parse(input.files[0], {
+    header: true,
+    skipEmptyLines: true,
+    complete: async (res) => {
+      if(!res.data.length){ statusEl.innerHTML = "❌ No data found in CSV."; return; }
+
+      statusEl.innerHTML = `⏳ Importing ${res.data.length} rows…`;
+
+      let rows;
+      if(csvImportTarget === "clubs"){
+        rows = res.data.map(r => ({
+          name:        (r["Society Name"]       || "").trim(),
+          email:       (r["Email"]              || "").trim(),
+          description: (r["Description"]        || "").trim(),
+          events:      (r["Signature Events"]   || "").trim(),
+          convenor:    (r["Convenor"]           || "").trim(),
+          co_convenor: (r["Co-Convenor"]        || "").trim(),
+          secretary:   (r["General Secretary"]  || "").trim(),
+          treasurer:   (r["Treasurer"]          || "").trim(),
+          logo_url:    (r["Logo"]               || "").trim(),
+        })).filter(r => r.name);
+      } else {
+        rows = res.data.map(r => ({
+          name:       (r["Event Name"]           || "").trim(),
+          organiser:  (r["Organiser"]            || "").trim(),
+          category:   (r["Category of the Event"]|| "").trim(),
+          venue:      (r["Venue"]                || "").trim(),
+          start_time: (r["Start Time"]           || "").trim(),
+          event_date: excelToDate(r["Date of the Event"]),
+        })).filter(r => r.name);
+      }
+
+      const table = csvImportTarget === "clubs" ? "clubs" : "events";
+      const { error } = await sb.from(table).upsert(rows, { onConflict: "name" });
+
+      if(error){
+        statusEl.innerHTML = `❌ Import failed: ${error.message}`;
+        return;
+      }
+
+      statusEl.innerHTML = `✅ Successfully imported ${rows.length} ${csvImportTarget}!`;
+      if(csvImportTarget === "clubs") { loadClubs(); }
+      else { loadEvents(); }
+      loadDashboard();
+      setTimeout(() => closeModal("csvModal"), 2000);
+    },
+    error: () => { statusEl.innerHTML = "❌ Failed to parse CSV file."; }
+  });
+}
+
+function excelToDate(v){
+  if(!v) return null;
+  if(isNaN(v)) return v; // already a date string
+  const d = new Date((Number(v) - 25569) * 86400000);
+  return d.toISOString().split("T")[0];
+}
+
+/* ══ TABLE SEARCH ══ */
+function filterTable(tableId, query){
+  const q    = query.toLowerCase();
+  const rows = document.getElementById(tableId).querySelectorAll("tbody tr");
+  rows.forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? "" : "none";
+  });
+}
+
+/* ══ MODAL HELPERS ══ */
+function closeModal(id){
+  document.getElementById(id).classList.remove("open");
+}
+
+// Close modals on backdrop click
+document.querySelectorAll(".modal-backdrop").forEach(bd => {
+  bd.addEventListener("click", e => { if(e.target === bd) bd.classList.remove("open"); });
+});
+document.getElementById("confirmDialog").addEventListener("click", e => {
+  if(e.target === document.getElementById("confirmDialog")) closeConfirm();
+});
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape"){
+    document.querySelectorAll(".modal-backdrop.open").forEach(m => m.classList.remove("open"));
+    closeConfirm();
+  }
+});
+
+/* ══ UTILS ══ */
+function esc(str){
+  return String(str ?? "")
+    .replaceAll("&","&amp;").replaceAll("<","&lt;")
+    .replaceAll(">","&gt;").replaceAll('"',"&quot;");
+}
+
+/* ══ INIT ══ */
+checkSession();
+</script>
+</body>
+</html>
