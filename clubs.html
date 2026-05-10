@@ -521,18 +521,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // thumbnail endpoint is cross-origin safe and works for direct embedding
     return `https://drive.google.com/thumbnail?id=${id}&sz=w400`;
   }
-  const PALETTE = [
-    { bg:"#F0F7FF", bar:"#4f7cff", icon:"🎓" },
-    { bg:"#F7F3FF", bar:"#7c5cbf", icon:"🎭" },
-    { bg:"#FFF6EC", bar:"#e07b39", icon:"⚽" },
-    { bg:"#F1FAF5", bar:"#2a9d6f", icon:"🌿" },
-    { bg:"#FFF0F3", bar:"#c94f6a", icon:"🎵" },
-    { bg:"#F5F5F5", bar:"#555555", icon:"📚" },
-    { bg:"#FEF9C3", bar:"#ca8a04", icon:"🏆" },
-    { bg:"#EFF6FF", bar:"#3b82f6", icon:"🔬" },
-    { bg:"#FDF4FF", bar:"#a855f7", icon:"🎨" },
-    { bg:"#ECFDF5", bar:"#10b981", icon:"🤝" },
-  ];
 
   // Club-name → specific emoji override for better visuals
   const ICON_MAP = {
