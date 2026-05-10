@@ -1,1 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Campus Life · Clubs & Societies</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <style>
+    :root {
+      --ink: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --bg: #f3f4f6;
+      --panel: #ffffff;
+      --shadow: 0 6px 14px rgba(0,0,0,.10);
+
+      --b1:#F0F7FF; --a1:#D6E6FF;
+      --b2:#F7F3FF; --a2:#E3DBFF;
+      --b3:#FFF6EC; --a3:#FFE6CC;
+      --b4:#F1FAF5; --a4:#D9F2E6;
+      --b5:#FFF0F3; --a5:#FFD6DE;
+      --b6:#F5F5F5; --a6:#E1E1E1;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    /* ── Topbar ── */
+    .topbar {
+      height: 56px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 18px;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand { font-weight: 600; letter-spacing: .2px; }
+    .nav-toggle {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 6px;
+      font-size: 22px;
+      line-height: 1;
+      color: var(--ink);
+    }
+
+    /* ── Shell ── */
+    .shell {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      min-height: calc(100vh - 56px);
+    }
+
+    /* ── Left nav ── */
+    .nav {
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      padding: 14px 10px;
+    }
+    .nav a {
+      display: block;
+      padding: 10px 12px;
+      margin: 4px 0;
+      border-radius: 10px;
+      color: #111;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .nav a:hover { background: #f3f4f6; }
+    .nav a.active {
+      background: #eef2ff;
+      color: #1f2a64;
+      font-weight: 600;
+    }
+
+    /* ── Content ── */
+    .content { padding: 22px; }
+    .page-title {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 6px 0 4px;
+    }
+    .page-subtitle {
+      font-size: 14px;
+      color: var(--muted);
+      margin: 0 0 20px;
+    }
+
+    /* ── Search bar row ── */
+    .search-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .search-row input,
+    .search-row select {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+    .search-row input { flex: 1; min-width: 200px; }
+    .search-row select { min-width: 180px; }
+    .search-row .btn-clear {
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .result-count {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    /* ── Cards grid ── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+    .empty {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      color: #444;
+      font-size: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    /* ── Club card ── */
+    .club-card {
+      background: var(--panel);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform .18s ease, box-shadow .18s ease;
+      cursor: pointer;
+    }
+    .club-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 28px rgba(0,0,0,.14);
+    }
+
+    /* Colour bar at top */
+    .club-card .top-bar {
+      height: 8px;
+      flex-shrink: 0;
+    }
+
+    /* Avatar / icon area */
+    .club-avatar {
+      height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      flex-shrink: 0;
+    }
+
+    .club-body {
+      padding: 0 16px 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .club-name {
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.35;
+      margin: 0 0 6px;
+      color: var(--ink);
+    }
+
+    .club-desc {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin: 0 0 12px;
+      flex: 1;
+    }
+
+    /* Signature events */
+    .club-events-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      margin-bottom: 4px;
+    }
+    .club-events {
+      font-size: 11.5px;
+      color: #333;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+
+    /* Leadership row */
+    .club-leadership {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      margin-bottom: 14px;
+    }
+    .leadership-item {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      font-size: 11.5px;
+    }
+    .leadership-role {
+      color: var(--muted);
+      font-weight: 500;
+      white-space: nowrap;
+      font-size: 11px;
+    }
+    .leadership-name {
+      color: var(--ink);
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Email button */
+    .club-email {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 7px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-top: auto;
+      transition: background .15s;
+      overflow: hidden;
+    }
+    .club-email:hover { background: #f3f4f6; }
+    .club-email span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ── Modal overlay ── */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-backdrop.open { display: flex; }
+
+    .modal {
+      background: var(--panel);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 640px;
+      max-height: 88vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 60px rgba(0,0,0,.25);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-top-bar { height: 10px; border-radius: 20px 20px 0 0; flex-shrink: 0; }
+
+    .modal-content { padding: 24px 28px 28px; }
+
+    .modal-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .modal-icon { font-size: 46px; line-height: 1; flex-shrink: 0; }
+    .modal-title-block { flex: 1; }
+    .modal-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin: 0 0 4px;
+      line-height: 1.25;
+    }
+    .modal-email {
+      font-size: 13px;
+      color: var(--muted);
+      text-decoration: none;
+    }
+    .modal-email:hover { text-decoration: underline; }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      color: var(--muted);
+      padding: 0 0 0 12px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .modal-section { margin-bottom: 20px; }
+    .modal-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .7px;
+      color: var(--muted);
+      margin: 0 0 8px;
+    }
+    .modal-section p {
+      font-size: 14px;
+      line-height: 1.65;
+      color: #333;
+      margin: 0;
+      white-space: pre-line;
+    }
+
+    /* Events list in modal */
+    .modal-events-list {
+      font-size: 13.5px;
+      line-height: 1.7;
+      color: #333;
+      white-space: pre-line;
+      margin: 0;
+    }
+
+    /* Leadership grid in modal */
+    .modal-leadership {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .modal-leader {
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 10px 14px;
+    }
+    .modal-leader-role {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+    .modal-leader-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+      white-space: pre-line;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 1280px) {
+      .cards { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 1024px) {
+      .shell { grid-template-columns: 1fr; }
+      .nav {
+        display: none;
+        position: fixed;
+        top: 56px; left: 0;
+        width: 200px;
+        height: calc(100vh - 56px);
+        z-index: 200;
+        box-shadow: 4px 0 16px rgba(0,0,0,.12);
+        overflow-y: auto;
+      }
+      .nav.open { display: block; }
+      .nav-toggle { display: block; }
+      .content { padding: 18px; }
+      .cards { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .content { padding: 12px; }
+      .page-title { font-size: 22px; }
+      .cards { grid-template-columns: 1fr; gap: 14px; }
+      .modal-leadership { grid-template-columns: 1fr; }
+      .modal-content { padding: 18px 18px 22px; }
+      .search-row input, .search-row select { min-width: 0; width: 100%; }
+    }
+    @media (max-width: 360px) {
+      .topbar { padding: 0 12px; }
+      .brand { font-size: 14px; }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">&#9776;</button>
+    <div class="brand">Campus Life</div>
+  </header>
+
+  <div class="shell">
+    <nav class="nav" id="sideNav">
+      <a href="index.html">Home</a>
+      <a href="index.html">Events</a>
+      <a href="clubs.html" class="active">Clubs</a>
+      <a href="#">News</a>
+      <a href="#">Forms</a>
+    </nav>
+
+    <main class="content">
+      <div class="page-title">Clubs &amp; Societies</div>
+      <div class="page-subtitle" id="pageSubtitle">Loading clubs…</div>
+
+      <div class="search-row">
+        <input id="searchQ" type="text" placeholder="🔍  Search clubs, events, people…" />
+        <select id="filterSelect">
+          <option value="">All Clubs</option>
+        </select>
+        <button class="btn-clear" id="clearBtn" type="button">Clear</button>
+      </div>
+
+      <div class="result-count" id="resultCount"></div>
+      <div id="emptyMsg" class="empty" style="display:none;">No clubs match your search.</div>
+      <div id="clubsGrid" class="cards"></div>
+    </main>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true">
+    <div class="modal" id="modal">
+      <div class="modal-top-bar" id="modalBar"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-icon" id="modalIcon"></div>
+          <div class="modal-title-block">
+            <div class="modal-title" id="modalTitle"></div>
+            <a class="modal-email" id="modalEmail" href="#"></a>
+          </div>
+          <button class="modal-close" id="modalClose" aria-label="Close">✕</button>
+        </div>
+
+        <div class="modal-section">
+          <div class="modal-section-title">About</div>
+          <p id="modalDesc"></p>
+        </div>
+
+        <div class="modal-section" id="modalEventsSection">
+          <div class="modal-section-title">Signature Events</div>
+          <div class="modal-events-list" id="modalEvents"></div>
+        </div>
+
+        <div class="modal-section">
+          <div class="modal-section-title">Leadership</div>
+          <div class="modal-leadership" id="modalLeadership"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  /* ── Nav toggle ── */
+  const navToggle = document.getElementById("navToggle");
+  const sideNav   = document.getElementById("sideNav");
+  navToggle.addEventListener("click", () => sideNav.classList.toggle("open"));
+  document.addEventListener("click", (e) => {
+    if(sideNav.classList.contains("open") && !sideNav.contains(e.target) && e.target !== navToggle)
+      sideNav.classList.remove("open");
+  });
+
+  /* ── Palette ── */
+  const PALETTE = [
+    { bg:"#F0F7FF", bar:"#4f7cff", icon:"🎓" },
+    { bg:"#F7F3FF", bar:"#7c5cbf", icon:"🎭" },
+    { bg:"#FFF6EC", bar:"#e07b39", icon:"⚽" },
+    { bg:"#F1FAF5", bar:"#2a9d6f", icon:"🌿" },
+    { bg:"#FFF0F3", bar:"#c94f6a", icon:"🎵" },
+    { bg:"#F5F5F5", bar:"#555555", icon:"📚" },
+    { bg:"#FEF9C3", bar:"#ca8a04", icon:"🏆" },
+    { bg:"#EFF6FF", bar:"#3b82f6", icon:"🔬" },
+    { bg:"#FDF4FF", bar:"#a855f7", icon:"🎨" },
+    { bg:"#ECFDF5", bar:"#10b981", icon:"🤝" },
+  ];
+
+  // Club-name → specific emoji override for better visuals
+  const ICON_MAP = {
+    "aurora":           "🌅",
+    "athletics":        "🏃",
+    "music":            "🎵",
+    "explorer":         "🧭",
+    "ied activity":     "🎪",
+    "entrepreneurial":  "💡",
+    "photography":      "📷",
+    "majlis":           "🏛️",
+    "chess":            "♟️",
+    "arts and culture": "🎨",
+    "rowing":           "🚣",
+    "climate":          "🌍",
+    "public speaking":  "🎤",
+    "journalism":       "📰",
+    "literary":         "📖",
+    "publication":      "📖",
+    "research forum":   "🔬",
+    "synergy":          "⚡",
+    "falah":            "❤️",
+    "mun":              "🌐",
+    "sports":           "🏅",
+    "graduate":         "🎓",
+  };
+
+  function getIcon(name){
+    const lower = name.toLowerCase();
+    for(const [key, emoji] of Object.entries(ICON_MAP)){
+      if(lower.includes(key)) return emoji;
+    }
+    return "🎓";
+  }
+
+  let allClubs = [];
+
+  /* ── DOM refs ── */
+  const searchQ      = document.getElementById("searchQ");
+  const filterSelect = document.getElementById("filterSelect");
+  const clearBtn     = document.getElementById("clearBtn");
+  const clubsGrid    = document.getElementById("clubsGrid");
+  const emptyMsg     = document.getElementById("emptyMsg");
+  const resultCount  = document.getElementById("resultCount");
+  const pageSubtitle = document.getElementById("pageSubtitle");
+
+  /* ── Modal refs ── */
+  const backdrop     = document.getElementById("modalBackdrop");
+  const modalBar     = document.getElementById("modalBar");
+  const modalIcon    = document.getElementById("modalIcon");
+  const modalTitle   = document.getElementById("modalTitle");
+  const modalEmail   = document.getElementById("modalEmail");
+  const modalDesc    = document.getElementById("modalDesc");
+  const modalEvents  = document.getElementById("modalEvents");
+  const modalEventsSection = document.getElementById("modalEventsSection");
+  const modalLeadership    = document.getElementById("modalLeadership");
+  const modalClose   = document.getElementById("modalClose");
+
+  /* ── Render ── */
+  function render(){
+    const q  = searchQ.value.trim().toLowerCase();
+    const fv = filterSelect.value;
+
+    let list = allClubs
+      .filter(c => !fv || c.name === fv)
+      .filter(c => {
+        if(!q) return true;
+        return [c.name, c.email, c.description, c.events,
+                c.convenor, c.coConvenor, c.secretary, c.treasurer]
+          .join(" ").toLowerCase().includes(q);
+      });
+
+    clubsGrid.innerHTML = "";
+    emptyMsg.style.display = "none";
+    resultCount.textContent = `Showing ${list.length} of ${allClubs.length} clubs`;
+
+    if(!list.length){
+      emptyMsg.style.display = "block";
+      return;
+    }
+
+    list.forEach((c, i) => {
+      const pal  = PALETTE[i % PALETTE.length];
+      const icon = getIcon(c.name);
+
+      // Compact events text (strip numbers & bullets for preview)
+      const eventsPreview = c.events
+        ? c.events.replace(/^\s*[\d\-\*\.]+\s*/gm, "").split("\n")
+            .filter(Boolean).slice(0, 3).join(" · ")
+        : "";
+
+      const leaderHtml = [
+        c.convenor    ? `<div class="leadership-item"><span class="leadership-role">Convenor:</span><span class="leadership-name">${esc(c.convenor.split("\n")[0])}</span></div>` : "",
+        c.coConvenor  ? `<div class="leadership-item"><span class="leadership-role">Co-Convenor:</span><span class="leadership-name">${esc(c.coConvenor.split("\n")[0])}</span></div>` : "",
+        c.secretary   ? `<div class="leadership-item"><span class="leadership-role">Secretary:</span><span class="leadership-name">${esc(c.secretary.split("\n")[0])}</span></div>` : "",
+        c.treasurer   ? `<div class="leadership-item"><span class="leadership-role">Treasurer:</span><span class="leadership-name">${esc(c.treasurer.split("\n")[0])}</span></div>` : "",
+      ].join("");
+
+      clubsGrid.insertAdjacentHTML("beforeend", `
+        <article class="club-card" data-idx="${allClubs.indexOf(c)}" style="background:${pal.bg}" tabindex="0" role="button" aria-label="View ${esc(c.name)} details">
+          <div class="top-bar" style="background:${pal.bar}"></div>
+          <div class="club-avatar" style="background:${pal.bg}">${icon}</div>
+          <div class="club-body">
+            <div class="club-name">${esc(c.name)}</div>
+            <div class="club-desc">${esc(c.description)}</div>
+            ${eventsPreview ? `
+              <div class="club-events-label">Signature Events</div>
+              <div class="club-events">${esc(eventsPreview)}</div>
+            ` : ""}
+            <div class="club-leadership">${leaderHtml}</div>
+            ${c.email ? `<a class="club-email" href="mailto:${esc(c.email)}" onclick="event.stopPropagation()">✉️ <span>${esc(c.email)}</span></a>` : ""}
+          </div>
+        </article>
+      `);
+    });
+
+    // Attach click → open modal
+    clubsGrid.querySelectorAll(".club-card").forEach(card => {
+      const open = () => openModal(allClubs[Number(card.dataset.idx)], PALETTE[Number(card.dataset.idx) % PALETTE.length]);
+      card.addEventListener("click", open);
+      card.addEventListener("keydown", e => { if(e.key === "Enter" || e.key === " ") open(); });
+    });
+  }
+
+  /* ── Modal ── */
+  function openModal(c, pal){
+    modalBar.style.background      = pal.bar;
+    modalIcon.textContent          = getIcon(c.name);
+    modalTitle.textContent         = c.name;
+    modalEmail.textContent         = c.email || "";
+    modalEmail.href                = c.email ? `mailto:${c.email}` : "#";
+    modalDesc.textContent          = c.description || "—";
+    modalEvents.textContent        = c.events || "";
+    modalEventsSection.style.display = c.events ? "" : "none";
+
+    // Leadership
+    const roles = [
+      { role: "Convenor",      val: c.convenor    },
+      { role: "Co-Convenor",   val: c.coConvenor  },
+      { role: "Gen. Secretary",val: c.secretary   },
+      { role: "Treasurer",     val: c.treasurer   },
+    ].filter(r => r.val);
+
+    modalLeadership.innerHTML = roles.map(r => `
+      <div class="modal-leader">
+        <div class="modal-leader-role">${esc(r.role)}</div>
+        <div class="modal-leader-name">${esc(r.val)}</div>
+      </div>
+    `).join("");
+
+    backdrop.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeModal(){
+    backdrop.classList.remove("open");
+    document.body.style.overflow = "";
+  }
+
+  modalClose.addEventListener("click", closeModal);
+  backdrop.addEventListener("click", e => { if(e.target === backdrop) closeModal(); });
+  document.addEventListener("keydown", e => { if(e.key === "Escape") closeModal(); });
+
+  /* ── Helpers ── */
+  function esc(str){
+    return String(str ?? "")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;")
+      .replaceAll(">","&gt;").replaceAll('"',"&quot;");
+  }
+
+  /* ── Load CSV ── */
+  Papa.parse("clubs-data.csv", {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: (res) => {
+      allClubs = res.data
+        .map(r => ({
+          name:        (r["Society Name"]    || "").trim(),
+          email:       (r["Email"]           || "").trim(),
+          description: (r["Description"]     || "").trim(),
+          events:      (r["Signature Events"]|| "").trim(),
+          convenor:    (r["Convenor"]        || "").trim(),
+          coConvenor:  (r["Co-Convenor"]     || "").trim(),
+          secretary:   (r["General Secretary"]|| "").trim(),
+          treasurer:   (r["Treasurer"]       || "").trim(),
+        }))
+        .filter(c => c.name);
+
+      // Populate filter dropdown
+      allClubs.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.name;
+        opt.textContent = c.name;
+        filterSelect.appendChild(opt);
+      });
+
+      pageSubtitle.textContent = `${allClubs.length} clubs and societies at AKU`;
+
+      // Wire up filters
+      searchQ.addEventListener("input", render);
+      filterSelect.addEventListener("change", render);
+      clearBtn.addEventListener("click", () => {
+        searchQ.value = "";
+        filterSelect.value = "";
+        render();
+      });
+
+      render();
+    },
+    error: () => {
+      pageSubtitle.textContent = "Could not load clubs data.";
+    }
+  });
+
+});
+</script>
+</body>
+</html>
