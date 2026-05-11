@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     :root {
@@ -737,73 +737,61 @@ document.addEventListener("DOMContentLoaded", () => {
       .replaceAll(">","&gt;").replaceAll('"',"&quot;");
   }
 
-  /* ── Load CSV ── */
-  // cleanText fixes mojibake characters (e.g. apostrophes showing as ?)
-  function cleanText(str){
-    return (str || "")
-      .trim()
-      .replace(/\xd5/g, "'")
-      .replace(/\xd1/g, "–")
-      .replace(/\xd2/g, "\u201C")
-      .replace(/\xd3/g, "\u201D")
-      .replace(/\u00e2\u0080\u0099/g, "'")
-      .replace(/\u00e2\u0080\u0098/g, "'")
-      .replace(/\u00e2\u0080\u009c/g, '"')
-      .replace(/\u00e2\u0080\u009d/g, '"')
-      .replace(/\u00e2\u0080\u0093/g, '–')
-      .replace(/\u00e2\u0080\u0094/g, '—')
-      .replace(/\ufffd/g, "'");
-  }
-  Papa.parse("clubs-data.csv", {
-    download: true,
-    header: true,
-    skipEmptyLines: true,
-    encoding: "UTF-8",
-    transformHeader: h => h.trim(),
-    complete: (res) => {
-      if(!res.data || res.data.length === 0){
-        pageSubtitle.textContent = "No club data found. Check the CSV file.";
-        return;
-      }
-      allClubs = res.data
-        .map(r => ({
-          name:        (r["Society Name"]      || "").trim(),
-          email:       (r["Email"]             || "").trim(),
-          description: cleanText(r["Description"]      || ""),
-          events:      cleanText(r["Signature Events"]  || ""),
-          convenor:    cleanText(r["Convenor"]          || ""),
-          coConvenor:  cleanText(r["Co-Convenor"]       || ""),
-          secretary:   cleanText(r["General Secretary"] || ""),
-          treasurer:   cleanText(r["Treasurer"]         || ""),
-          logo:        driveUrl(r["Logo"]               || ""),
-        }))
-        .filter(c => c.name);
+  /* ── Supabase init ── */
+  const SUPABASE_URL = "https://dgzuqvffnbfybngoadse.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_77t5gCD7M620CzcMwESN-A_oAuqz6B8";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-      // Populate filter dropdown
-      allClubs.forEach(c => {
-        const opt = document.createElement("option");
-        opt.value = c.name;
-        opt.textContent = c.name;
-        filterSelect.appendChild(opt);
-      });
+  /* ── Load clubs from Supabase ── */
+  async function loadClubs(){
+    pageSubtitle.textContent = "Loading clubs…";
 
-      pageSubtitle.textContent = `${allClubs.length} clubs and societies at AKU`;
+    const { data, error } = await sb
+      .from("clubs")
+      .select("*")
+      .order("name", { ascending: true });
 
-      // Wire up filters
-      searchQ.addEventListener("input", render);
-      filterSelect.addEventListener("change", render);
-      clearBtn.addEventListener("click", () => {
-        searchQ.value = "";
-        filterSelect.value = "";
-        render();
-      });
-
-      render();
-    },
-    error: (err) => {
-      pageSubtitle.textContent = `Could not load clubs data: ${err.message || "unknown error"}`;
+    if(error){
+      pageSubtitle.textContent = "Failed to load clubs. Please try again later.";
+      return;
     }
-  });
+
+    allClubs = (data || []).map(r => ({
+      name:        (r.name        || "").trim(),
+      email:       (r.email       || "").trim(),
+      description: (r.description || "").trim(),
+      events:      (r.events      || "").trim(),
+      convenor:    (r.convenor    || "").trim(),
+      coConvenor:  (r.co_convenor || "").trim(),
+      secretary:   (r.secretary   || "").trim(),
+      treasurer:   (r.treasurer   || "").trim(),
+      logo:        driveUrl(r.logo_url || ""),
+    })).filter(c => c.name);
+
+    // Populate filter dropdown
+    filterSelect.innerHTML = `<option value="">All Clubs</option>`;
+    allClubs.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c.name;
+      opt.textContent = c.name;
+      filterSelect.appendChild(opt);
+    });
+
+    pageSubtitle.textContent = `${allClubs.length} clubs and societies at AKU`;
+
+    // Wire up filters
+    searchQ.addEventListener("input", render);
+    filterSelect.addEventListener("change", render);
+    clearBtn.addEventListener("click", () => {
+      searchQ.value = "";
+      filterSelect.value = "";
+      render();
+    });
+
+    render();
+  }
+
+  loadClubs();
 
 });
 </script>
