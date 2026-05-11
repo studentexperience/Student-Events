@@ -331,9 +331,23 @@
       opacity: 1;
     }
 
-    /* =============================================
-       MOBILE NAV TOGGLE (hamburger)
-    ============================================= */
+    /* Campus tag on card */
+    .campus-tag{
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      font-size:11px;
+      font-weight:600;
+      padding:3px 9px;
+      border-radius:999px;
+      margin-top:8px;
+      align-self:flex-start;
+    }
+    .campus-tag.karachi    { background:#eff6ff; color:#1d4ed8; }
+    .campus-tag.nairobi    { background:#f0fdf4; color:#15803d; }
+    .campus-tag.kampala    { background:#fffbeb; color:#b45309; }
+    .campus-tag.dares      { background:#fdf4ff; color:#7e22ce; }
+    .campus-tag.default    { background:#f3f4f6; color:#374151; }
     .nav-toggle{
       display:none;
       background:none;
@@ -482,6 +496,17 @@
             <select id="catFilter"></select>
           </div>
 
+          <div class="field">
+            <label for="campusFilter">Campus</label>
+            <select id="campusFilter">
+              <option value="">All Campuses</option>
+              <option value="Karachi">Karachi</option>
+              <option value="Nairobi">Nairobi</option>
+              <option value="Kampala">Kampala</option>
+              <option value="Dar es Salaam">Dar es Salaam</option>
+            </select>
+          </div>
+
           <div class="btn-row">
             <button id="clearBtn" class="btn secondary" type="button">Clear</button>
           </div><!-- /.btn-row -->
@@ -572,6 +597,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const dateFilter  = document.getElementById("dateFilter");
   const clubFilter  = document.getElementById("clubFilter");
   const catFilter   = document.getElementById("catFilter");
+  const campusFilter= document.getElementById("campusFilter");
   const clearBtn    = document.getElementById("clearBtn");
   const eventsEl    = document.getElementById("events");
   const emptyMsg    = document.getElementById("emptyMsg");
@@ -605,18 +631,20 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function render(){
-    const qv = q.value.trim().toLowerCase();
-    const cv = clubFilter.value;
-    const tv = catFilter.value;
-    const dv = dateFilter.value ? new Date(dateFilter.value + "T00:00:00") : null;
+    const qv  = q.value.trim().toLowerCase();
+    const cv  = clubFilter.value;
+    const tv  = catFilter.value;
+    const cpv = campusFilter.value;
+    const dv  = dateFilter.value ? new Date(dateFilter.value + "T00:00:00") : null;
 
     let list = allEvents.filter(e => mode === "upcoming" ? e.date >= today : e.date < today);
 
     list = list
-      .filter(e => !cv || e.organiser === cv)
-      .filter(e => !tv || e.category === tv)
-      .filter(e => !dv || sameDay(e.date, dv))
-      .filter(e => !qv || `${e.name} ${e.organiser} ${e.category} ${e.venue} ${e.time}`.toLowerCase().includes(qv));
+      .filter(e => !cv  || e.organiser === cv)
+      .filter(e => !tv  || e.category  === tv)
+      .filter(e => !cpv || e.campus    === cpv)
+      .filter(e => !dv  || sameDay(e.date, dv))
+      .filter(e => !qv  || `${e.name} ${e.organiser} ${e.category} ${e.venue} ${e.time} ${e.campus}`.toLowerCase().includes(qv));
 
     list.sort((a,b) => mode === "upcoming" ? a.date - b.date : b.date - a.date);
 
@@ -629,6 +657,8 @@ document.addEventListener("DOMContentLoaded", () => {
         emptyMsg.textContent = "✨ Looks like our clubs and societies are taking a short break before the fun begins again :-)";
       } else if(tv){
         emptyMsg.textContent = "💡 Don't see any relevant event? How about you bring the event and OSEP would love to support you in planning and execution of the event.";
+      } else if(cpv){
+        emptyMsg.textContent = `📍 No ${mode === "upcoming" ? "upcoming" : "past"} events found for ${cpv} campus.`;
       } else {
         emptyMsg.textContent = mode === "upcoming" ? "No upcoming events to show." : "No past events to show.";
       }
@@ -642,6 +672,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const dateLine  = e.date  ? `<div class="meta"><span class="meta-icon">📅</span>${escapeHtml(formatDate(e.date))}</div>` : "";
       const timeLine  = e.time  ? `<div class="meta"><span class="meta-icon">⏰</span>${escapeHtml(e.time)}</div>` : "";
       const venueLine = e.venue ? `<div class="meta"><span class="meta-icon">📍</span>${escapeHtml(e.venue)}</div>` : "";
+      const campusTag = e.campus ? `<div class="campus-tag ${campusClass(e.campus)}">🏫 ${escapeHtml(e.campus)}</div>` : "";
       const bannerHtml = e.organiser
         ? `<a class="organizer-banner" href="clubs.html?club=${encodeURIComponent(e.organiser)}" style="background:${bannerColor};" title="View ${escapeHtml(e.organiser)} on Clubs page">🎭 ${escapeHtml(e.organiser)}</a>`
         : "";
@@ -661,12 +692,17 @@ document.addEventListener("DOMContentLoaded", () => {
             ${timeLine}
             ${venueLine}
             <div class="chip">${escapeHtml(e.category)}</div>
+            ${campusTag}
           </div>
           ${bannerHtml}
         </article>
       `);
-
     });
+  }
+
+  function campusClass(campus){
+    const map = { "Karachi":"karachi", "Nairobi":"nairobi", "Kampala":"kampala", "Dar es Salaam":"dares" };
+    return map[campus] || "default";
   }
 
   /* ------------------------------------------------------------------ */
@@ -722,6 +758,7 @@ document.addEventListener("DOMContentLoaded", () => {
       category:  (r.category   || "").trim(),
       venue:     (r.venue      || "").trim(),
       time:      (r.start_time || "").trim(),
+      campus:    (r.campus     || "").trim(),
       date:      r.event_date ? (() => { const d = new Date(r.event_date); d.setHours(0,0,0,0); return d; })() : null,
       image:     (r.cover_image|| "").trim(),
     })).filter(e => e.name && e.date);
@@ -744,12 +781,14 @@ document.addEventListener("DOMContentLoaded", () => {
   dateFilter.addEventListener("change", render);
   clubFilter.addEventListener("change", render);
   catFilter.addEventListener("change", render);
+  campusFilter.addEventListener("change", render);
 
   clearBtn.addEventListener("click", () => {
     q.value = "";
-    dateFilter.value = "";
-    clubFilter.value = "";
-    catFilter.value  = "";
+    dateFilter.value  = "";
+    clubFilter.value  = "";
+    catFilter.value   = "";
+    campusFilter.value= "";
     render();
   });
 
