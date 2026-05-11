@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- PapaParse -->
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     :root{
@@ -512,7 +512,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* ---- CSV / events logic ---- */
-  const csvUrl = "website-data.csv";
 
   const today = new Date();
   today.setHours(0,0,0,0);
@@ -563,13 +562,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const emptyMsg    = document.getElementById("emptyMsg");
   const upcomingBtn = document.getElementById("upcomingBtn");
   const pastBtn     = document.getElementById("pastBtn");
-
-  // Excel serial date -> JS date
-  function excelToDate(v){
-    const d = new Date((Number(v) - 25569) * 86400000);
-    d.setHours(0,0,0,0);
-    return d;
-  }
 
   function buildDropdown(el, placeholder, list){
     el.innerHTML = `<option value="">${placeholder}</option>` +
@@ -687,61 +679,80 @@ document.addEventListener("DOMContentLoaded", () => {
     return `https://picsum.photos/id/${id}/800/420`;
   }
 
-  // Load CSV
-  Papa.parse(csvUrl, {
-    download:true,
-    header:true,
-    skipEmptyLines:true,
-    complete: (res) => {
-      allEvents = res.data.map(r => ({
-        organiser: (r["Organiser"] || "").trim(),
-        name:      (r["Event Name"] || "").trim(),
-        category:  (r["Category of the Event"] || "").trim(),
-        venue:     (r["Venue"] || "").trim(),
-        time:      (r["Start Time"] || "").trim(),
-        date:      excelToDate(r["Date of the Event"]),
-        image:     (r["Cover Image"] || r["Image"] || r["cover_image"] || "").trim()
-      })).filter(e => e.name && e.date);
+  /* ---- Supabase init ---- */
+  const SUPABASE_URL = "https://dgzuqvffnbfybngoadse.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_77t5gCD7M620CzcMwESN-A_oAuqz6B8";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-      const clubsFromData = [...new Set(allEvents.map(e => e.organiser).filter(Boolean))];
-      const catsFromData  = [...new Set(allEvents.map(e => e.category).filter(Boolean))];
+  /* ---- Load events from Supabase ---- */
+  async function loadEvents(){
+    eventsEl.innerHTML = "";
+    emptyMsg.style.display  = "none";
+    emptyMsg.textContent    = "⏳ Loading events…";
+    emptyMsg.style.display  = "block";
 
-      const mergedClubs = [...new Set([...ALL_CLUBS, ...clubsFromData])].sort();
-      const mergedCats  = [...new Set([...ALL_CATEGORIES, ...catsFromData])].sort();
+    const { data, error } = await sb
+      .from("events")
+      .select("*")
+      .order("event_date", { ascending: true });
 
-      buildDropdown(clubFilter, "All Clubs", mergedClubs);
-      buildDropdown(catFilter, "All Categories", mergedCats);
-
-      q.addEventListener("input", render);
-      dateFilter.addEventListener("change", render);
-      clubFilter.addEventListener("change", render);
-      catFilter.addEventListener("change", render);
-
-      clearBtn.addEventListener("click", () => {
-        q.value = "";
-        dateFilter.value = "";
-        clubFilter.value = "";
-        catFilter.value = "";
-        render();
-      });
-
-      upcomingBtn.addEventListener("click", () => {
-        mode = "upcoming";
-        upcomingBtn.classList.add("active");
-        pastBtn.classList.remove("active");
-        render();
-      });
-
-      pastBtn.addEventListener("click", () => {
-        mode = "past";
-        pastBtn.classList.add("active");
-        upcomingBtn.classList.remove("active");
-        render();
-      });
-
-      render();
+    if(error){
+      emptyMsg.textContent = "Failed to load events. Please try again later.";
+      return;
     }
+
+    allEvents = (data || []).map(r => ({
+      organiser: (r.organiser  || "").trim(),
+      name:      (r.name       || "").trim(),
+      category:  (r.category   || "").trim(),
+      venue:     (r.venue      || "").trim(),
+      time:      (r.start_time || "").trim(),
+      date:      r.event_date ? (() => { const d = new Date(r.event_date); d.setHours(0,0,0,0); return d; })() : null,
+      image:     (r.cover_image|| "").trim(),
+    })).filter(e => e.name && e.date);
+
+    // Build dropdowns from live data merged with master lists
+    const clubsFromData = [...new Set(allEvents.map(e => e.organiser).filter(Boolean))];
+    const catsFromData  = [...new Set(allEvents.map(e => e.category).filter(Boolean))];
+    const mergedClubs   = [...new Set([...ALL_CLUBS, ...clubsFromData])].sort();
+    const mergedCats    = [...new Set([...ALL_CATEGORIES, ...catsFromData])].sort();
+
+    buildDropdown(clubFilter, "All Clubs", mergedClubs);
+    buildDropdown(catFilter,  "All Categories", mergedCats);
+
+    emptyMsg.style.display = "none";
+    render();
+  }
+
+  // Wire up filter controls
+  q.addEventListener("input", render);
+  dateFilter.addEventListener("change", render);
+  clubFilter.addEventListener("change", render);
+  catFilter.addEventListener("change", render);
+
+  clearBtn.addEventListener("click", () => {
+    q.value = "";
+    dateFilter.value = "";
+    clubFilter.value = "";
+    catFilter.value  = "";
+    render();
   });
+
+  upcomingBtn.addEventListener("click", () => {
+    mode = "upcoming";
+    upcomingBtn.classList.add("active");
+    pastBtn.classList.remove("active");
+    render();
+  });
+
+  pastBtn.addEventListener("click", () => {
+    mode = "past";
+    pastBtn.classList.add("active");
+    upcomingBtn.classList.remove("active");
+    render();
+  });
+
+  loadEvents();
 
 });
 </script>
