@@ -528,7 +528,26 @@
     .confirm-msg { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
     .confirm-actions { display: flex; gap: 10px; justify-content: center; }
 
-    /* ── RESPONSIVE ── */
+    /* ── ROLE BADGES ── */
+    .role-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+    }
+    .role-badge.super_admin {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fcd34d;
+    }
+    .role-badge.admin {
+      background: var(--accent-light);
+      color: var(--accent);
+      border: 1px solid #bfdbfe;
+    }
     @media (max-width: 768px) {
       .sidebar { display: none; }
       .main { padding: 16px; }
@@ -558,7 +577,7 @@
   <!-- Topbar -->
   <div class="topbar">
     <div class="topbar-brand">Campus Life</div>
-    <div class="topbar-badge">ADMIN</div>
+    <div class="topbar-badge" id="topbarBadge">ADMIN</div>
     <div class="topbar-user">
       <span id="userEmail"></span>
       <button class="logout-btn" onclick="handleLogout()">Sign Out</button>
@@ -581,8 +600,8 @@
         <span class="nav-icon">📅</span> Events
       </button>
 
-      <div class="sidebar-label">Settings</div>
-      <button class="nav-item" onclick="showSection('admins', this)">
+      <div class="sidebar-label" id="settingsNavLabel">Settings</div>
+      <button class="nav-item" id="adminsNavBtn" onclick="showSection('admins', this)">
         <span class="nav-icon">👤</span> Admins
       </button>
     </div>
@@ -700,15 +719,22 @@
         <div class="admin-list" id="admins-list">
           <div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-text">Loading…</div></div>
         </div>
-        <div class="add-admin-form">
+        <div class="add-admin-form" id="addAdminForm">
           <div class="field">
-            <label>Add New Admin by Email</label>
+            <label>Email</label>
             <input type="email" id="newAdminEmail" placeholder="colleague@aku.edu" />
+          </div>
+          <div class="field" style="min-width:160px;">
+            <label>Role</label>
+            <select id="newAdminRole">
+              <option value="admin">Admin</option>
+              <option value="super_admin">Super Admin</option>
+            </select>
           </div>
           <button class="btn btn-primary" onclick="addAdmin()">Add Admin</button>
         </div>
-        <p style="font-size:12px;color:var(--muted);margin-top:10px;">
-          ⚠️ New admins must sign up at <strong>your site URL/admin.html</strong> with the same email to set their password.
+        <p style="font-size:12px;color:var(--muted);margin-top:10px;" id="addAdminNote">
+          ⚠️ New admins must go to <strong>admin.html</strong> and sign up with the same email to set their password.
         </p>
       </div>
 
@@ -882,7 +908,8 @@ const SUPABASE_KEY = "sb_publishable_77t5gCD7M620CzcMwESN-A_oAuqz6B8";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
-let csvImportTarget = null; // 'clubs' or 'events'
+let currentRole = null; // 'super_admin' or 'admin'
+let csvImportTarget = null;
 
 /* ══ AUTH ══ */
 async function handleLogin(){
@@ -908,7 +935,7 @@ async function handleLogin(){
   }
 
   // Check if this email is in the admins table
-  const { data: adminRow } = await sb.from("admins").select("email").eq("email", email).single();
+  const { data: adminRow } = await sb.from("admins").select("email, role").eq("email", email).single();
   if(!adminRow){
     await sb.auth.signOut();
     msg.textContent = "Access denied. Your email is not an authorised admin.";
@@ -919,6 +946,7 @@ async function handleLogin(){
   }
 
   currentUser = data.user;
+  currentRole = adminRow.role || "admin";
   showAdminPanel();
 }
 
@@ -933,9 +961,10 @@ async function handleLogout(){
 async function checkSession(){
   const { data: { session } } = await sb.auth.getSession();
   if(session){
-    const { data: adminRow } = await sb.from("admins").select("email").eq("email", session.user.email).single();
+    const { data: adminRow } = await sb.from("admins").select("email, role").eq("email", session.user.email).single();
     if(adminRow){
       currentUser = session.user;
+      currentRole = adminRow.role || "admin";
       showAdminPanel();
     }
   }
@@ -945,10 +974,27 @@ function showAdminPanel(){
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("adminShell").classList.add("visible");
   document.getElementById("userEmail").textContent = currentUser.email;
+
+  // Set topbar badge
+  const badge = document.getElementById("topbarBadge");
+  if(currentRole === "super_admin"){
+    badge.textContent = "SUPER ADMIN";
+    badge.style.background = "#fef3c7";
+    badge.style.color = "#92400e";
+  } else {
+    badge.textContent = "ADMIN";
+  }
+
+  // Hide Admins section from regular admins
+  if(currentRole !== "super_admin"){
+    document.getElementById("adminsNavBtn").style.display   = "none";
+    document.getElementById("settingsNavLabel").style.display = "none";
+  }
+
   loadDashboard();
   loadClubs();
   loadEvents();
-  loadAdmins();
+  if(currentRole === "super_admin") loadAdmins();
 }
 
 /* ══ NAVIGATION ══ */
@@ -1184,26 +1230,38 @@ function renderAdmins(list){
   }
   el.innerHTML = list.map(a => `
     <div class="admin-item">
-      <div class="admin-avatar">${a.email[0].toUpperCase()}</div>
+      <div class="admin-avatar" style="background:${a.role === 'super_admin' ? '#fef3c7' : 'var(--accent-light)'};color:${a.role === 'super_admin' ? '#92400e' : 'var(--accent)'}">
+        ${a.email[0].toUpperCase()}
+      </div>
       <div>
         <div class="admin-email">${esc(a.email)}</div>
-        <div class="admin-date">Added ${new Date(a.created_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</div>
+        <div class="admin-date" style="display:flex;align-items:center;gap:6px;margin-top:3px;">
+          <span class="role-badge ${a.role || 'admin'}">${a.role === 'super_admin' ? 'Super Admin' : 'Admin'}</span>
+          <span>Added ${new Date(a.created_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</span>
+        </div>
       </div>
-      ${a.email !== currentUser.email ? `
       <div class="admin-actions">
-        <button class="btn btn-danger btn-sm" onclick="confirmDelete('admin','${a.id}','${esc(a.email)}')">Remove</button>
-      </div>` : `<div class="admin-actions"><span style="font-size:12px;color:var(--muted);">You</span></div>`}
+        ${a.email === currentUser.email
+          ? `<span style="font-size:12px;color:var(--muted);">You</span>`
+          : currentRole === "super_admin"
+            ? `<button class="btn btn-danger btn-sm" onclick="confirmDelete('admin','${a.id}','${esc(a.email)}')">Remove</button>`
+            : ""
+        }
+      </div>
     </div>
   `).join("");
 }
 
 async function addAdmin(){
+  if(currentRole !== "super_admin"){ showToast("Only Super Admins can add new admins.", "error"); return; }
   const email = document.getElementById("newAdminEmail").value.trim();
+  const role  = document.getElementById("newAdminRole").value;
   if(!email){ showToast("Enter an email address", "error"); return; }
-  const { error } = await sb.from("admins").insert({ email });
+  const { error } = await sb.from("admins").insert({ email, role });
   if(error){ showToast("Failed: " + error.message, "error"); return; }
-  showToast("Admin added! They must sign up to set their password.");
+  showToast(`${role === "super_admin" ? "Super Admin" : "Admin"} added! They must sign up to set their password.`);
   document.getElementById("newAdminEmail").value = "";
+  document.getElementById("newAdminRole").value  = "admin";
   loadAdmins();
   loadDashboard();
 }
