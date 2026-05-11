@@ -580,6 +580,7 @@
     <div class="topbar-badge" id="topbarBadge">ADMIN</div>
     <div class="topbar-user">
       <span id="userEmail"></span>
+      <button class="logout-btn" style="color:var(--ink);border-color:var(--border);" onclick="openChangePassword(false)">🔑 Change Password</button>
       <button class="logout-btn" onclick="handleLogout()">Sign Out</button>
     </div>
   </div>
@@ -897,6 +898,32 @@
   </div>
 </div>
 
+<!-- ══ CHANGE PASSWORD MODAL ══ -->
+<div class="modal-backdrop" id="changePasswordModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <div class="modal-title" id="changePasswordTitle">Change Password</div>
+      <button class="modal-close" id="changePasswordClose" onclick="closeModal('changePasswordModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="changePasswordMsg" style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.6;"></p>
+      <div class="field" style="margin-bottom:14px;">
+        <label>New Password</label>
+        <input type="password" id="newPassword" placeholder="Min. 8 characters" />
+      </div>
+      <div class="field" style="margin-bottom:4px;">
+        <label>Confirm New Password</label>
+        <input type="password" id="confirmPassword" placeholder="Repeat password" />
+      </div>
+      <div id="changePasswordError" style="font-size:12px;color:var(--danger);min-height:18px;margin-top:6px;"></div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" id="changePasswordSkip" onclick="closeModal('changePasswordModal')" style="display:none;">Skip for now</button>
+        <button class="btn btn-primary" onclick="handleChangePassword()">Update Password</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -948,6 +975,7 @@ async function handleLogin(){
   currentUser = data.user;
   currentRole = adminRow.role || "admin";
   showAdminPanel();
+  checkFirstLogin(data.session);
 }
 
 async function handleLogout(){
@@ -1403,7 +1431,68 @@ function excelToDate(v){
   return d.toISOString().split("T")[0];
 }
 
-/* ══ TABLE SEARCH ══ */
+/* ══ CHANGE PASSWORD ══ */
+function openChangePassword(isFirstLogin = false){
+  const modal = document.getElementById("changePasswordModal");
+  const msg   = document.getElementById("changePasswordMsg");
+  const skip  = document.getElementById("changePasswordSkip");
+  const close = document.getElementById("changePasswordClose");
+  const title = document.getElementById("changePasswordTitle");
+
+  document.getElementById("newPassword").value     = "";
+  document.getElementById("confirmPassword").value = "";
+  document.getElementById("changePasswordError").textContent = "";
+
+  if(isFirstLogin){
+    title.textContent = "👋 Welcome! Set Your Password";
+    msg.textContent   = "Your account was created by the Super Admin. Please set a new personal password before continuing.";
+    skip.style.display  = "inline-flex";   // allow skipping but nudge them
+    close.style.display = "none";          // hide X to nudge them
+  } else {
+    title.textContent = "Change Password";
+    msg.textContent   = "Enter a new password for your account.";
+    skip.style.display  = "none";
+    close.style.display = "block";
+  }
+
+  modal.classList.add("open");
+}
+
+async function handleChangePassword(){
+  const newPw  = document.getElementById("newPassword").value;
+  const confPw = document.getElementById("confirmPassword").value;
+  const errEl  = document.getElementById("changePasswordError");
+
+  errEl.textContent = "";
+
+  if(newPw.length < 8){
+    errEl.textContent = "Password must be at least 8 characters.";
+    return;
+  }
+  if(newPw !== confPw){
+    errEl.textContent = "Passwords do not match.";
+    return;
+  }
+
+  const { error } = await sb.auth.updateUser({ password: newPw });
+  if(error){
+    errEl.textContent = "Failed: " + error.message;
+    return;
+  }
+
+  closeModal("changePasswordModal");
+  showToast("Password updated successfully! 🎉");
+}
+
+/* Detect first login — Supabase sets created_at = last_sign_in_at on first login */
+function checkFirstLogin(session){
+  if(!session?.user) return;
+  const created    = new Date(session.user.created_at).getTime();
+  const lastSignIn = new Date(session.user.last_sign_in_at).getTime();
+  // If created and last sign in are within 60 seconds → first login
+  const isFirst = Math.abs(created - lastSignIn) < 60000;
+  if(isFirst) openChangePassword(true);
+}
 function filterTable(tableId, query){
   const q    = query.toLowerCase();
   const rows = document.getElementById(tableId).querySelectorAll("tbody tr");
