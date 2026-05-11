@@ -1,1 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Campus Life · News</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --ink: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --bg: #f3f4f6;
+      --panel: #ffffff;
+      --shadow: 0 6px 14px rgba(0,0,0,.10);
+      --accent: #2563eb;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    /* ── Topbar ── */
+    .topbar {
+      height: 56px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 18px;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand { font-weight: 600; letter-spacing: .2px; }
+    .nav-toggle {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 22px;
+      color: var(--ink);
+    }
+
+    /* ── Shell ── */
+    .shell {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      min-height: calc(100vh - 56px);
+    }
+
+    /* ── Left nav ── */
+    .nav {
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      padding: 14px 10px;
+    }
+    .nav a {
+      display: block;
+      padding: 10px 12px;
+      margin: 4px 0;
+      border-radius: 10px;
+      color: #111;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .nav a:hover { background: #f3f4f6; }
+    .nav a.active {
+      background: #eef2ff;
+      color: #1f2a64;
+      font-weight: 600;
+    }
+
+    /* ── Content ── */
+    .content { padding: 28px; }
+
+    /* ── Page header ── */
+    .page-header {
+      margin-bottom: 28px;
+    }
+    .page-title {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .page-sub {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    /* ── Filter bar ── */
+    .filter-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+      align-items: center;
+    }
+    .filter-bar input {
+      flex: 1;
+      min-width: 200px;
+      padding: 9px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      outline: none;
+    }
+    .filter-bar input:focus { border-color: var(--accent); }
+    .filter-bar select {
+      padding: 9px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* ── Category pills ── */
+    .cat-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .cat-pill {
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1.5px solid var(--border);
+      background: var(--panel);
+      color: var(--muted);
+      transition: all .15s;
+      font-family: 'Poppins', sans-serif;
+    }
+    .cat-pill:hover { border-color: var(--accent); color: var(--accent); }
+    .cat-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    /* ── PINNED / FEATURED article ── */
+    .pinned-article {
+      background: var(--panel);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      margin-bottom: 32px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      cursor: pointer;
+      transition: transform .18s, box-shadow .18s;
+      text-decoration: none;
+      color: inherit;
+    }
+    .pinned-article:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 14px 32px rgba(0,0,0,.13);
+    }
+    .pinned-img {
+      width: 100%;
+      height: 320px;
+      object-fit: cover;
+    }
+    .pinned-img-placeholder {
+      width: 100%;
+      height: 320px;
+      background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 64px;
+    }
+    .pinned-body {
+      padding: 32px 36px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .pinned-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    .pinned-title {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.35;
+      margin-bottom: 12px;
+    }
+    .pinned-subtitle {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .pinned-meta {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .pinned-read-more {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    /* ── News grid ── */
+    .news-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    /* ── News card ── */
+    .news-card {
+      background: var(--panel);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: transform .18s, box-shadow .18s;
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+      color: inherit;
+    }
+    .news-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 14px 32px rgba(0,0,0,.13);
+    }
+    .news-card-img {
+      width: 100%;
+      height: 190px;
+      object-fit: cover;
+    }
+    .news-card-img-placeholder {
+      width: 100%;
+      height: 190px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+    }
+    .news-card-body {
+      padding: 16px 18px 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .news-card-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .tag-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+    .tag-achievement  { background: #fef3c7; color: #92400e; }
+    .tag-announcement { background: #eff6ff; color: #1d4ed8; }
+    .tag-eventrecap   { background: #f0fdf4; color: #15803d; }
+    .tag-opportunity  { background: #fdf4ff; color: #7e22ce; }
+    .tag-other        { background: #f3f4f6; color: #374151; }
+    .tag-campus       { background: #f0f9ff; color: #0369a1; }
+
+    .news-card-title {
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.35;
+      margin-bottom: 8px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .news-card-subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.55;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 14px;
+      flex: 1;
+    }
+    .news-card-meta {
+      font-size: 11.5px;
+      color: var(--muted);
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: auto;
+      padding-top: 12px;
+      border-top: 1px solid #f3f4f6;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 64px 20px;
+      color: var(--muted);
+    }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-text { font-size: 15px; }
+
+    /* ── Article modal ── */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 500;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 20px;
+      overflow-y: auto;
+    }
+    .modal-backdrop.open { display: flex; }
+    .article-modal {
+      background: var(--panel);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 740px;
+      box-shadow: 0 24px 60px rgba(0,0,0,.22);
+      overflow: hidden;
+      margin: auto;
+    }
+    .article-cover {
+      width: 100%;
+      height: 320px;
+      object-fit: cover;
+    }
+    .article-cover-placeholder {
+      width: 100%;
+      height: 240px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 64px;
+    }
+    .article-body { padding: 32px 36px 40px; }
+    .article-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .article-title {
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 10px;
+    }
+    .article-subtitle {
+      font-size: 16px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
+    .article-meta {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 13px;
+      color: var(--muted);
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .article-meta span { display: flex; align-items: center; gap: 5px; }
+    .article-content {
+      font-size: 15px;
+      line-height: 1.8;
+      color: #1f2937;
+    }
+    .article-content p { margin-bottom: 16px; }
+    .article-content ul, .article-content ol { padding-left: 20px; margin-bottom: 16px; }
+    .article-content li { margin-bottom: 6px; }
+    .article-content a { color: var(--accent); }
+    .article-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(0,0,0,.5);
+      color: white;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    .article-modal-wrap { position: relative; }
+
+    /* ── Result count ── */
+    .result-count {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 1100px) {
+      .news-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 1024px) {
+      .shell { grid-template-columns: 1fr; }
+      .nav {
+        display: none;
+        position: fixed;
+        top: 56px; left: 0;
+        width: 200px;
+        height: calc(100vh - 56px);
+        z-index: 200;
+        box-shadow: 4px 0 16px rgba(0,0,0,.12);
+        overflow-y: auto;
+      }
+      .nav.open { display: block; }
+      .nav-toggle { display: block; }
+      .content { padding: 18px; }
+      .pinned-article { grid-template-columns: 1fr; }
+      .pinned-img, .pinned-img-placeholder { height: 220px; }
+    }
+    @media (max-width: 640px) {
+      .news-grid { grid-template-columns: 1fr; }
+      .content { padding: 14px; }
+      .page-title { font-size: 22px; }
+      .article-body { padding: 20px 20px 28px; }
+      .article-title { font-size: 20px; }
+      .pinned-body { padding: 20px; }
+      .pinned-title { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <button class="nav-toggle" id="navToggle" aria-label="Menu">&#9776;</button>
+  <div class="brand">Campus Life</div>
+</header>
+
+<div class="shell">
+  <nav class="nav" id="sideNav">
+    <a href="index.html">Home</a>
+    <a href="index.html">Events</a>
+    <a href="clubs.html">Clubs</a>
+    <a href="news.html" class="active">News</a>
+    <a href="forms.html">Forms</a>
+  </nav>
+
+  <main class="content">
+    <div class="page-header">
+      <div class="page-title">News &amp; Updates</div>
+      <div class="page-sub" id="newsSub">Latest stories, achievements and announcements from AKU campuses</div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <input id="searchInput" type="text" placeholder="🔍  Search news…" />
+      <select id="campusSelect">
+        <option value="">All Campuses</option>
+        <option value="Karachi">Karachi</option>
+        <option value="Nairobi">Nairobi</option>
+        <option value="Kampala">Kampala</option>
+        <option value="Dar es Salaam">Dar es Salaam</option>
+      </select>
+    </div>
+
+    <!-- Category pills -->
+    <div class="cat-pills">
+      <button class="cat-pill active" data-cat="">All</button>
+      <button class="cat-pill" data-cat="Achievement">🏆 Achievement</button>
+      <button class="cat-pill" data-cat="Announcement">📢 Announcement</button>
+      <button class="cat-pill" data-cat="Event Recap">🎉 Event Recap</button>
+      <button class="cat-pill" data-cat="Opportunity">💡 Opportunity</button>
+      <button class="cat-pill" data-cat="Other">📌 Other</button>
+    </div>
+
+    <!-- Pinned article (shown when one exists) -->
+    <div id="pinnedWrap"></div>
+
+    <!-- Result count -->
+    <div class="result-count" id="resultCount"></div>
+
+    <!-- News grid -->
+    <div id="newsGrid" class="news-grid"></div>
+
+    <!-- Empty state -->
+    <div id="emptyState" style="display:none;">
+      <div class="empty-state">
+        <div class="empty-icon">📰</div>
+        <div class="empty-text">No articles found.</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Article modal -->
+<div class="modal-backdrop" id="articleModal">
+  <div class="article-modal-wrap">
+    <button class="article-close" onclick="closeArticle()">✕</button>
+    <div class="article-modal" id="articleModalContent"></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://dgzuqvffnbfybngoadse.supabase.co";
+const SUPABASE_KEY = "sb_publishable_77t5gCD7M620CzcMwESN-A_oAuqz6B8";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ── Nav toggle ── */
+const navToggle = document.getElementById("navToggle");
+const sideNav   = document.getElementById("sideNav");
+navToggle.addEventListener("click", () => sideNav.classList.toggle("open"));
+document.addEventListener("click", e => {
+  if(sideNav.classList.contains("open") && !sideNav.contains(e.target) && e.target !== navToggle)
+    sideNav.classList.remove("open");
+});
+
+/* ── State ── */
+let allArticles = [];
+let activeCategory = "";
+let activeCampus   = "";
+let searchQuery    = "";
+
+const CATEGORY_COLORS = {
+  "Achievement":  { cls:"tag-achievement",  emoji:"🏆" },
+  "Announcement": { cls:"tag-announcement", emoji:"📢" },
+  "Event Recap":  { cls:"tag-eventrecap",   emoji:"🎉" },
+  "Opportunity":  { cls:"tag-opportunity",  emoji:"💡" },
+  "Other":        { cls:"tag-other",        emoji:"📌" },
+};
+
+const PLACEHOLDER_EMOJIS = {
+  "Achievement":"🏆", "Announcement":"📢", "Event Recap":"🎉", "Opportunity":"💡", "Other":"📰"
+};
+
+const CAMPUS_GRADIENTS = {
+  "Karachi":       "linear-gradient(135deg,#2563eb,#7c3aed)",
+  "Nairobi":       "linear-gradient(135deg,#059669,#2563eb)",
+  "Kampala":       "linear-gradient(135deg,#d97706,#dc2626)",
+  "Dar es Salaam": "linear-gradient(135deg,#7c3aed,#db2777)",
+};
+
+function esc(str){
+  return String(str ?? "")
+    .replaceAll("&","&amp;").replaceAll("<","&lt;")
+    .replaceAll(">","&gt;").replaceAll('"',"&quot;");
+}
+
+function formatDate(str){
+  if(!str) return "";
+  return new Date(str).toLocaleDateString("en-GB", { day:"numeric", month:"long", year:"numeric" });
+}
+
+function tagClass(cat){
+  return CATEGORY_COLORS[cat]?.cls || "tag-other";
+}
+
+function placeholderEmoji(cat){
+  return PLACEHOLDER_EMOJIS[cat] || "📰";
+}
+
+/* ── Load ── */
+async function loadNews(){
+  document.getElementById("newsSub").textContent = "Loading…";
+  const { data, error } = await sb
+    .from("news")
+    .select("*")
+    .eq("published", true)
+    .order("pinned", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if(error){
+    document.getElementById("newsSub").textContent = "Failed to load news.";
+    return;
+  }
+
+  allArticles = data || [];
+  document.getElementById("newsSub").textContent =
+    `Latest stories, achievements and announcements from AKU campuses`;
+  render();
+}
+
+/* ── Render ── */
+function render(){
+  const q    = searchQuery.toLowerCase();
+  const cat  = activeCategory;
+  const camp = activeCampus;
+
+  let list = allArticles
+    .filter(a => !cat  || a.category === cat)
+    .filter(a => !camp || a.campus === camp || a.campus === "All")
+    .filter(a => !q    || `${a.title} ${a.subtitle} ${a.author} ${a.category} ${a.campus} ${a.content}`.toLowerCase().includes(q));
+
+  // Pinned article — always the first pinned one if no filters active
+  const pinnedWrap = document.getElementById("pinnedWrap");
+  const pinned     = (!cat && !camp && !q) ? list.find(a => a.pinned) : null;
+  const gridList   = pinned ? list.filter(a => a.id !== pinned.id) : list;
+
+  // Render pinned
+  if(pinned){
+    const bg    = CAMPUS_GRADIENTS[pinned.campus] || "linear-gradient(135deg,#2563eb,#7c3aed)";
+    const catInfo = CATEGORY_COLORS[pinned.category] || { cls:"tag-other", emoji:"📌" };
+    pinnedWrap.innerHTML = `
+      <div class="pinned-article" onclick="openArticle('${pinned.id}')">
+        ${pinned.cover_image
+          ? `<img class="pinned-img" src="${esc(pinned.cover_image)}" alt="${esc(pinned.title)}" loading="lazy" />`
+          : `<div class="pinned-img-placeholder" style="background:${bg}">${placeholderEmoji(pinned.category)}</div>`
+        }
+        <div class="pinned-body">
+          <div class="pinned-tag">
+            📌 Featured &nbsp;·&nbsp; ${catInfo.emoji} ${esc(pinned.category || "News")}
+          </div>
+          <div class="pinned-title">${esc(pinned.title)}</div>
+          <div class="pinned-subtitle">${esc(pinned.subtitle || "")}</div>
+          <div class="pinned-meta">
+            ${pinned.author ? `<span>✍️ ${esc(pinned.author)}</span>` : ""}
+            ${pinned.created_at ? `<span>📅 ${formatDate(pinned.created_at)}</span>` : ""}
+            ${pinned.campus && pinned.campus !== "All" ? `<span>📍 ${esc(pinned.campus)}</span>` : ""}
+          </div>
+          <div class="pinned-read-more">Read full story →</div>
+        </div>
+      </div>`;
+  } else {
+    pinnedWrap.innerHTML = "";
+  }
+
+  // Result count
+  document.getElementById("resultCount").textContent =
+    list.length ? `Showing ${list.length} article${list.length !== 1 ? "s" : ""}` : "";
+
+  // Empty state
+  const empty = document.getElementById("emptyState");
+  const grid  = document.getElementById("newsGrid");
+  if(!gridList.length && !pinned){
+    empty.style.display = "block";
+    grid.innerHTML      = "";
+    return;
+  }
+  empty.style.display = "none";
+
+  // Render cards
+  grid.innerHTML = gridList.map(a => {
+    const bg      = CAMPUS_GRADIENTS[a.campus] || "linear-gradient(135deg,#6b7280,#374151)";
+    const catInfo = CATEGORY_COLORS[a.category] || { cls:"tag-other", emoji:"📌" };
+    return `
+      <div class="news-card" onclick="openArticle('${a.id}')">
+        ${a.cover_image
+          ? `<img class="news-card-img" src="${esc(a.cover_image)}" alt="${esc(a.title)}" loading="lazy" />`
+          : `<div class="news-card-img-placeholder" style="background:${bg}">${placeholderEmoji(a.category)}</div>`
+        }
+        <div class="news-card-body">
+          <div class="news-card-tags">
+            ${a.category ? `<span class="tag-badge ${catInfo.cls}">${catInfo.emoji} ${esc(a.category)}</span>` : ""}
+            ${a.campus && a.campus !== "All" ? `<span class="tag-badge tag-campus">📍 ${esc(a.campus)}</span>` : ""}
+          </div>
+          <div class="news-card-title">${a.pinned ? "📌 " : ""}${esc(a.title)}</div>
+          <div class="news-card-subtitle">${esc(a.subtitle || "")}</div>
+          <div class="news-card-meta">
+            ${a.author ? `<span>✍️ ${esc(a.author)}</span>` : ""}
+            ${a.created_at ? `<span>📅 ${formatDate(a.created_at)}</span>` : ""}
+          </div>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+/* ── Article modal ── */
+function openArticle(id){
+  const a = allArticles.find(x => x.id === id);
+  if(!a) return;
+
+  const bg      = CAMPUS_GRADIENTS[a.campus] || "linear-gradient(135deg,#6b7280,#374151)";
+  const catInfo = CATEGORY_COLORS[a.category] || { cls:"tag-other", emoji:"📌" };
+
+  document.getElementById("articleModalContent").innerHTML = `
+    ${a.cover_image
+      ? `<img class="article-cover" src="${esc(a.cover_image)}" alt="${esc(a.title)}" />`
+      : `<div class="article-cover-placeholder" style="background:${bg}">${placeholderEmoji(a.category)}</div>`
+    }
+    <div class="article-body">
+      <div class="article-tags">
+        ${a.category ? `<span class="tag-badge ${catInfo.cls}">${catInfo.emoji} ${esc(a.category)}</span>` : ""}
+        ${a.campus && a.campus !== "All" ? `<span class="tag-badge tag-campus">📍 ${esc(a.campus)}</span>` : ""}
+        ${a.pinned ? `<span class="tag-badge" style="background:#fef3c7;color:#92400e;">📌 Featured</span>` : ""}
+      </div>
+      <div class="article-title">${esc(a.title)}</div>
+      ${a.subtitle ? `<div class="article-subtitle">${esc(a.subtitle)}</div>` : ""}
+      <div class="article-meta">
+        ${a.author ? `<span>✍️ <strong>${esc(a.author)}</strong></span>` : ""}
+        ${a.created_at ? `<span>📅 ${formatDate(a.created_at)}</span>` : ""}
+      </div>
+      <div class="article-content">${a.content || "<p>No content available.</p>"}</div>
+    </div>`;
+
+  document.getElementById("articleModal").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeArticle(){
+  document.getElementById("articleModal").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+// Close on backdrop click
+document.getElementById("articleModal").addEventListener("click", e => {
+  if(e.target === document.getElementById("articleModal")) closeArticle();
+});
+document.addEventListener("keydown", e => { if(e.key === "Escape") closeArticle(); });
+
+/* ── Filter wiring ── */
+document.getElementById("searchInput").addEventListener("input", e => {
+  searchQuery = e.target.value.trim();
+  render();
+});
+
+document.getElementById("campusSelect").addEventListener("change", e => {
+  activeCampus = e.target.value;
+  render();
+});
+
+document.querySelectorAll(".cat-pill").forEach(pill => {
+  pill.addEventListener("click", () => {
+    document.querySelectorAll(".cat-pill").forEach(p => p.classList.remove("active"));
+    pill.classList.add("active");
+    activeCategory = pill.dataset.cat;
+    render();
+  });
+});
+
+/* ── Init ── */
+loadNews();
+</script>
+</body>
+</html>
