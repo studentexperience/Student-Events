@@ -789,6 +789,21 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     render();
+
+    // Check if a club name was passed in the URL → auto-open its modal
+    const urlParams  = new URLSearchParams(window.location.search);
+    const targetClub = urlParams.get("club");
+    if(targetClub){
+      const match = allClubs.find(c =>
+        c.name.toLowerCase() === targetClub.toLowerCase()
+      );
+      if(match){
+        const idx = allClubs.indexOf(match);
+        const pal = PALETTE[idx % PALETTE.length];
+        // Small delay so the cards are painted first
+        setTimeout(() => openModal(match, pal), 200);
+      }
+    }
   }
 
   loadClubs();
