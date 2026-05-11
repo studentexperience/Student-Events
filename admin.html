@@ -1311,13 +1311,22 @@ function handleCSVUpload(input){
         })).filter(r => r.name);
       }
 
-      const table = csvImportTarget === "clubs" ? "clubs" : "events";
-      const { error } = await sb.from(table).upsert(rows, { onConflict: "name" });
+      // Deduplicate by name — keep last occurrence
+      const seen = new Map();
+      rows.forEach(r => seen.set(r.name, r));
+      rows = [...seen.values()];
 
-      if(error){
-        statusEl.innerHTML = `❌ Import failed: ${error.message}`;
-        return;
+      const table = csvImportTarget === "clubs" ? "clubs" : "events";
+      // Upsert in batches of 50
+      const chunkSize = 50;
+      let failed = false;
+      for(let i = 0; i < rows.length; i += chunkSize){
+        const chunk = rows.slice(i, i + chunkSize);
+        const { error } = await sb.from(table).upsert(chunk, { onConflict: "name" });
+        if(error){ statusEl.innerHTML = `❌ Import failed: ${error.message}`; failed = true; break; }
+        statusEl.innerHTML = `⏳ Imported ${Math.min(i + chunkSize, rows.length)} of ${rows.length}…`;
       }
+      if(failed) return;
 
       statusEl.innerHTML = `✅ Successfully imported ${rows.length} ${csvImportTarget}!`;
       if(csvImportTarget === "clubs") { loadClubs(); }
