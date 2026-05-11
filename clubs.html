@@ -396,6 +396,24 @@
       white-space: pre-line;
     }
 
+    /* ── Campus tag ── */
+    .campus-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 999px;
+      margin-top: 8px;
+      align-self: flex-start;
+    }
+    .campus-tag.karachi  { background: #eff6ff; color: #1d4ed8; }
+    .campus-tag.nairobi  { background: #f0fdf4; color: #15803d; }
+    .campus-tag.kampala  { background: #fffbeb; color: #b45309; }
+    .campus-tag.dares    { background: #fdf4ff; color: #7e22ce; }
+    .campus-tag.default  { background: #f3f4f6; color: #374151; }
+
     /* ── Responsive ── */
     @media (max-width: 1280px) {
       .cards { grid-template-columns: repeat(3, 1fr); }
@@ -453,6 +471,13 @@
 
       <div class="search-row">
         <input id="searchQ" type="text" placeholder="🔍  Search clubs, events, people…" />
+        <select id="campusFilter">
+          <option value="">All Campuses</option>
+          <option value="Karachi">Karachi</option>
+          <option value="Nairobi">Nairobi</option>
+          <option value="Kampala">Kampala</option>
+          <option value="Dar es Salaam">Dar es Salaam</option>
+        </select>
         <select id="filterSelect">
           <option value="">All Clubs</option>
         </select>
@@ -474,6 +499,7 @@
           <div class="modal-icon" id="modalIcon"></div>
           <div class="modal-title-block">
             <div class="modal-title" id="modalTitle"></div>
+            <div id="modalCampus" class="campus-tag" style="display:none;margin-bottom:4px;"></div>
             <a class="modal-email" id="modalEmail" href="#"></a>
           </div>
           <button class="modal-close" id="modalClose" aria-label="Close">✕</button>
@@ -560,6 +586,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ── DOM refs ── */
   const searchQ      = document.getElementById("searchQ");
+  const campusFilter = document.getElementById("campusFilter");
   const filterSelect = document.getElementById("filterSelect");
   const clearBtn     = document.getElementById("clearBtn");
   const clubsGrid    = document.getElementById("clubsGrid");
@@ -607,16 +634,23 @@ document.addEventListener("DOMContentLoaded", () => {
   ];
 
   /* ── Render ── */
+  function campusClass(campus){
+    const map = { "Karachi":"karachi", "Nairobi":"nairobi", "Kampala":"kampala", "Dar es Salaam":"dares" };
+    return map[campus] || "default";
+  }
+
   function render(){
-    const q  = searchQ.value.trim().toLowerCase();
-    const fv = filterSelect.value;
+    const q   = searchQ.value.trim().toLowerCase();
+    const fv  = filterSelect.value;
+    const cpv = campusFilter.value;
 
     let list = allClubs
-      .filter(c => !fv || c.name === fv)
+      .filter(c => !fv  || c.name   === fv)
+      .filter(c => !cpv || c.campus === cpv)
       .filter(c => {
         if(!q) return true;
         return [c.name, c.email, c.description, c.events,
-                c.convenor, c.coConvenor, c.secretary, c.treasurer]
+                c.convenor, c.coConvenor, c.secretary, c.treasurer, c.campus]
           .join(" ").toLowerCase().includes(q);
       });
 
@@ -671,6 +705,7 @@ document.addEventListener("DOMContentLoaded", () => {
               <div class="club-events">${esc(eventsPreview)}</div>
             ` : ""}
             <div class="club-leadership">${leaderHtml}</div>
+            ${c.campus ? `<div class="campus-tag ${campusClass(c.campus)}">🏫 ${esc(c.campus)}</div>` : ""}
             ${c.email ? `<a class="club-email" href="mailto:${esc(c.email)}" onclick="event.stopPropagation()">✉️ <span>${esc(c.email)}</span></a>` : ""}
           </div>
         </article>
@@ -698,6 +733,12 @@ document.addEventListener("DOMContentLoaded", () => {
     modalTitle.textContent         = c.name;
     modalEmail.textContent         = c.email || "";
     modalEmail.href                = c.email ? `mailto:${c.email}` : "#";
+    const modalCampus = document.getElementById("modalCampus");
+    if(modalCampus){
+      modalCampus.textContent  = c.campus ? `🏫 ${c.campus}` : "";
+      modalCampus.style.display = c.campus ? "inline-flex" : "none";
+      modalCampus.className = `campus-tag ${campusClass(c.campus || "")}`;
+    }
     modalDesc.textContent          = c.description || "—";
     modalEvents.textContent        = c.events || "";
     modalEventsSection.style.display = c.events ? "" : "none";
@@ -765,6 +806,7 @@ document.addEventListener("DOMContentLoaded", () => {
       coConvenor:  (r.co_convenor || "").trim(),
       secretary:   (r.secretary   || "").trim(),
       treasurer:   (r.treasurer   || "").trim(),
+      campus:      (r.campus      || "").trim(),
       logo:        driveUrl(r.logo_url || ""),
     })).filter(c => c.name);
 
@@ -781,9 +823,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Wire up filters
     searchQ.addEventListener("input", render);
+    campusFilter.addEventListener("change", render);
     filterSelect.addEventListener("change", render);
     clearBtn.addEventListener("click", () => {
-      searchQ.value = "";
+      searchQ.value      = "";
+      campusFilter.value = "";
       filterSelect.value = "";
       render();
     });
@@ -794,14 +838,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const urlParams  = new URLSearchParams(window.location.search);
     const targetClub = urlParams.get("club");
     if(targetClub){
-      const match = allClubs.find(c =>
-        c.name.toLowerCase() === targetClub.toLowerCase()
-      );
+      const target = targetClub.toLowerCase().trim();
+
+      // 1. Exact match
+      let match = allClubs.find(c => c.name.toLowerCase() === target);
+
+      // 2. Partial match — club name contains the organiser name or vice versa
+      if(!match){
+        match = allClubs.find(c =>
+          c.name.toLowerCase().includes(target) ||
+          target.includes(c.name.toLowerCase())
+        );
+      }
+
       if(match){
         const idx = allClubs.indexOf(match);
         const pal = PALETTE[idx % PALETTE.length];
-        // Small delay so the cards are painted first
-        setTimeout(() => openModal(match, pal), 200);
+        openModal(match, pal);
       }
     }
   }
