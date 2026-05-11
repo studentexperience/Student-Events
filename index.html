@@ -314,6 +314,21 @@
       overflow:hidden;
       text-overflow:ellipsis;
       flex-shrink:0;
+      text-decoration:none;
+      display:block;
+      transition: filter .15s;
+    }
+    .organizer-banner:hover{
+      filter: brightness(1.15);
+      cursor: pointer;
+    }
+    .organizer-banner::after{
+      content: " →";
+      opacity: 0;
+      transition: opacity .15s;
+    }
+    .organizer-banner:hover::after{
+      opacity: 1;
     }
 
     /* =============================================
@@ -628,7 +643,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const timeLine  = e.time  ? `<div class="meta"><span class="meta-icon">⏰</span>${escapeHtml(e.time)}</div>` : "";
       const venueLine = e.venue ? `<div class="meta"><span class="meta-icon">📍</span>${escapeHtml(e.venue)}</div>` : "";
       const bannerHtml = e.organiser
-        ? `<div class="organizer-banner" style="background:${bannerColor};">🎭 ${escapeHtml(e.organiser)}</div>`
+        ? `<a class="organizer-banner" href="clubs.html?club=${encodeURIComponent(e.organiser)}" style="background:${bannerColor};" title="View ${escapeHtml(e.organiser)} on Clubs page">🎭 ${escapeHtml(e.organiser)}</a>`
         : "";
 
       // Cover: real image → use it; missing → pick from curated student activity pool
