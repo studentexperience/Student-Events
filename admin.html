@@ -548,10 +548,104 @@
       color: var(--accent);
       border: 1px solid #bfdbfe;
     }
+
+    /* ── PAGES EDITOR ── */
+    .pages-grid {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    .pages-nav {
+      background: white;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .page-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      font-family: 'Poppins', sans-serif;
+      border-bottom: 1px solid var(--border);
+      color: var(--ink);
+      transition: background .12s;
+    }
+    .page-nav-item:last-child { border-bottom: none; }
+    .page-nav-item:hover { background: var(--bg); }
+    .page-nav-item.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+    .page-editor {
+      background: white;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .page-editor-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .page-editor-title { font-size: 16px; font-weight: 700; }
+    .editor-toolbar {
+      display: flex;
+      gap: 4px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .toolbar-btn {
+      padding: 5px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: white;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      transition: background .12s;
+    }
+    .toolbar-btn:hover { background: var(--bg); }
+    .editor-content {
+      min-height: 320px;
+      padding: 16px 20px;
+      outline: none;
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--ink);
+    }
+    .editor-footer {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      align-items: center;
+    }
+    .editor-saved-msg {
+      font-size: 12px;
+      color: var(--success);
+      opacity: 0;
+      transition: opacity .3s;
+    }
+    .editor-saved-msg.show { opacity: 1; }
+
     @media (max-width: 768px) {
       .sidebar { display: none; }
       .main { padding: 16px; }
       .form-grid { grid-template-columns: 1fr; }
+      .pages-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -561,13 +655,24 @@
 <div class="login-screen" id="loginScreen">
   <div class="login-box">
     <div class="login-logo">🎓 Campus Life</div>
-    <div class="login-sub">Admin Panel — Authorised Access Only</div>
+    <div class="login-sub" id="loginSubText">Admin Panel — Authorised Access Only</div>
+
     <label class="login-label" for="loginEmail">Email</label>
     <input class="login-input" id="loginEmail" type="email" placeholder="your@email.com" />
     <label class="login-label" for="loginPassword">Password</label>
     <input class="login-input" id="loginPassword" type="password" placeholder="••••••••" />
-    <button class="login-btn" id="loginBtn" onclick="handleLogin()">Sign In</button>
+    <div id="signupPasswordRow" style="display:none;">
+      <label class="login-label" for="loginPasswordConfirm">Confirm Password</label>
+      <input class="login-input" id="loginPasswordConfirm" type="password" placeholder="••••••••" />
+    </div>
+
+    <button class="login-btn" id="loginBtn" onclick="handleAuthAction()">Sign In</button>
     <div class="login-msg" id="loginMsg"></div>
+
+    <div style="text-align:center;margin-top:16px;font-size:13px;color:var(--muted);">
+      <span id="authToggleText">New admin? </span>
+      <a href="#" id="authToggleLink" onclick="toggleAuthMode(event)" style="color:var(--accent);font-weight:600;">Create Account</a>
+    </div>
   </div>
 </div>
 
@@ -599,6 +704,9 @@
       </button>
       <button class="nav-item" onclick="showSection('events', this)">
         <span class="nav-icon">📅</span> Events
+      </button>
+      <button class="nav-item" onclick="showSection('pages', this)">
+        <span class="nav-icon">📄</span> Pages
       </button>
 
       <div class="sidebar-label" id="settingsNavLabel">Settings</div>
@@ -735,8 +843,45 @@
           <button class="btn btn-primary" onclick="addAdmin()">Add Admin</button>
         </div>
         <p style="font-size:12px;color:var(--muted);margin-top:10px;" id="addAdminNote">
-          ⚠️ New admins must go to <strong>admin.html</strong> and sign up with the same email to set their password.
+          ℹ️ After adding, share this page URL with the new admin. They can click <strong>"Create Account"</strong> on the login screen to set their password.
         </p>
+      </div>
+
+      <!-- ── PAGES ── -->
+      <div class="section" id="section-pages">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Pages</div>
+            <div class="section-subtitle">Edit content for Home, News, and Forms pages</div>
+          </div>
+        </div>
+        <div class="pages-grid">
+          <div class="pages-nav">
+            <button class="page-nav-item active" onclick="switchPage('home', this)">🏠 Home</button>
+            <button class="page-nav-item" onclick="switchPage('news', this)">📰 News</button>
+            <button class="page-nav-item" onclick="switchPage('forms', this)">📋 Forms</button>
+          </div>
+          <div class="page-editor">
+            <div class="page-editor-header">
+              <div class="page-editor-title" id="pageEditorTitle">Home</div>
+            </div>
+            <div class="editor-toolbar">
+              <button class="toolbar-btn" onclick="fmt('bold')"><b>B</b></button>
+              <button class="toolbar-btn" onclick="fmt('italic')"><i>I</i></button>
+              <button class="toolbar-btn" onclick="fmt('underline')"><u>U</u></button>
+              <button class="toolbar-btn" onclick="fmt('insertUnorderedList')">• List</button>
+              <button class="toolbar-btn" onclick="fmt('insertOrderedList')">1. List</button>
+              <button class="toolbar-btn" onclick="insertLink()">🔗 Link</button>
+              <button class="toolbar-btn" onclick="fmt('removeFormat')">✕ Clear</button>
+            </div>
+            <div class="editor-content" id="pageEditorContent" contenteditable="true"></div>
+            <div class="editor-footer">
+              <span class="editor-saved-msg" id="editorSavedMsg">✅ Saved!</span>
+              <button class="btn btn-secondary" onclick="loadPageContent(currentPageSlug)">↺ Reset</button>
+              <button class="btn btn-primary" onclick="savePage()">Save Page</button>
+            </div>
+          </div>
+        </div>
       </div>
 
     </div><!-- /main -->
@@ -819,8 +964,10 @@
           <input id="eventName" type="text" placeholder="Annual Science Fair" />
         </div>
         <div class="field">
-          <label>Organiser</label>
-          <input id="eventOrganiser" type="text" />
+          <label>Organiser (Club)</label>
+          <select id="eventOrganiser">
+            <option value="">Select club…</option>
+          </select>
         </div>
         <div class="field">
           <label>Category</label>
@@ -938,7 +1085,60 @@ let currentUser = null;
 let currentRole = null; // 'super_admin' or 'admin'
 let csvImportTarget = null;
 
+let authMode = "login"; // or "signup"
+
+function toggleAuthMode(e){
+  e.preventDefault();
+  authMode = authMode === "login" ? "signup" : "login";
+  const isSignup = authMode === "signup";
+  document.getElementById("loginSubText").textContent    = isSignup ? "Create your admin account" : "Admin Panel — Authorised Access Only";
+  document.getElementById("loginBtn").textContent        = isSignup ? "Create Account" : "Sign In";
+  document.getElementById("authToggleText").textContent  = isSignup ? "Already have an account? " : "New admin? ";
+  document.getElementById("authToggleLink").textContent  = isSignup ? "Sign In" : "Create Account";
+  document.getElementById("signupPasswordRow").style.display = isSignup ? "block" : "none";
+  document.getElementById("loginMsg").textContent        = "";
+}
+
 /* ══ AUTH ══ */
+async function handleAuthAction(){
+  if(authMode === "signup") return handleSignup();
+  return handleLogin();
+}
+
+async function handleSignup(){
+  const email   = document.getElementById("loginEmail").value.trim();
+  const pw      = document.getElementById("loginPassword").value;
+  const pwConf  = document.getElementById("loginPasswordConfirm").value;
+  const msg     = document.getElementById("loginMsg");
+  const btn     = document.getElementById("loginBtn");
+
+  if(!email || !pw){ msg.textContent = "Please fill in all fields."; msg.className = "login-msg error"; return; }
+  if(pw.length < 8){ msg.textContent = "Password must be at least 8 characters."; msg.className = "login-msg error"; return; }
+  if(pw !== pwConf){ msg.textContent = "Passwords do not match."; msg.className = "login-msg error"; return; }
+
+  // Check they're in the admins table first
+  const { data: adminRow } = await sb.from("admins").select("email").eq("email", email).single();
+  if(!adminRow){
+    msg.textContent = "This email has not been authorised. Contact the Super Admin.";
+    msg.className = "login-msg error";
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = "Creating account…";
+  const { error } = await sb.auth.signUp({ email, password: pw });
+  if(error){
+    msg.textContent = error.message;
+    msg.className = "login-msg error";
+    btn.disabled = false; btn.textContent = "Create Account";
+    return;
+  }
+
+  msg.textContent = "✅ Account created! You can now sign in.";
+  msg.className = "login-msg success";
+  btn.disabled = false;
+  toggleAuthMode({ preventDefault: ()=>{} });
+}
+
 async function handleLogin(){
   const email    = document.getElementById("loginEmail").value.trim();
   const password = document.getElementById("loginPassword").value;
@@ -1022,6 +1222,7 @@ function showAdminPanel(){
   loadDashboard();
   loadClubs();
   loadEvents();
+  loadPages();
   if(currentRole === "super_admin") loadAdmins();
 }
 
@@ -1063,6 +1264,13 @@ async function loadClubs(){
   if(error){ showToast("Failed to load clubs", "error"); return; }
   allClubs = data || [];
   renderClubs(allClubs);
+
+  // Populate organiser dropdown in event modal
+  const sel = document.getElementById("eventOrganiser");
+  const current = sel.value;
+  sel.innerHTML = `<option value="">Select club…</option>` +
+    allClubs.map(c => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join("");
+  if(current) sel.value = current;
 }
 
 function renderClubs(list){
@@ -1197,8 +1405,9 @@ function openEventModal(id = null){
     document.getElementById("eventImageUrl").value  = e.cover_image || "";
     if(e.cover_image) document.getElementById("eventImagePreviewWrap").innerHTML = `<img src="${esc(e.cover_image)}" class="upload-preview" />`;
   } else {
-    ["eventName","eventOrganiser","eventDate","eventTime","eventVenue","eventImageUrl"].forEach(id => document.getElementById(id).value = "");
-    document.getElementById("eventCategory").value = "";
+    ["eventName","eventDate","eventTime","eventVenue","eventImageUrl"].forEach(i => document.getElementById(i).value = "");
+    document.getElementById("eventCategory").value  = "";
+    document.getElementById("eventOrganiser").value = "";
   }
   document.getElementById("eventModal").classList.add("open");
 }
@@ -1339,6 +1548,59 @@ function previewEventImage(input){
   if(!input.files[0]) return;
   const url = URL.createObjectURL(input.files[0]);
   document.getElementById("eventImagePreviewWrap").innerHTML = `<img src="${url}" class="upload-preview" />`;
+}
+
+/* ══ PAGES ══ */
+let allPages = {};
+let currentPageSlug = "home";
+
+async function loadPages(){
+  const { data, error } = await sb.from("pages").select("*");
+  if(error){ return; }
+  (data || []).forEach(p => allPages[p.slug] = p);
+  // Load the default page into the editor
+  loadPageContent("home");
+}
+
+function switchPage(slug, btn){
+  currentPageSlug = slug;
+  document.querySelectorAll(".page-nav-item").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("pageEditorTitle").textContent =
+    slug === "home" ? "Home" : slug === "news" ? "News" : "Forms";
+  loadPageContent(slug);
+}
+
+function loadPageContent(slug){
+  const page = allPages[slug];
+  document.getElementById("pageEditorContent").innerHTML = page?.content || "";
+  document.getElementById("editorSavedMsg").classList.remove("show");
+}
+
+async function savePage(){
+  const content = document.getElementById("pageEditorContent").innerHTML;
+  const slug    = currentPageSlug;
+  const { error } = await sb.from("pages")
+    .upsert({ slug, title: slug, content, updated_at: new Date().toISOString() }, { onConflict: "slug" });
+  if(error){ showToast("Save failed: " + error.message, "error"); return; }
+  allPages[slug] = { ...allPages[slug], content };
+  const saved = document.getElementById("editorSavedMsg");
+  saved.classList.add("show");
+  setTimeout(() => saved.classList.remove("show"), 3000);
+  showToast("Page saved!");
+}
+
+function fmt(cmd){
+  document.getElementById("pageEditorContent").focus();
+  document.execCommand(cmd, false, null);
+}
+
+function insertLink(){
+  const url = prompt("Enter URL:");
+  if(url){
+    document.getElementById("pageEditorContent").focus();
+    document.execCommand("createLink", false, url);
+  }
 }
 
 /* ══ CSV IMPORT ══ */
