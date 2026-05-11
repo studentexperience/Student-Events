@@ -705,8 +705,14 @@
       <button class="nav-item" onclick="showSection('events', this)">
         <span class="nav-icon">📅</span> Events
       </button>
-      <button class="nav-item" onclick="showSection('pages', this)">
-        <span class="nav-icon">📄</span> Pages
+      <button class="nav-item" onclick="showSection('news', this)">
+        <span class="nav-icon">📰</span> News
+      </button>
+      <button class="nav-item" onclick="showSection('forms', this)">
+        <span class="nav-icon">📋</span> Forms
+      </button>
+      <button class="nav-item" onclick="showSection('home', this)">
+        <span class="nav-icon">🏠</span> Home Page
       </button>
 
       <div class="sidebar-label" id="settingsNavLabel">Settings</div>
@@ -746,6 +752,11 @@
             <div class="stat-label">Admins</div>
             <div class="stat-value" id="statAdmins">—</div>
             <div class="stat-sub">Authorised users</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">News Articles</div>
+            <div class="stat-value" id="statNews">—</div>
+            <div class="stat-sub">Published articles</div>
           </div>
         </div>
 
@@ -863,39 +874,94 @@
         </p>
       </div>
 
-      <!-- ── PAGES ── -->
-      <div class="section" id="section-pages">
+      <!-- ── NEWS ── -->
+      <div class="section" id="section-news">
         <div class="section-header">
           <div>
-            <div class="section-title">Pages</div>
-            <div class="section-subtitle">Edit content for Home, News, and Forms pages</div>
+            <div class="section-title">News</div>
+            <div class="section-subtitle">Manage news articles, achievements and announcements</div>
+          </div>
+          <button class="btn btn-primary" onclick="openNewsModal()">+ Add Article</button>
+        </div>
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <input class="table-search" placeholder="🔍 Search news…" oninput="filterTable('news-table', this.value)" />
+          </div>
+          <table id="news-table">
+            <thead>
+              <tr>
+                <th>Image</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Campus</th>
+                <th>Author</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="news-tbody">
+              <tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-text">Loading…</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── FORMS ── -->
+      <div class="section" id="section-forms">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Forms</div>
+            <div class="section-subtitle">Manage important forms and links</div>
+          </div>
+          <button class="btn btn-primary" onclick="openFormModal()">+ Add Form</button>
+        </div>
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <input class="table-search" placeholder="🔍 Search forms…" oninput="filterTable('forms-table', this.value)" />
+          </div>
+          <table id="forms-table">
+            <thead>
+              <tr>
+                <th>Icon</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Campus</th>
+                <th>URL</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="forms-tbody">
+              <tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-text">Loading…</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── HOME PAGE EDITOR ── -->
+      <div class="section" id="section-home">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Home Page</div>
+            <div class="section-subtitle">Edit the welcome content shown on the home page</div>
           </div>
         </div>
-        <div class="pages-grid">
-          <div class="pages-nav">
-            <button class="page-nav-item active" onclick="switchPage('home', this)">🏠 Home</button>
-            <button class="page-nav-item" onclick="switchPage('news', this)">📰 News</button>
-            <button class="page-nav-item" onclick="switchPage('forms', this)">📋 Forms</button>
+        <div class="page-editor">
+          <div class="editor-toolbar">
+            <button class="toolbar-btn" onclick="fmt('bold')"><b>B</b></button>
+            <button class="toolbar-btn" onclick="fmt('italic')"><i>I</i></button>
+            <button class="toolbar-btn" onclick="fmt('underline')"><u>U</u></button>
+            <button class="toolbar-btn" onclick="fmt('insertUnorderedList')">• List</button>
+            <button class="toolbar-btn" onclick="fmt('insertOrderedList')">1. List</button>
+            <button class="toolbar-btn" onclick="insertLink()">🔗 Link</button>
+            <button class="toolbar-btn" onclick="fmt('removeFormat')">✕ Clear</button>
           </div>
-          <div class="page-editor">
-            <div class="page-editor-header">
-              <div class="page-editor-title" id="pageEditorTitle">Home</div>
-            </div>
-            <div class="editor-toolbar">
-              <button class="toolbar-btn" onclick="fmt('bold')"><b>B</b></button>
-              <button class="toolbar-btn" onclick="fmt('italic')"><i>I</i></button>
-              <button class="toolbar-btn" onclick="fmt('underline')"><u>U</u></button>
-              <button class="toolbar-btn" onclick="fmt('insertUnorderedList')">• List</button>
-              <button class="toolbar-btn" onclick="fmt('insertOrderedList')">1. List</button>
-              <button class="toolbar-btn" onclick="insertLink()">🔗 Link</button>
-              <button class="toolbar-btn" onclick="fmt('removeFormat')">✕ Clear</button>
-            </div>
-            <div class="editor-content" id="pageEditorContent" contenteditable="true"></div>
-            <div class="editor-footer">
-              <span class="editor-saved-msg" id="editorSavedMsg">✅ Saved!</span>
-              <button class="btn btn-secondary" onclick="loadPageContent(currentPageSlug)">↺ Reset</button>
-              <button class="btn btn-primary" onclick="savePage()">Save Page</button>
-            </div>
+          <div class="editor-content" id="pageEditorContent" contenteditable="true"></div>
+          <div class="editor-footer">
+            <span class="editor-saved-msg" id="editorSavedMsg">✅ Saved!</span>
+            <button class="btn btn-secondary" onclick="loadPageContent('home')">↺ Reset</button>
+            <button class="btn btn-primary" onclick="savePage()">Save Home Page</button>
           </div>
         </div>
       </div>
@@ -1081,6 +1147,142 @@
   </div>
 </div>
 
+<!-- ══ NEWS MODAL ══ -->
+<div class="modal-backdrop" id="newsModal">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-header">
+      <div class="modal-title" id="newsModalTitle">Add News Article</div>
+      <button class="modal-close" onclick="closeModal('newsModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="newsId" />
+      <div class="form-grid">
+        <div class="field full">
+          <label>Title *</label>
+          <input id="newsTitle" type="text" placeholder="Student wins national award…" />
+        </div>
+        <div class="field full">
+          <label>Subtitle / Tagline</label>
+          <input id="newsSubtitle" type="text" placeholder="A short summary shown on the card" />
+        </div>
+        <div class="field">
+          <label>Author</label>
+          <input id="newsAuthor" type="text" placeholder="Name of writer or department" />
+        </div>
+        <div class="field">
+          <label>Category</label>
+          <select id="newsCategory">
+            <option value="">Select…</option>
+            <option>Achievement</option>
+            <option>Announcement</option>
+            <option>Event Recap</option>
+            <option>Opportunity</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Campus</label>
+          <select id="newsCampus">
+            <option value="All">All Campuses</option>
+            <option>Karachi</option>
+            <option>Nairobi</option>
+            <option>Kampala</option>
+            <option>Dar es Salaam</option>
+          </select>
+        </div>
+        <div class="field" style="display:flex;gap:20px;align-items:center;">
+          <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;">
+            <input type="checkbox" id="newsPublished" checked style="width:16px;height:16px;" /> Published
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;">
+            <input type="checkbox" id="newsPinned" style="width:16px;height:16px;" /> 📌 Pinned
+          </label>
+        </div>
+        <div class="field full">
+          <label>Cover Image</label>
+          <div class="upload-area" onclick="document.getElementById('newsImageFile').click()">
+            <input type="file" id="newsImageFile" accept="image/*" onchange="previewNewsImage(this)" />
+            <div id="newsImagePreviewWrap">📸 Click to upload cover image</div>
+          </div>
+          <input type="text" id="newsImageUrl" placeholder="Or paste image URL" style="margin-top:8px;" />
+        </div>
+        <div class="field full">
+          <label>Content *</label>
+          <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+            <div style="display:flex;gap:4px;padding:8px;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+              <button class="toolbar-btn" onclick="fmtNews('bold')"><b>B</b></button>
+              <button class="toolbar-btn" onclick="fmtNews('italic')"><i>I</i></button>
+              <button class="toolbar-btn" onclick="fmtNews('underline')"><u>U</u></button>
+              <button class="toolbar-btn" onclick="fmtNews('insertUnorderedList')">• List</button>
+              <button class="toolbar-btn" onclick="fmtNews('insertOrderedList')">1. List</button>
+              <button class="toolbar-btn" onclick="insertNewsLink()">🔗 Link</button>
+            </div>
+            <div id="newsContent" contenteditable="true" style="min-height:180px;padding:14px 16px;font-size:14px;line-height:1.7;outline:none;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="closeModal('newsModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveNews()">Save Article</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FORMS MODAL ══ -->
+<div class="modal-backdrop" id="formModal">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <div class="modal-title" id="formModalTitle">Add Form</div>
+      <button class="modal-close" onclick="closeModal('formModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="formId" />
+      <div class="form-grid">
+        <div class="field full">
+          <label>Title *</label>
+          <input id="formTitle" type="text" placeholder="Student Registration Form" />
+        </div>
+        <div class="field full">
+          <label>Description</label>
+          <textarea id="formDescription" rows="2" placeholder="Brief description of what this form is for"></textarea>
+        </div>
+        <div class="field">
+          <label>Icon (emoji)</label>
+          <input id="formIcon" type="text" placeholder="📋" maxlength="4" />
+        </div>
+        <div class="field">
+          <label>Category</label>
+          <input id="formCategory" type="text" placeholder="Registration, Welfare, Academic…" />
+        </div>
+        <div class="field">
+          <label>Campus</label>
+          <select id="formCampus">
+            <option value="All">All Campuses</option>
+            <option>Karachi</option>
+            <option>Nairobi</option>
+            <option>Kampala</option>
+            <option>Dar es Salaam</option>
+          </select>
+        </div>
+        <div class="field">
+          <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;">
+            <input type="checkbox" id="formActive" checked style="width:16px;height:16px;" /> Active
+          </label>
+        </div>
+        <div class="field full">
+          <label>Form URL *</label>
+          <input id="formUrl" type="url" placeholder="https://forms.google.com/…" />
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="closeModal('formModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveForm()">Save Form</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ CHANGE PASSWORD MODAL ══ -->
 <div class="modal-backdrop" id="changePasswordModal">
   <div class="modal" style="max-width:420px;">
@@ -1258,6 +1460,8 @@ function showAdminPanel(){
   loadDashboard();
   loadClubs();
   loadEvents();
+  loadNews();
+  loadForms();
   loadPages();
   if(currentRole === "super_admin") loadAdmins();
 }
@@ -1283,10 +1487,11 @@ const CAMPUSES = ['Karachi', 'Nairobi', 'Kampala', 'Dar es Salaam'];
 
 async function loadDashboard(){
   const today = new Date().toISOString().split("T")[0];
-  const [{ count: clubCount }, { count: eventCount }, { count: adminCount }, { data: upcomingData }, { data: allClubsData }, { data: allEventsData }] = await Promise.all([
+  const [{ count: clubCount }, { count: eventCount }, { count: adminCount }, { count: newsCount }, { data: upcomingData }, { data: allClubsData }, { data: allEventsData }] = await Promise.all([
     sb.from("clubs").select("*", { count: "exact", head: true }),
     sb.from("events").select("*", { count: "exact", head: true }),
     sb.from("admins").select("*", { count: "exact", head: true }),
+    sb.from("news").select("*", { count: "exact", head: true }),
     sb.from("events").select("event_date").gte("event_date", today),
     sb.from("clubs").select("campus"),
     sb.from("events").select("campus, event_date"),
@@ -1295,6 +1500,7 @@ async function loadDashboard(){
   document.getElementById("statClubs").textContent    = clubCount ?? "—";
   document.getElementById("statEvents").textContent   = eventCount ?? "—";
   document.getElementById("statAdmins").textContent   = adminCount ?? "—";
+  document.getElementById("statNews").textContent     = newsCount ?? "—";
   document.getElementById("statUpcoming").textContent = upcomingData?.length ?? "—";
 
   // Per-campus breakdown
@@ -1589,11 +1795,15 @@ async function doDelete(type, id){
   if(type === "club")  ({ error } = await sb.from("clubs").delete().eq("id", id));
   if(type === "event") ({ error } = await sb.from("events").delete().eq("id", id));
   if(type === "admin") ({ error } = await sb.from("admins").delete().eq("id", id));
+  if(type === "news")  ({ error } = await sb.from("news").delete().eq("id", id));
+  if(type === "form")  ({ error } = await sb.from("forms").delete().eq("id", id));
   if(error){ showToast("Delete failed: " + error.message, "error"); return; }
   showToast("Deleted successfully.");
   if(type === "club")  { loadClubs();  loadDashboard(); }
   if(type === "event") { loadEvents(); loadDashboard(); }
   if(type === "admin") { loadAdmins(); loadDashboard(); }
+  if(type === "news")  { loadNews(); }
+  if(type === "form")  { loadForms(); }
 }
 
 function closeConfirm(){
@@ -1622,25 +1832,213 @@ function previewEventImage(input){
   document.getElementById("eventImagePreviewWrap").innerHTML = `<img src="${url}" class="upload-preview" />`;
 }
 
-/* ══ PAGES ══ */
+/* ══ NEWS ══ */
+let allNews = [];
+
+async function loadNews(){
+  const { data, error } = await sb.from("news").select("*").order("created_at", { ascending: false });
+  if(error){ showToast("Failed to load news", "error"); return; }
+  allNews = data || [];
+  renderNews(allNews);
+}
+
+function renderNews(list){
+  const tbody = document.getElementById("news-tbody");
+  if(!list.length){
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">📰</div><div class="empty-state-text">No articles yet. Add one above.</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(n => `
+    <tr>
+      <td>${n.cover_image ? `<img class="logo-thumb" src="${esc(n.cover_image)}" style="width:56px;height:40px;object-fit:cover;border-radius:6px;" />` : "—"}</td>
+      <td title="${esc(n.title)}" style="max-width:200px;">${n.pinned ? "📌 " : ""}${esc(n.title)}</td>
+      <td>${n.category ? `<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#f0fdf4;color:#16a34a;">${esc(n.category)}</span>` : "—"}</td>
+      <td>${n.campus ? `<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#eff6ff;color:#2563eb;">${esc(n.campus)}</span>` : "—"}</td>
+      <td>${esc(n.author || "—")}</td>
+      <td>${n.created_at ? new Date(n.created_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "—"}</td>
+      <td><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:${n.published ? "#f0fdf4" : "#fef2f2"};color:${n.published ? "#16a34a" : "#dc2626"};">${n.published ? "Published" : "Draft"}</span></td>
+      <td><div class="td-actions">
+        <button class="btn btn-secondary btn-sm" onclick="openNewsModal('${n.id}')">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDelete('news','${n.id}','${esc(n.title)}')">🗑️</button>
+      </div></td>
+    </tr>
+  `).join("");
+}
+
+function openNewsModal(id = null){
+  document.getElementById("newsModalTitle").textContent = id ? "Edit Article" : "Add News Article";
+  document.getElementById("newsId").value = id || "";
+  document.getElementById("newsImagePreviewWrap").innerHTML = "📸 Click to upload cover image";
+  document.getElementById("newsContent").innerHTML = "";
+
+  if(id){
+    const n = allNews.find(x => x.id === id);
+    if(!n) return;
+    document.getElementById("newsTitle").value      = n.title || "";
+    document.getElementById("newsSubtitle").value   = n.subtitle || "";
+    document.getElementById("newsAuthor").value     = n.author || "";
+    document.getElementById("newsCategory").value   = n.category || "";
+    document.getElementById("newsCampus").value     = n.campus || "All";
+    document.getElementById("newsPublished").checked= n.published !== false;
+    document.getElementById("newsPinned").checked   = n.pinned || false;
+    document.getElementById("newsImageUrl").value   = n.cover_image || "";
+    document.getElementById("newsContent").innerHTML= n.content || "";
+    if(n.cover_image) document.getElementById("newsImagePreviewWrap").innerHTML = `<img src="${esc(n.cover_image)}" class="upload-preview" />`;
+  } else {
+    ["newsTitle","newsSubtitle","newsAuthor","newsImageUrl"].forEach(i => document.getElementById(i).value = "");
+    document.getElementById("newsCategory").value    = "";
+    document.getElementById("newsCampus").value      = "All";
+    document.getElementById("newsPublished").checked = true;
+    document.getElementById("newsPinned").checked    = false;
+  }
+  document.getElementById("newsModal").classList.add("open");
+}
+
+async function saveNews(){
+  const id    = document.getElementById("newsId").value;
+  const title = document.getElementById("newsTitle").value.trim();
+  if(!title){ showToast("Title is required", "error"); return; }
+
+  let imageUrl = document.getElementById("newsImageUrl").value.trim();
+  const fileInput = document.getElementById("newsImageFile");
+  if(fileInput.files[0]){
+    imageUrl = await uploadImage(fileInput.files[0], "news");
+    if(!imageUrl) return;
+  }
+
+  const payload = {
+    title,
+    subtitle:    document.getElementById("newsSubtitle").value.trim(),
+    author:      document.getElementById("newsAuthor").value.trim(),
+    category:    document.getElementById("newsCategory").value,
+    campus:      document.getElementById("newsCampus").value,
+    published:   document.getElementById("newsPublished").checked,
+    pinned:      document.getElementById("newsPinned").checked,
+    cover_image: imageUrl,
+    content:     document.getElementById("newsContent").innerHTML,
+    updated_at:  new Date().toISOString(),
+  };
+
+  let error;
+  if(id){ ({ error } = await sb.from("news").update(payload).eq("id", id)); }
+  else   { ({ error } = await sb.from("news").insert(payload)); }
+
+  if(error){ showToast("Save failed: " + error.message, "error"); return; }
+  showToast(id ? "Article updated!" : "Article published!");
+  closeModal("newsModal");
+  loadNews();
+}
+
+function previewNewsImage(input){
+  if(!input.files[0]) return;
+  const url = URL.createObjectURL(input.files[0]);
+  document.getElementById("newsImagePreviewWrap").innerHTML = `<img src="${url}" class="upload-preview" />`;
+}
+
+function fmtNews(cmd){
+  document.getElementById("newsContent").focus();
+  document.execCommand(cmd, false, null);
+}
+
+function insertNewsLink(){
+  const url = prompt("Enter URL:");
+  if(url){
+    document.getElementById("newsContent").focus();
+    document.execCommand("createLink", false, url);
+  }
+}
+
+/* ══ FORMS ══ */
+let allForms = [];
+
+async function loadForms(){
+  const { data, error } = await sb.from("forms").select("*").order("created_at", { ascending: false });
+  if(error){ showToast("Failed to load forms", "error"); return; }
+  allForms = data || [];
+  renderForms(allForms);
+}
+
+function renderForms(list){
+  const tbody = document.getElementById("forms-tbody");
+  if(!list.length){
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">No forms yet. Add one above.</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(f => `
+    <tr>
+      <td style="font-size:22px;">${esc(f.icon || "📋")}</td>
+      <td title="${esc(f.title)}">${esc(f.title)}</td>
+      <td>${esc(f.category || "—")}</td>
+      <td>${f.campus ? `<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#eff6ff;color:#2563eb;">${esc(f.campus)}</span>` : "—"}</td>
+      <td>${f.form_url ? `<a href="${esc(f.form_url)}" target="_blank" style="color:var(--accent);font-size:12px;">Open ↗</a>` : "—"}</td>
+      <td><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:${f.active ? "#f0fdf4" : "#fef2f2"};color:${f.active ? "#16a34a" : "#dc2626"};">${f.active ? "Active" : "Inactive"}</span></td>
+      <td><div class="td-actions">
+        <button class="btn btn-secondary btn-sm" onclick="openFormModal('${f.id}')">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDelete('form','${f.id}','${esc(f.title)}')">🗑️</button>
+      </div></td>
+    </tr>
+  `).join("");
+}
+
+function openFormModal(id = null){
+  document.getElementById("formModalTitle").textContent = id ? "Edit Form" : "Add Form";
+  document.getElementById("formId").value = id || "";
+
+  if(id){
+    const f = allForms.find(x => x.id === id);
+    if(!f) return;
+    document.getElementById("formTitle").value       = f.title || "";
+    document.getElementById("formDescription").value = f.description || "";
+    document.getElementById("formIcon").value        = f.icon || "📋";
+    document.getElementById("formCategory").value    = f.category || "";
+    document.getElementById("formCampus").value      = f.campus || "All";
+    document.getElementById("formUrl").value         = f.form_url || "";
+    document.getElementById("formActive").checked    = f.active !== false;
+  } else {
+    ["formTitle","formDescription","formCategory","formUrl"].forEach(i => document.getElementById(i).value = "");
+    document.getElementById("formIcon").value    = "📋";
+    document.getElementById("formCampus").value  = "All";
+    document.getElementById("formActive").checked= true;
+  }
+  document.getElementById("formModal").classList.add("open");
+}
+
+async function saveForm(){
+  const id    = document.getElementById("formId").value;
+  const title = document.getElementById("formTitle").value.trim();
+  const url   = document.getElementById("formUrl").value.trim();
+  if(!title){ showToast("Title is required", "error"); return; }
+  if(!url)  { showToast("Form URL is required", "error"); return; }
+
+  const payload = {
+    title,
+    description: document.getElementById("formDescription").value.trim(),
+    icon:        document.getElementById("formIcon").value.trim() || "📋",
+    category:    document.getElementById("formCategory").value.trim(),
+    campus:      document.getElementById("formCampus").value,
+    form_url:    url,
+    active:      document.getElementById("formActive").checked,
+    updated_at:  new Date().toISOString(),
+  };
+
+  let error;
+  if(id){ ({ error } = await sb.from("forms").update(payload).eq("id", id)); }
+  else   { ({ error } = await sb.from("forms").insert(payload)); }
+
+  if(error){ showToast("Save failed: " + error.message, "error"); return; }
+  showToast(id ? "Form updated!" : "Form added!");
+  closeModal("formModal");
+  loadForms();
+}
+
+/* ══ HOME PAGE EDITOR ══ */
 let allPages = {};
-let currentPageSlug = "home";
 
 async function loadPages(){
   const { data, error } = await sb.from("pages").select("*");
   if(error){ return; }
   (data || []).forEach(p => allPages[p.slug] = p);
-  // Load the default page into the editor
   loadPageContent("home");
-}
-
-function switchPage(slug, btn){
-  currentPageSlug = slug;
-  document.querySelectorAll(".page-nav-item").forEach(b => b.classList.remove("active"));
-  btn.classList.add("active");
-  document.getElementById("pageEditorTitle").textContent =
-    slug === "home" ? "Home" : slug === "news" ? "News" : "Forms";
-  loadPageContent(slug);
 }
 
 function loadPageContent(slug){
@@ -1651,15 +2049,14 @@ function loadPageContent(slug){
 
 async function savePage(){
   const content = document.getElementById("pageEditorContent").innerHTML;
-  const slug    = currentPageSlug;
   const { error } = await sb.from("pages")
-    .upsert({ slug, title: slug, content, updated_at: new Date().toISOString() }, { onConflict: "slug" });
+    .upsert({ slug:"home", title:"Home", content, updated_at: new Date().toISOString() }, { onConflict: "slug" });
   if(error){ showToast("Save failed: " + error.message, "error"); return; }
-  allPages[slug] = { ...allPages[slug], content };
+  allPages["home"] = { ...allPages["home"], content };
   const saved = document.getElementById("editorSavedMsg");
   saved.classList.add("show");
   setTimeout(() => saved.classList.remove("show"), 3000);
-  showToast("Page saved!");
+  showToast("Home page saved!");
 }
 
 function fmt(cmd){
