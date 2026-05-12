@@ -1756,7 +1756,7 @@
       <!-- API Key input -->
       <div class="api-key-row">
         <span>🔑</span>
-        <input type="password" id="geminiKey" placeholder="Paste your Gemini API key here (get free key at aistudio.google.com)" />
+        <input type="password" id="geminiKey" placeholder="Paste your Groq API key here (get free key at console.groq.com)" />
         <button class="btn btn-secondary btn-sm" onclick="saveGeminiKey()">Save</button>
       </div>
 
@@ -1820,7 +1820,7 @@
       <div class="report-generating" id="reportGenerating">
         <div class="report-spinner"></div>
         <div style="font-size:14px;font-weight:600;">Analysing your data…</div>
-        <div style="font-size:12px;margin-top:6px;">Gemini is reading your dashboard and writing the report</div>
+        <div style="font-size:12px;margin-top:6px;">Groq is reading your dashboard and writing the report</div>
       </div>
 
       <!-- Report output -->
@@ -3614,13 +3614,18 @@ ${dataSnapshot}`.trim();
 
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key=${apiKey}`,
+      `https://api.groq.com/openai/v1/chat/completions`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 1500 }
+          model: "llama-3.3-70b-versatile",
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.7,
+          max_tokens: 1500
         })
       }
     );
@@ -3631,7 +3636,7 @@ ${dataSnapshot}`.trim();
       throw new Error(data.error.message);
     }
 
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "No report generated.";
+    const text = data.choices?.[0]?.message?.content || "No report generated.";
 
     // Render markdown-style formatting
     const html = text
@@ -3657,8 +3662,8 @@ ${dataSnapshot}`.trim();
     generatingEl.classList.remove("visible");
     outputEl.innerHTML = `<div style="color:var(--danger);font-weight:600;">❌ Error: ${err.message}</div>
       <div style="margin-top:8px;font-size:12px;color:var(--muted);">
-        Check your API key is correct and has access to Gemini 1.5 Flash.
-        Get a free key at <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a>
+        Check your API key is correct. Get a free key at
+        <a href="https://console.groq.com" target="_blank">console.groq.com</a>
       </div>`;
     outputEl.classList.add("visible");
   } finally {
