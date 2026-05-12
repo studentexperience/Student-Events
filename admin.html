@@ -891,18 +891,8 @@
           </div>
         </div>
 
-        <!-- Row 3: Upcoming vs Past + Events by Category -->
-        <div class="charts-grid">
-          <div class="chart-card">
-            <div class="chart-card-header">
-              <div>
-                <div class="chart-card-title">Upcoming vs Past Events</div>
-                <div class="chart-card-sub">By campus</div>
-              </div>
-            </div>
-            <div class="chart-wrap"><canvas id="chartUpcomingVsPast"></canvas></div>
-          </div>
-
+        <!-- Row 3: Events by Category full width -->
+        <div class="charts-grid full">
           <div class="chart-card">
             <div class="chart-card-header">
               <div>
@@ -917,9 +907,15 @@
                   <option>Kampala</option>
                   <option>Dar es Salaam</option>
                 </select>
+                <select class="chart-select" id="categoryChartType" onchange="renderCategoryChart()">
+                  <option value="doughnut">Doughnut</option>
+                  <option value="pie">Pie</option>
+                  <option value="bar">Bar</option>
+                  <option value="polarArea">Polar Area</option>
+                </select>
               </div>
             </div>
-            <div class="chart-wrap"><canvas id="chartByCategory"></canvas></div>
+            <div class="chart-wrap" style="height:300px;"><canvas id="chartByCategory"></canvas></div>
           </div>
         </div>
 
@@ -1733,7 +1729,6 @@ async function loadDashboard(){
   renderCampusChart();
   renderMonthChart();
   renderCampusMonthChart();
-  renderUpcomingVsPast(today);
   renderCategoryChart();
 }
 
@@ -1856,79 +1851,60 @@ function renderCampusMonthChart(){
   });
 }
 
-/* ── Chart 4: Upcoming vs Past by Campus ── */
-function renderUpcomingVsPast(today){
-  destroyChart("chartUpcomingVsPast");
-  const t = today || new Date().toISOString().split("T")[0];
-
-  const upcomingCounts = CAMPUSES.map(c =>
-    dashEventData.filter(e => e.campus === c && e.event_date >= t).length
-  );
-  const pastCounts = CAMPUSES.map(c =>
-    dashEventData.filter(e => e.campus === c && e.event_date < t).length
-  );
-
-  const ctx = document.getElementById("chartUpcomingVsPast").getContext("2d");
-  chartInstances["chartUpcomingVsPast"] = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: CAMPUSES,
-      datasets: [
-        {
-          label: "Upcoming",
-          data: upcomingCounts,
-          backgroundColor: "rgba(37,99,235,0.75)",
-          borderRadius: 6,
-          borderSkipped: false,
-        },
-        {
-          label: "Past",
-          data: pastCounts,
-          backgroundColor: "rgba(107,114,128,0.4)",
-          borderRadius: 6,
-          borderSkipped: false,
-        }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: "bottom", labels: { usePointStyle: true, padding: 16 } } },
-      scales: {
-        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: "#f3f4f6" }, stacked: false },
-        x: { grid: { display: false } }
-      }
-    }
-  });
-}
-
 /* ── Chart 5: Events by Category ── */
 function renderCategoryChart(){
   destroyChart("chartByCategory");
   const campus   = document.getElementById("categoryChartCampus").value;
+  const type     = document.getElementById("categoryChartType").value;
   const filtered = campus ? dashEventData.filter(e => e.campus === campus) : dashEventData;
   const cats     = [...new Set(filtered.map(e => e.category).filter(Boolean))].sort();
   const counts   = cats.map(c => filtered.filter(e => e.category === c).length);
 
-  const palette = ["#2563eb","#16a34a","#d97706","#9333ea","#dc2626","#0891b2","#ca8a04","#15803d"];
+  const palette  = ["#2563eb","#16a34a","#d97706","#9333ea","#dc2626","#0891b2","#ca8a04","#15803d"];
+  const colors   = cats.map((_,i) => palette[i % palette.length]);
+  const isRadial = ["doughnut","pie","polarArea"].includes(type);
 
   const ctx = document.getElementById("chartByCategory").getContext("2d");
   chartInstances["chartByCategory"] = new Chart(ctx, {
-    type: "doughnut",
+    type,
     data: {
       labels: cats.length ? cats : ["No data"],
       datasets: [{
-        data: counts.length ? counts : [1],
-        backgroundColor: cats.length ? cats.map((_,i) => palette[i % palette.length]) : ["#e5e7eb"],
-        borderWidth: 2,
-        borderColor: "#fff",
+        label: "Events",
+        data:  counts.length ? counts : [1],
+        backgroundColor: cats.length
+          ? (type === "bar" ? colors.map(c => c + "cc") : colors)
+          : ["#e5e7eb"],
+        borderColor:  type === "bar" ? colors : "#fff",
+        borderWidth:  type === "bar" ? 0 : 2,
+        borderRadius: type === "bar" ? 8 : 0,
       }]
     },
     options: {
-      responsive: true, maintainAspectRatio: false,
+      responsive: true,
+      maintainAspectRatio: false,
       plugins: {
-        legend: { position: "bottom", labels: { usePointStyle: true, padding: 12, font: { size: 11 } } }
+        legend: {
+          display: isRadial,
+          position: "bottom",
+          labels: { usePointStyle: true, padding: 14, font: { size: 11 } }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const val   = ctx.parsed.y ?? ctx.parsed ?? ctx.raw ?? 0;
+              const total = counts.reduce((a,b) => a+b, 0);
+              const pct   = total ? Math.round((val / total) * 100) : 0;
+              return ` ${val} events (${pct}%)`;
+            }
+          }
+        }
       },
-      cutout: "60%",
+      scales: type === "bar" ? {
+        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: "#f3f4f6" } },
+        x: { grid: { display: false } }
+      } : {},
+      cutout: type === "doughnut" ? "60%" : undefined,
     }
   });
 }
