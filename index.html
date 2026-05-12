@@ -348,6 +348,69 @@
     .campus-tag.kampala    { background:#fffbeb; color:#b45309; }
     .campus-tag.dares      { background:#fdf4ff; color:#7e22ce; }
     .campus-tag.default    { background:#f3f4f6; color:#374151; }
+
+    /* Interested button */
+    .interested-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px dashed rgba(0,0,0,.1);
+    }
+    .interested-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border: 1.5px solid rgba(0,0,0,.12);
+      background: white;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+      cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      transition: all .18s ease;
+    }
+    .interested-btn:hover {
+      border-color: #ef4444;
+      color: #ef4444;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(239,68,68,.15);
+    }
+    .interested-btn.active {
+      background: linear-gradient(135deg, #ef4444, #f97316);
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 4px 12px rgba(239,68,68,.3);
+    }
+    .interested-btn.active:hover {
+      transform: translateY(-1px) scale(1.02);
+    }
+    .interested-btn .heart-icon {
+      font-size: 14px;
+      transition: transform .25s ease;
+    }
+    .interested-btn:hover .heart-icon,
+    .interested-btn.active .heart-icon {
+      transform: scale(1.25);
+    }
+    .interested-count {
+      font-variant-numeric: tabular-nums;
+    }
+    /* Pulse animation when clicked */
+    @keyframes heart-pulse {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.4); }
+      70%  { transform: scale(0.9); }
+      100% { transform: scale(1); }
+    }
+    .interested-btn.pulse .heart-icon {
+      animation: heart-pulse .5s ease;
+    }
     .nav-toggle{
       display:none;
       background:none;
@@ -678,6 +741,20 @@ document.addEventListener("DOMContentLoaded", () => {
         ? `<a class="organizer-banner" href="clubs.html?club=${encodeURIComponent(e.organiser)}" style="background:${bannerColor};" title="View ${escapeHtml(e.organiser)} on Clubs page">🎭 ${escapeHtml(e.organiser)}</a>`
         : "";
 
+      // Interested counter — only show for upcoming events
+      const isInterested = hasUserInterested(e.id);
+      const interestedHtml = (mode === "upcoming" && e.id) ? `
+        <div class="interested-row">
+          <button class="interested-btn ${isInterested ? 'active' : ''}" 
+                  data-event-id="${e.id}" 
+                  onclick="toggleInterested(event, '${e.id}')"
+                  title="${isInterested ? "You're interested!" : "Mark as interested"}">
+            <span class="heart-icon">${isInterested ? '❤️' : '🤍'}</span>
+            <span class="interested-count" id="count-${e.id}">${e.interested || 0}</span>
+            <span>${e.interested === 1 ? 'person' : 'people'} interested</span>
+          </button>
+        </div>` : "";
+
       // Cover: real image → use it; missing → pick from curated student activity pool
       const coverHtml = e.image
         ? `<img class="cover-img" src="${escapeHtml(e.image)}" alt="${escapeHtml(e.name)}" loading="lazy" />`
@@ -694,6 +771,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ${venueLine}
             <div class="chip">${escapeHtml(e.category)}</div>
             ${campusTag}
+            ${interestedHtml}
           </div>
           ${bannerHtml}
         </article>
@@ -705,6 +783,75 @@ document.addEventListener("DOMContentLoaded", () => {
     const map = { "Karachi":"karachi", "Nairobi":"nairobi", "Kampala":"kampala", "Dar es Salaam":"dares" };
     return map[campus] || "default";
   }
+
+  /* ── Interested counter ── */
+  // Track which events this device has marked interested (localStorage)
+  function getInterestedSet(){
+    try { return new Set(JSON.parse(localStorage.getItem("interestedEvents") || "[]")); }
+    catch { return new Set(); }
+  }
+  function saveInterestedSet(set){
+    localStorage.setItem("interestedEvents", JSON.stringify([...set]));
+  }
+  function hasUserInterested(eventId){
+    return getInterestedSet().has(eventId);
+  }
+
+  // Make toggle accessible from inline onclick
+  window.toggleInterested = async function(evt, eventId){
+    evt.stopPropagation();
+    evt.preventDefault();
+
+    const btn       = evt.currentTarget;
+    const countEl   = document.getElementById(`count-${eventId}`);
+    const heartEl   = btn.querySelector(".heart-icon");
+    const labelEl   = btn.querySelector("span:last-child");
+    const interested = getInterestedSet();
+    const isAdding   = !interested.has(eventId);
+
+    // Optimistic UI update — instant feedback
+    btn.classList.add("pulse");
+    setTimeout(() => btn.classList.remove("pulse"), 500);
+
+    let currentCount = parseInt(countEl.textContent, 10) || 0;
+    const newCount   = isAdding ? currentCount + 1 : Math.max(0, currentCount - 1);
+    countEl.textContent = newCount;
+    heartEl.textContent = isAdding ? "❤️" : "🤍";
+    btn.classList.toggle("active", isAdding);
+    labelEl.textContent = newCount === 1 ? "person interested" : "people interested";
+
+    // Disable while saving to prevent rapid double-clicks
+    btn.disabled = true;
+
+    try {
+      const fn = isAdding ? "increment_event_interest" : "decrement_event_interest";
+      const { data, error } = await sb.rpc(fn, { event_id: eventId });
+      if(error) throw error;
+
+      // Sync local state
+      if(isAdding) interested.add(eventId);
+      else         interested.delete(eventId);
+      saveInterestedSet(interested);
+
+      // Sync count from server (handles concurrent users)
+      if(typeof data === "number"){
+        countEl.textContent = data;
+        labelEl.textContent = data === 1 ? "person interested" : "people interested";
+        // Update local cache
+        const ev = allEvents.find(x => x.id === eventId);
+        if(ev) ev.interested = data;
+      }
+    } catch(err){
+      // Revert on failure
+      countEl.textContent = currentCount;
+      heartEl.textContent = isAdding ? "🤍" : "❤️";
+      btn.classList.toggle("active", !isAdding);
+      labelEl.textContent = currentCount === 1 ? "person interested" : "people interested";
+      console.error("Failed to update interest:", err);
+    } finally {
+      btn.disabled = false;
+    }
+  };
 
   /* ------------------------------------------------------------------ */
   /*  Curated category-matched student activity photos                  */
@@ -754,6 +901,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     allEvents = (data || []).map(r => ({
+      id:        r.id,
       organiser: (r.organiser  || "").trim(),
       name:      (r.name       || "").trim(),
       category:  (r.category   || "").trim(),
@@ -762,6 +910,7 @@ document.addEventListener("DOMContentLoaded", () => {
       campus:    (r.campus     || "").trim(),
       date:      r.event_date ? (() => { const d = new Date(r.event_date); d.setHours(0,0,0,0); return d; })() : null,
       image:     (r.cover_image|| "").trim(),
+      interested: r.interested_count || 0,
     })).filter(e => e.name && e.date);
 
     // Build dropdowns from live data merged with master lists
