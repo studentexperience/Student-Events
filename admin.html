@@ -2296,6 +2296,41 @@ function renderCategoryChart(){
   });
 }
 
+/* ── Campus enforcement ── */
+// Returns true if current admin can access the given campus
+function canAccessCampus(campus){
+  if(currentRole === "super_admin") return true;
+  const camps = currentPermissions.campus || ["All"];
+  return camps.includes("All") || camps.includes(campus) || !campus;
+}
+
+// Filters a list to items the admin can access
+function filterByCampus(list, campusKey = "campus"){
+  if(currentRole === "super_admin") return list;
+  return list.filter(item => canAccessCampus(item[campusKey]));
+}
+
+// Restricts a campus <select> to only allowed options
+function lockCampusSelect(selectId){
+  if(currentRole === "super_admin") return;
+  const sel    = document.getElementById(selectId);
+  const camps  = currentPermissions.campus || ["All"];
+  if(camps.includes("All")) return; // no restriction needed
+  [...sel.options].forEach(opt => {
+    if(opt.value && !camps.includes(opt.value)){
+      opt.disabled = true;
+      opt.style.display = "none";
+    } else {
+      opt.disabled = false;
+      opt.style.display = "";
+    }
+  });
+  // Auto-select first allowed campus if current selection is blocked
+  if(sel.value && !camps.includes(sel.value)){
+    sel.value = camps[0] || "";
+  }
+}
+
 /* ══ CLUBS ══ */
 let allClubs = [];
 
@@ -2303,23 +2338,26 @@ async function loadClubs(){
   const { data, error } = await sb.from("clubs").select("*").order("name");
   if(error){ showToast("Failed to load clubs", "error"); return; }
   allClubs = data || [];
-  renderClubs(allClubs);
+  renderClubs(filterByCampus(allClubs));
 
-  // Populate organiser dropdown in event modal
+  // Populate organiser dropdown — only clubs from accessible campuses
+  const accessible = filterByCampus(allClubs);
   const sel = document.getElementById("eventOrganiser");
   const current = sel.value;
   sel.innerHTML = `<option value="">Select club…</option>` +
-    allClubs.map(c => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join("");
+    accessible.map(c => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join("");
   if(current) sel.value = current;
 }
 
 function renderClubs(list){
   const tbody = document.getElementById("clubs-tbody");
   if(!list.length){
-    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">🎭</div><div class="empty-state-text">No clubs yet. Add one above.</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">🎭</div><div class="empty-state-text">No clubs yet. Add one above.</div></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = list.map(c => `
+  tbody.innerHTML = list.map(c => {
+    const canEdit = canAccessCampus(c.campus);
+    return `
     <tr>
       <td>${c.logo_url ? `<img class="logo-thumb" src="${esc(c.logo_url)}" onerror="this.style.display='none'" />` : "—"}</td>
       <td title="${esc(c.name)}">${esc(c.name)}</td>
@@ -2327,11 +2365,12 @@ function renderClubs(list){
       <td>${c.campus ? `<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#eff6ff;color:#2563eb;">${esc(c.campus)}</span>` : "—"}</td>
       <td>${esc(c.convenor || "—")}</td>
       <td><div class="td-actions">
-        <button class="btn btn-secondary btn-sm" onclick="openClubModal('${c.id}')">✏️ Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="confirmDelete('club','${c.id}','${esc(c.name)}')">🗑️ Delete</button>
+        ${canEdit ? `<button class="btn btn-secondary btn-sm" onclick="openClubModal('${c.id}')">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDelete('club','${c.id}','${esc(c.name)}')">🗑️ Delete</button>`
+        : `<span style="font-size:11px;color:var(--muted);">No access</span>`}
       </div></td>
-    </tr>
-  `).join("");
+    </tr>`;
+  }).join("");
 }
 
 function openClubModal(id = null){
@@ -2358,12 +2397,15 @@ function openClubModal(id = null){
     document.getElementById("clubCampus").value = "";
   }
   document.getElementById("clubModal").classList.add("open");
+  lockCampusSelect("clubCampus");
 }
 
 async function saveClub(){
-  const id   = document.getElementById("clubId").value;
-  const name = document.getElementById("clubName").value.trim();
+  const id     = document.getElementById("clubId").value;
+  const name   = document.getElementById("clubName").value.trim();
+  const campus = document.getElementById("clubCampus").value || null;
   if(!name){ showToast("Club name is required", "error"); return; }
+  if(!canAccessCampus(campus)){ showToast("You don't have access to manage clubs for this campus.", "error"); return; }
 
   // Handle file upload if a file was selected
   let logoUrl = document.getElementById("clubLogoUrl").value.trim();
@@ -2408,16 +2450,18 @@ async function loadEvents(){
   const { data, error } = await sb.from("events").select("*").order("event_date", { ascending: false });
   if(error){ showToast("Failed to load events", "error"); return; }
   allEvents = data || [];
-  renderEvents(allEvents);
+  renderEvents(filterByCampus(allEvents));
 }
 
 function renderEvents(list){
   const tbody = document.getElementById("events-tbody");
   if(!list.length){
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">No events yet. Add one above.</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">No events yet. Add one above.</div></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = list.map(e => `
+  tbody.innerHTML = list.map(e => {
+    const canEdit = canAccessCampus(e.campus);
+    return `
     <tr>
       <td title="${esc(e.name)}">${esc(e.name)}</td>
       <td>${esc(e.organiser || "—")}</td>
@@ -2426,11 +2470,12 @@ function renderEvents(list){
       <td>${e.campus ? `<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#eff6ff;color:#2563eb;">${esc(e.campus)}</span>` : "—"}</td>
       <td title="${esc(e.venue||'')}">${esc(e.venue || "—")}</td>
       <td><div class="td-actions">
-        <button class="btn btn-secondary btn-sm" onclick="openEventModal('${e.id}')">✏️ Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="confirmDelete('event','${e.id}','${esc(e.name)}')">🗑️ Delete</button>
+        ${canEdit ? `<button class="btn btn-secondary btn-sm" onclick="openEventModal('${e.id}')">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDelete('event','${e.id}','${esc(e.name)}')">🗑️ Delete</button>`
+        : `<span style="font-size:11px;color:var(--muted);">No access</span>`}
       </div></td>
-    </tr>
-  `).join("");
+    </tr>`;
+  }).join("");
 }
 
 function openEventModal(id = null){
@@ -2457,12 +2502,15 @@ function openEventModal(id = null){
     document.getElementById("eventOrganiser").value = "";
   }
   document.getElementById("eventModal").classList.add("open");
+  lockCampusSelect("eventCampus");
 }
 
 async function saveEvent(){
-  const id   = document.getElementById("eventId").value;
-  const name = document.getElementById("eventName").value.trim();
+  const id     = document.getElementById("eventId").value;
+  const name   = document.getElementById("eventName").value.trim();
+  const campus = document.getElementById("eventCampus").value || null;
   if(!name){ showToast("Event name is required", "error"); return; }
+  if(!canAccessCampus(campus)){ showToast("You don't have access to manage events for this campus.", "error"); return; }
 
   let imageUrl = document.getElementById("eventImageUrl").value.trim();
   const fileInput = document.getElementById("eventImageFile");
@@ -2674,6 +2722,20 @@ function confirmDelete(type, id, name){
 
 async function doDelete(type, id){
   closeConfirm();
+
+  // Campus access check before deleting
+  if(currentRole !== "super_admin"){
+    let item = null;
+    if(type === "club")  item = allClubs.find(x => x.id === id);
+    if(type === "event") item = allEvents.find(x => x.id === id);
+    if(type === "news")  item = allNews.find(x => x.id === id);
+    if(type === "form")  item = allForms.find(x => x.id === id);
+    if(item && !canAccessCampus(item.campus === "All" ? null : item.campus)){
+      showToast("You don't have permission to delete this item.", "error");
+      return;
+    }
+  }
+
   let error;
   if(type === "club")  ({ error } = await sb.from("clubs").delete().eq("id", id));
   if(type === "event") ({ error } = await sb.from("events").delete().eq("id", id));
@@ -2722,7 +2784,7 @@ async function loadNews(){
   const { data, error } = await sb.from("news").select("*").order("created_at", { ascending: false });
   if(error){ showToast("Failed to load news", "error"); return; }
   allNews = data || [];
-  renderNews(allNews);
+  renderNews(filterByCampus(allNews));
 }
 
 function renderNews(list){
@@ -2731,7 +2793,9 @@ function renderNews(list){
     tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">📰</div><div class="empty-state-text">No articles yet. Add one above.</div></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = list.map(n => `
+  tbody.innerHTML = list.map(n => {
+    const canEdit = canAccessCampus(n.campus === "All" ? null : n.campus);
+    return `
     <tr>
       <td>${n.cover_image ? `<img class="logo-thumb" src="${esc(n.cover_image)}" style="width:56px;height:40px;object-fit:cover;border-radius:6px;" />` : "—"}</td>
       <td title="${esc(n.title)}" style="max-width:200px;">${n.pinned ? "📌 " : ""}${esc(n.title)}</td>
@@ -2741,11 +2805,12 @@ function renderNews(list){
       <td>${n.created_at ? new Date(n.created_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "—"}</td>
       <td><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:${n.published ? "#f0fdf4" : "#fef2f2"};color:${n.published ? "#16a34a" : "#dc2626"};">${n.published ? "Published" : "Draft"}</span></td>
       <td><div class="td-actions">
-        <button class="btn btn-secondary btn-sm" onclick="openNewsModal('${n.id}')">✏️ Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="confirmDelete('news','${n.id}','${esc(n.title)}')">🗑️</button>
+        ${canEdit ? `<button class="btn btn-secondary btn-sm" onclick="openNewsModal('${n.id}')">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDelete('news','${n.id}','${esc(n.title)}')">🗑️</button>`
+        : `<span style="font-size:11px;color:var(--muted);">No access</span>`}
       </div></td>
-    </tr>
-  `).join("");
+    </tr>`;
+  }).join("");
 }
 
 function openNewsModal(id = null){
@@ -2778,9 +2843,11 @@ function openNewsModal(id = null){
 }
 
 async function saveNews(){
-  const id    = document.getElementById("newsId").value;
-  const title = document.getElementById("newsTitle").value.trim();
+  const id     = document.getElementById("newsId").value;
+  const title  = document.getElementById("newsTitle").value.trim();
+  const campus = document.getElementById("newsCampus").value;
   if(!title){ showToast("Title is required", "error"); return; }
+  if(campus !== "All" && !canAccessCampus(campus)){ showToast("You don't have access to post news for this campus.", "error"); return; }
 
   let imageUrl = document.getElementById("newsImageUrl").value.trim();
   const fileInput = document.getElementById("newsImageFile");
@@ -2838,7 +2905,7 @@ async function loadForms(){
   const { data, error } = await sb.from("forms").select("*").order("created_at", { ascending: false });
   if(error){ showToast("Failed to load forms", "error"); return; }
   allForms = data || [];
-  renderForms(allForms);
+  renderForms(filterByCampus(allForms));
 }
 
 function renderForms(list){
@@ -2847,7 +2914,9 @@ function renderForms(list){
     tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">No forms yet. Add one above.</div></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = list.map(f => `
+  tbody.innerHTML = list.map(f => {
+    const canEdit = canAccessCampus(f.campus === "All" ? null : f.campus);
+    return `
     <tr>
       <td style="font-size:22px;">${esc(f.icon || "📋")}</td>
       <td title="${esc(f.title)}">${esc(f.title)}</td>
@@ -2856,11 +2925,12 @@ function renderForms(list){
       <td>${f.form_url ? `<a href="${esc(f.form_url)}" target="_blank" style="color:var(--accent);font-size:12px;">Open ↗</a>` : "—"}</td>
       <td><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:${f.active ? "#f0fdf4" : "#fef2f2"};color:${f.active ? "#16a34a" : "#dc2626"};">${f.active ? "Active" : "Inactive"}</span></td>
       <td><div class="td-actions">
-        <button class="btn btn-secondary btn-sm" onclick="openFormModal('${f.id}')">✏️ Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="confirmDelete('form','${f.id}','${esc(f.title)}')">🗑️</button>
+        ${canEdit ? `<button class="btn btn-secondary btn-sm" onclick="openFormModal('${f.id}')">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDelete('form','${f.id}','${esc(f.title)}')">🗑️</button>`
+        : `<span style="font-size:11px;color:var(--muted);">No access</span>`}
       </div></td>
-    </tr>
-  `).join("");
+    </tr>`;
+  }).join("");
 }
 
 function openFormModal(id = null){
@@ -2884,14 +2954,17 @@ function openFormModal(id = null){
     document.getElementById("formActive").checked= true;
   }
   document.getElementById("formModal").classList.add("open");
+  lockCampusSelect("formCampus");
 }
 
 async function saveForm(){
-  const id    = document.getElementById("formId").value;
-  const title = document.getElementById("formTitle").value.trim();
-  const url   = document.getElementById("formUrl").value.trim();
+  const id     = document.getElementById("formId").value;
+  const title  = document.getElementById("formTitle").value.trim();
+  const url    = document.getElementById("formUrl").value.trim();
+  const campus = document.getElementById("formCampus").value;
   if(!title){ showToast("Title is required", "error"); return; }
   if(!url)  { showToast("Form URL is required", "error"); return; }
+  if(campus !== "All" && !canAccessCampus(campus)){ showToast("You don't have access to manage forms for this campus.", "error"); return; }
 
   const payload = {
     title,
