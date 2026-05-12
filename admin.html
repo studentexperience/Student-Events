@@ -3590,20 +3590,14 @@ ${clubsByC.map(c => `- ${c.campus}: ${c.clubs} clubs`).join("\n")}
     sections.recommend   && "6. Recommendations — data-driven suggestions for improvement",
   ].filter(Boolean).join("\n");
 
-  const prompt = `You are an expert student affairs analyst at Aga Khan University.
-You have been given aggregated dashboard data (no personal information) about student events and clubs.
-Write a ${toneMap[tone]} report.
-${typeMap[reportType]}
+  const prompt = `You are a student affairs analyst at Aga Khan University.
+Write a ${toneMap[tone]} report. ${typeMap[reportType]}
+Tone: ${tone}. Include ONLY these sections: ${sectionInstructions}
+Use ## for section headers, **bold** for key numbers, - for bullet points.
+Only use the data provided below. Be specific with numbers.
 
-Include these sections:
-${sectionInstructions}
-
-Use markdown formatting: ## for section headers, **bold** for key figures, bullet points for lists.
-Be specific with the numbers. Identify trends, highlight achievements, and flag areas needing attention.
-Keep the tone consistent throughout. Do not make up data — only use what is provided.
-
-HERE IS THE DATA:
-${dataSnapshot}`;
+DATA:
+${dataSnapshot}`.trim();
 
   // ── Call Gemini API ──
   const outputEl     = document.getElementById("reportOutput");
@@ -3620,13 +3614,13 @@ ${dataSnapshot}`;
 
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+          generationConfig: { temperature: 0.7, maxOutputTokens: 1500 }
         })
       }
     );
