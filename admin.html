@@ -2093,14 +2093,8 @@ function showSection(name, btn){
   btn.classList.add("active");
 
   // Re-render charts when dashboard becomes visible
-  // Charts lose their canvas context when hidden via display:none
   if(name === "dashboard" && dashEventData.length > 0){
-    setTimeout(() => {
-      renderCampusChart();
-      renderMonthChart();
-      renderCampusMonthChart();
-      renderCategoryChart();
-    }, 50);
+    renderAllCharts();
   }
 }
 
@@ -2309,10 +2303,27 @@ async function loadDashboard(){
     ).join("");
   });
 
-  renderCampusChart();
-  renderMonthChart();
-  renderCampusMonthChart();
-  renderCategoryChart();
+  renderAllCharts();
+}
+
+/* ── Reliable chart renderer — waits for canvas to be visible ── */
+function waitForVisible(canvasId, renderFn, attempts = 0){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  const { width, height } = canvas.getBoundingClientRect();
+  if(width > 0 && height > 0){
+    renderFn();
+  } else if(attempts < 20){
+    // Retry every 100ms up to 2 seconds
+    setTimeout(() => waitForVisible(canvasId, renderFn, attempts + 1), 100);
+  }
+}
+
+function renderAllCharts(){
+  waitForVisible("chartByCampus",      renderCampusChart);
+  waitForVisible("chartByMonth",       renderMonthChart);
+  waitForVisible("chartCampusByMonth", renderCampusMonthChart);
+  waitForVisible("chartByCategory",    renderCategoryChart);
 }
 
 /* ── Chart 1: Events by Campus ── */
