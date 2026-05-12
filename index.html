@@ -499,60 +499,38 @@
       .organizer-banner{ font-size:11.5px; padding:8px 14px; }
     }
 
-    /* When calendar view active, hide the sidebar filters and use full width */
-    .page-grid.calendar-mode {
-      grid-template-columns: 1fr;
-    }
-    .page-grid.calendar-mode .filters {
-      display: none;
-    }
-
-    /* Compact calendar filter bar */
-    .cal-filter-bar {
-      display: none;
-      gap: 8px;
-      flex-wrap: wrap;
+    /* Add to Calendar button */
+    .add-to-cal-btn {
+      display: inline-flex;
       align-items: center;
-      margin-bottom: 14px;
-      padding: 10px 14px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: var(--shadow);
-    }
-    .cal-filter-bar.visible { display: flex; }
-    .cal-filter-bar select,
-    .cal-filter-bar input[type="text"] {
-      padding: 6px 10px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-family: 'Poppins', sans-serif;
-      font-size: 12px;
-      background: white;
-      outline: none;
-      min-width: 120px;
-    }
-    .cal-filter-bar input[type="text"] { flex: 1; min-width: 160px; }
-    .cal-filter-bar select:focus,
-    .cal-filter-bar input:focus { border-color: #2563eb; }
-    .cal-filter-bar-label {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: .5px;
-    }
-    .cal-filter-clear {
+      gap: 5px;
       padding: 6px 12px;
-      background: none;
-      border: 1px solid var(--border);
+      background: #f0fdf4;
+      color: #16a34a;
+      border: 1.5px solid #bbf7d0;
       border-radius: 8px;
-      font-family: 'Poppins', sans-serif;
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 600;
       cursor: pointer;
-      color: var(--muted);
+      font-family: 'Poppins', sans-serif;
+      transition: all .15s;
+      white-space: nowrap;
+      text-decoration: none;
     }
-    .cal-filter-clear:hover { background: #f3f4f6; color: var(--ink); }
+    .add-to-cal-btn:hover {
+      background: #16a34a;
+      color: white;
+      border-color: #16a34a;
+    }
+
+    /* Calendar detail add-to-cal row */
+    .cal-detail-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
 
     /* ── CALENDAR VIEW ── */
     .view-switch {
@@ -906,27 +884,7 @@
         </section>
 
         <!-- Calendar View -->
-        <section id="calendarSection" style="display:none;grid-column:1/-1;">
-          <!-- Compact filter bar (only visible in calendar mode) -->
-          <div class="cal-filter-bar visible" id="calFilterBar">
-            <span class="cal-filter-bar-label">Filter:</span>
-            <input type="text" id="calSearchQ" placeholder="🔍 Search…" />
-            <select id="calCampusFilter">
-              <option value="">All Campuses</option>
-              <option value="Karachi">Karachi</option>
-              <option value="Nairobi">Nairobi</option>
-              <option value="Kampala">Kampala</option>
-              <option value="Dar es Salaam">Dar es Salaam</option>
-            </select>
-            <select id="calClubFilter">
-              <option value="">All Clubs</option>
-            </select>
-            <select id="calCatFilter">
-              <option value="">All Categories</option>
-            </select>
-            <button class="cal-filter-clear" id="calClearBtn">Clear</button>
-          </div>
-
+        <section id="calendarSection" style="display:none;">
           <div class="calendar-wrap visible">
             <div class="calendar-header">
               <button class="cal-nav-btn" id="calPrev" aria-label="Previous month">‹</button>
@@ -1119,6 +1077,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <span class="interested-count" id="count-${e.id}">${e.interested || 0}</span>
             <span>${e.interested === 1 ? 'person' : 'people'} interested</span>
           </button>
+          ${e.id && e.date ? `<button class="add-to-cal-btn" onclick="downloadICS('${e.id}')" title="Add to your calendar">📆 Save</button>` : ""}
         </div>` : "";
 
       // Cover: real image → use it; missing → pick from curated student activity pool
@@ -1292,12 +1251,16 @@ document.addEventListener("DOMContentLoaded", () => {
     render();
   }
 
-  // Wire up filter controls
-  q.addEventListener("input", render);
-  dateFilter.addEventListener("change", render);
-  clubFilter.addEventListener("change", render);
-  catFilter.addEventListener("change", render);
-  campusFilter.addEventListener("change", render);
+  // Wire up filter controls — re-render both list and calendar
+  function onFilterChange(){
+    if(calSection.style.display !== "none") renderCalendar();
+    else render();
+  }
+  q.addEventListener("input", onFilterChange);
+  dateFilter.addEventListener("change", onFilterChange);
+  clubFilter.addEventListener("change", onFilterChange);
+  catFilter.addEventListener("change", onFilterChange);
+  campusFilter.addEventListener("change", onFilterChange);
 
   clearBtn.addEventListener("click", () => {
     q.value = "";
@@ -1336,58 +1299,81 @@ document.addEventListener("DOMContentLoaded", () => {
     viewCalBtn.classList.remove("active");
     listSection.style.display = "";
     calSection.style.display  = "none";
-    pageGrid.classList.remove("calendar-mode");
   });
+
   viewCalBtn.addEventListener("click", () => {
     viewCalBtn.classList.add("active");
     viewListBtn.classList.remove("active");
     listSection.style.display = "none";
     calSection.style.display  = "";
-    pageGrid.classList.add("calendar-mode");
-    syncCalFilterDropdowns();
     renderCalendar();
   });
 
-  /* ══ CALENDAR FILTERS ══ */
-  const calSearchQ      = document.getElementById("calSearchQ");
-  const calCampusFilter = document.getElementById("calCampusFilter");
-  const calClubFilter   = document.getElementById("calClubFilter");
-  const calCatFilter    = document.getElementById("calCatFilter");
-  const calClearBtn     = document.getElementById("calClearBtn");
+  /* ══ ADD TO CALENDAR (.ics) ══ */
+  function pad(n){ return String(n).padStart(2, "0"); }
 
-  function syncCalFilterDropdowns(){
-    // Populate club and category dropdowns from the main filter's options
-    calClubFilter.innerHTML = clubFilter.innerHTML;
-    calCatFilter.innerHTML  = catFilter.innerHTML;
-    // Sync current selections from main filters
-    calSearchQ.value      = q.value;
-    calCampusFilter.value = campusFilter.value;
-    calClubFilter.value   = clubFilter.value;
-    calCatFilter.value    = catFilter.value;
+  function dateToICS(date, time){
+    // date is a JS Date, time is "HH:MM" string or empty
+    const d = new Date(date);
+    let hours = 9, mins = 0;
+    if(time){
+      const parts = time.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+      if(parts){
+        hours = parseInt(parts[1]);
+        mins  = parseInt(parts[2]);
+        if(parts[3] && parts[3].toUpperCase() === "PM" && hours < 12) hours += 12;
+        if(parts[3] && parts[3].toUpperCase() === "AM" && hours === 12) hours = 0;
+      }
+    }
+    return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(hours)}${pad(mins)}00`;
   }
 
-  [calSearchQ, calCampusFilter, calClubFilter, calCatFilter].forEach(el => {
-    el.addEventListener(el.tagName === "INPUT" ? "input" : "change", () => {
-      // Mirror to main filters so the underlying filter logic works
-      q.value            = calSearchQ.value;
-      campusFilter.value = calCampusFilter.value;
-      clubFilter.value   = calClubFilter.value;
-      catFilter.value    = calCatFilter.value;
-      renderCalendar();
-    });
-  });
+  function generateICS(event){
+    const startDt  = dateToICS(event.date, event.time);
+    // Default 1 hour duration
+    const endDate  = new Date(event.date);
+    const hrs      = event.time ? parseInt(event.time.split(":")[0]) : 9;
+    endDate.setHours(hrs + 1);
+    const endDt    = dateToICS(endDate, null);
+    const now      = dateToICS(new Date(), null);
+    const uid      = `${event.id || Math.random().toString(36).slice(2)}@akucampuslife`;
+    const location = event.venue ? event.venue.replace(/,/g, "\\,") : "";
+    const desc     = [
+      event.organiser ? `Organised by: ${event.organiser}` : "",
+      event.campus    ? `Campus: ${event.campus}`           : "",
+      event.category  ? `Category: ${event.category}`      : "",
+    ].filter(Boolean).join("\\n");
 
-  calClearBtn.addEventListener("click", () => {
-    calSearchQ.value      = "";
-    calCampusFilter.value = "";
-    calClubFilter.value   = "";
-    calCatFilter.value    = "";
-    q.value               = "";
-    campusFilter.value    = "";
-    clubFilter.value      = "";
-    catFilter.value       = "";
-    renderCalendar();
-  });
+    return [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//AKU Campus Life//EN",
+      "CALSCALE:GREGORIAN",
+      "METHOD:PUBLISH",
+      "BEGIN:VEVENT",
+      `UID:${uid}`,
+      `DTSTAMP:${now}`,
+      `DTSTART:${startDt}`,
+      `DTEND:${endDt}`,
+      `SUMMARY:${event.name.replace(/,/g, "\\,")}`,
+      `DESCRIPTION:${desc}`,
+      `LOCATION:${location}`,
+      "END:VEVENT",
+      "END:VCALENDAR"
+    ].join("\r\n");
+  }
+
+  window.downloadICS = function(eventId){
+    const event = allEvents.find(e => e.id === eventId);
+    if(!event || !event.date) return;
+    const ics      = generateICS(event);
+    const blob     = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+    const a        = document.createElement("a");
+    a.href         = URL.createObjectURL(blob);
+    a.download     = `${event.name.replace(/[^a-z0-9]/gi,"_")}.ics`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
 
   /* ══ CALENDAR ══ */
   let calDate     = new Date();
@@ -1518,15 +1504,17 @@ document.addEventListener("DOMContentLoaded", () => {
           const vn    = e.venue ? `<span>📍 ${escapeHtml(e.venue)}</span>` : "";
           const og    = e.organiser ? `<span>🎭 ${escapeHtml(e.organiser)}</span>` : "";
           const cm    = e.campus ? `<span>🏫 ${escapeHtml(e.campus)}</span>` : "";
-          const href  = e.organiser ? `href="clubs.html?club=${encodeURIComponent(e.organiser)}"` : `href="#"`;
+          const clubHref = e.organiser ? `href="clubs.html?club=${encodeURIComponent(e.organiser)}"` : "";
+          const icsBtn = e.id ? `<button class="add-to-cal-btn" onclick="event.preventDefault();event.stopPropagation();downloadICS('${e.id}')">📆 Add to Calendar</button>` : "";
           return `
-            <a class="cal-detail-event" ${href}>
+            <div class="cal-detail-event">
               <div class="cal-detail-color" style="background:${color};"></div>
               <div class="cal-detail-body">
-                <div class="cal-detail-name">${escapeHtml(e.name)}</div>
+                <div class="cal-detail-name">${e.organiser ? `<a ${clubHref} style="color:inherit;text-decoration:none;" onclick="event.stopPropagation()">${escapeHtml(e.name)}</a>` : escapeHtml(e.name)}</div>
                 <div class="cal-detail-meta">${tm}${vn}${og}${cm}</div>
+                <div class="cal-detail-actions">${icsBtn}</div>
               </div>
-            </a>`;
+            </div>`;
         }).join("")}
       </div>`;
     detailEl.classList.add("visible");
