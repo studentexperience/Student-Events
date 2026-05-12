@@ -499,6 +499,61 @@
       .organizer-banner{ font-size:11.5px; padding:8px 14px; }
     }
 
+    /* When calendar view active, hide the sidebar filters and use full width */
+    .page-grid.calendar-mode {
+      grid-template-columns: 1fr;
+    }
+    .page-grid.calendar-mode .filters {
+      display: none;
+    }
+
+    /* Compact calendar filter bar */
+    .cal-filter-bar {
+      display: none;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 14px;
+      padding: 10px 14px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+    }
+    .cal-filter-bar.visible { display: flex; }
+    .cal-filter-bar select,
+    .cal-filter-bar input[type="text"] {
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      background: white;
+      outline: none;
+      min-width: 120px;
+    }
+    .cal-filter-bar input[type="text"] { flex: 1; min-width: 160px; }
+    .cal-filter-bar select:focus,
+    .cal-filter-bar input:focus { border-color: #2563eb; }
+    .cal-filter-bar-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .cal-filter-clear {
+      padding: 6px 12px;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--muted);
+    }
+    .cal-filter-clear:hover { background: #f3f4f6; color: var(--ink); }
+
     /* ── CALENDAR VIEW ── */
     .view-switch {
       display: inline-flex;
@@ -852,6 +907,26 @@
 
         <!-- Calendar View -->
         <section id="calendarSection" style="display:none;grid-column:1/-1;">
+          <!-- Compact filter bar (only visible in calendar mode) -->
+          <div class="cal-filter-bar visible" id="calFilterBar">
+            <span class="cal-filter-bar-label">Filter:</span>
+            <input type="text" id="calSearchQ" placeholder="🔍 Search…" />
+            <select id="calCampusFilter">
+              <option value="">All Campuses</option>
+              <option value="Karachi">Karachi</option>
+              <option value="Nairobi">Nairobi</option>
+              <option value="Kampala">Kampala</option>
+              <option value="Dar es Salaam">Dar es Salaam</option>
+            </select>
+            <select id="calClubFilter">
+              <option value="">All Clubs</option>
+            </select>
+            <select id="calCatFilter">
+              <option value="">All Categories</option>
+            </select>
+            <button class="cal-filter-clear" id="calClearBtn">Clear</button>
+          </div>
+
           <div class="calendar-wrap visible">
             <div class="calendar-header">
               <button class="cal-nav-btn" id="calPrev" aria-label="Previous month">‹</button>
@@ -1250,22 +1325,67 @@ document.addEventListener("DOMContentLoaded", () => {
   loadEvents();
 
   /* ══ VIEW SWITCH (List ↔ Calendar) ══ */
-  const viewListBtn = document.getElementById("viewListBtn");
-  const viewCalBtn  = document.getElementById("viewCalBtn");
-  const listSection = document.getElementById("listViewSection");
-  const calSection  = document.getElementById("calendarSection");
+  const viewListBtn  = document.getElementById("viewListBtn");
+  const viewCalBtn   = document.getElementById("viewCalBtn");
+  const listSection  = document.getElementById("listViewSection");
+  const calSection   = document.getElementById("calendarSection");
+  const pageGrid     = document.querySelector(".page-grid");
 
   viewListBtn.addEventListener("click", () => {
     viewListBtn.classList.add("active");
     viewCalBtn.classList.remove("active");
     listSection.style.display = "";
     calSection.style.display  = "none";
+    pageGrid.classList.remove("calendar-mode");
   });
   viewCalBtn.addEventListener("click", () => {
     viewCalBtn.classList.add("active");
     viewListBtn.classList.remove("active");
     listSection.style.display = "none";
     calSection.style.display  = "";
+    pageGrid.classList.add("calendar-mode");
+    syncCalFilterDropdowns();
+    renderCalendar();
+  });
+
+  /* ══ CALENDAR FILTERS ══ */
+  const calSearchQ      = document.getElementById("calSearchQ");
+  const calCampusFilter = document.getElementById("calCampusFilter");
+  const calClubFilter   = document.getElementById("calClubFilter");
+  const calCatFilter    = document.getElementById("calCatFilter");
+  const calClearBtn     = document.getElementById("calClearBtn");
+
+  function syncCalFilterDropdowns(){
+    // Populate club and category dropdowns from the main filter's options
+    calClubFilter.innerHTML = clubFilter.innerHTML;
+    calCatFilter.innerHTML  = catFilter.innerHTML;
+    // Sync current selections from main filters
+    calSearchQ.value      = q.value;
+    calCampusFilter.value = campusFilter.value;
+    calClubFilter.value   = clubFilter.value;
+    calCatFilter.value    = catFilter.value;
+  }
+
+  [calSearchQ, calCampusFilter, calClubFilter, calCatFilter].forEach(el => {
+    el.addEventListener(el.tagName === "INPUT" ? "input" : "change", () => {
+      // Mirror to main filters so the underlying filter logic works
+      q.value            = calSearchQ.value;
+      campusFilter.value = calCampusFilter.value;
+      clubFilter.value   = calClubFilter.value;
+      catFilter.value    = calCatFilter.value;
+      renderCalendar();
+    });
+  });
+
+  calClearBtn.addEventListener("click", () => {
+    calSearchQ.value      = "";
+    calCampusFilter.value = "";
+    calClubFilter.value   = "";
+    calCatFilter.value    = "";
+    q.value               = "";
+    campusFilter.value    = "";
+    clubFilter.value      = "";
+    catFilter.value       = "";
     renderCalendar();
   });
 
@@ -1283,8 +1403,20 @@ document.addEventListener("DOMContentLoaded", () => {
     return CAL_PALETTE[Math.abs(hash) % CAL_PALETTE.length];
   }
 
+  function getFilteredCalEvents(){
+    const qv  = q.value.trim().toLowerCase();
+    const cv  = clubFilter.value;
+    const tv  = catFilter.value;
+    const cpv = campusFilter.value;
+    return allEvents
+      .filter(e => !cv  || e.organiser === cv)
+      .filter(e => !tv  || e.category  === tv)
+      .filter(e => !cpv || e.campus    === cpv)
+      .filter(e => !qv  || `${e.name} ${e.organiser} ${e.category} ${e.venue} ${e.time} ${e.campus}`.toLowerCase().includes(qv));
+  }
+
   function eventsOnDate(date){
-    return allEvents.filter(e => e.date && sameDay(e.date, date));
+    return getFilteredCalEvents().filter(e => e.date && sameDay(e.date, date));
   }
 
   function renderCalendar(){
