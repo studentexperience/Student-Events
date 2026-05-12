@@ -1709,25 +1709,42 @@ function makeGradient(ctx, color, alpha1 = 0.85, alpha2 = 0.25){
   return gr;
 }
 
-/* ── Download chart as PNG ── */
+/* ── Download chart as high-res PNG ── */
 function downloadChart(canvasId, label){
-  const canvas = document.getElementById(canvasId);
-  if(!canvas) return;
+  const sourceCanvas = document.getElementById(canvasId);
+  if(!sourceCanvas) return;
 
-  // Draw on a white background canvas
-  const out = document.createElement("canvas");
-  out.width  = canvas.width;
-  out.height = canvas.height;
-  const octx = out.getContext("2d");
+  const chartInst = chartInstances[canvasId];
+  if(!chartInst) return;
+
+  // Export at 3× resolution for crisp print/presentation quality
+  const SCALE  = 3;
+  const W      = sourceCanvas.offsetWidth  * SCALE;
+  const H      = sourceCanvas.offsetHeight * SCALE;
+
+  const out    = document.createElement("canvas");
+  out.width    = W;
+  out.height   = H;
+  const octx   = out.getContext("2d");
+
+  // White background
   octx.fillStyle = "#ffffff";
-  octx.fillRect(0, 0, out.width, out.height);
-  octx.drawImage(canvas, 0, 0);
+  octx.fillRect(0, 0, W, H);
+
+  // Scale up and draw the chart
+  octx.scale(SCALE, SCALE);
+  octx.drawImage(sourceCanvas, 0, 0, sourceCanvas.offsetWidth, sourceCanvas.offsetHeight);
+
+  // Add a subtle title watermark at the top
+  octx.font = "bold 13px 'Poppins', sans-serif";
+  octx.fillStyle = "#6b7280";
+  octx.fillText(`AKU Campus Life · ${label} · ${new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"})}`, 12, 16);
 
   const a    = document.createElement("a");
-  a.href     = out.toDataURL("image/png");
+  a.href     = out.toDataURL("image/png", 1.0);
   a.download = `${label.replace(/\s+/g,"-").toLowerCase()}-${new Date().toISOString().split("T")[0]}.png`;
   a.click();
-  showToast(`Downloaded: ${label}`);
+  showToast(`Downloaded high-res: ${label}`);
 }
 
 async function loadDashboard(){
