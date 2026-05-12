@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
 
   <style>
     :root {
@@ -3777,10 +3777,14 @@ async function downloadReport(){
   const filename = `AKU-Student-Experience-Report-${campus}-${year}.docx`;
 
   try {
+    // docx UMD bundle exposes itself as window.docx
+    const docxLib = window.docx || window.DocxJS || window.Docx;
+    if(!docxLib) throw new Error("Word library not loaded. Please refresh the page and try again.");
+
     const {
       Document, Packer, Paragraph, TextRun, HeadingLevel,
       AlignmentType, BorderStyle, LevelFormat
-    } = window.docx;
+    } = docxLib;
 
     const children = [];
 
@@ -3874,11 +3878,14 @@ async function downloadReport(){
 }
 
 function buildRuns(text){
+  const docxLib = window.docx || window.DocxJS || window.Docx || {};
+  const TextRun = docxLib.TextRun;
+  if(!TextRun) return [];
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
   return parts.map(part => {
-    if(part.startsWith("**")&&part.endsWith("**"))
-      return new window.docx.TextRun({text:part.slice(2,-2),bold:true,font:"Arial",size:24});
-    return new window.docx.TextRun({text:part,font:"Arial",size:24});
+    if(part.startsWith("**") && part.endsWith("**"))
+      return new TextRun({text:part.slice(2,-2),bold:true,font:"Arial",size:24});
+    return new TextRun({text:part,font:"Arial",size:24});
   });
 }
 // Wrap all tables in a scroll container for horizontal scrolling on small screens
