@@ -3506,8 +3506,13 @@ async function generateReport(){
   if(focusCampus !== "All") filtered = filtered.filter(e => e.campus === focusCampus);
   if(year !== "All") filtered = filtered.filter(e => e.event_date && new Date(e.event_date).getFullYear() === parseInt(year));
 
-  // Campus breakdown
-  const campusBreakdown = CAMPUSES.map(c => ({
+  // Filtered clubs (respect campus selection)
+  const filteredClubs = focusCampus === "All"
+    ? allClubs
+    : allClubs.filter(cl => cl.campus === focusCampus);
+
+  // Campus breakdown — only show selected campus if filtered
+  const campusBreakdown = (focusCampus === "All" ? CAMPUSES : [focusCampus]).map(c => ({
     campus:   c,
     total:    filtered.filter(e => e.campus === c).length,
     upcoming: filtered.filter(e => e.campus === c && e.event_date >= today).length,
@@ -3535,35 +3540,34 @@ async function generateReport(){
   const peakMonth = monthlyBreakdown.reduce((a,b) => a.count > b.count ? a : b, {month:"N/A",count:0});
   const mostActiveCampus = campusBreakdown.reduce((a,b) => a.total > b.total ? a : b, {campus:"N/A",total:0});
 
-  // Clubs count per campus
-  const clubsByC = CAMPUSES.map(c => ({
+  // Clubs count — filtered by campus
+  const clubsByC = (focusCampus === "All" ? CAMPUSES : [focusCampus]).map(c => ({
     campus: c,
     clubs: allClubs.filter(cl => cl.campus === c).length
   }));
 
   const dataSnapshot = `
-DASHBOARD DATA SNAPSHOT — Aga Khan University Student Experience
+REPORT SCOPE: ${focusCampus === "All" ? "All Campuses" : focusCampus} | ${year === "All" ? "All Years" : year}
 Generated: ${new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"})}
-Focus: ${focusCampus === "All" ? "All Campuses" : focusCampus} | Period: ${year === "All" ? "All time" : year}
 
-OVERALL STATS:
-- Total events in selection: ${filtered.length}
+OVERALL STATS (filtered):
+- Total events: ${filtered.length}
 - Upcoming events: ${filtered.filter(e => e.event_date >= today).length}
 - Past events: ${filtered.filter(e => e.event_date < today).length}
-- Total clubs (all campuses): ${allClubs.length}
-- Peak activity month: ${peakMonth.month} (${peakMonth.count} events)
-- Most active campus: ${mostActiveCampus.campus} (${mostActiveCampus.total} events)
+- Total clubs: ${filteredClubs.length}
+- Peak month: ${peakMonth.month} (${peakMonth.count} events)
+${focusCampus === "All" ? `- Most active campus: ${mostActiveCampus.campus} (${mostActiveCampus.total} events)` : ""}
 
 CAMPUS BREAKDOWN:
-${campusBreakdown.map(c => `- ${c.campus}: ${c.total} total (${c.upcoming} upcoming, ${c.past} past)`).join("\n")}
+${campusBreakdown.map(c => `- ${c.campus}: ${c.total} events (${c.upcoming} upcoming, ${c.past} past)`).join("\n")}
 
 MONTHLY TREND:
-${monthlyBreakdown.filter(m => m.count > 0).map(m => `- ${m.month}: ${m.count} events`).join("\n")}
+${monthlyBreakdown.filter(m => m.count > 0).map(m => `- ${m.month}: ${m.count} events`).join("\n") || "- No events recorded"}
 
 CATEGORY DISTRIBUTION:
-${categoryBreakdown.map(c => `- ${c.category}: ${c.count} events (${c.pct}%)`).join("\n")}
+${categoryBreakdown.length ? categoryBreakdown.map(c => `- ${c.category}: ${c.count} events (${c.pct}%)`).join("\n") : "- No categorised events"}
 
-CLUBS PER CAMPUS:
+CLUBS:
 ${clubsByC.map(c => `- ${c.campus}: ${c.clubs} clubs`).join("\n")}
   `.trim();
 
@@ -3591,12 +3595,14 @@ ${clubsByC.map(c => `- ${c.campus}: ${c.clubs} clubs`).join("\n")}
   ].filter(Boolean).join("\n");
 
   const prompt = `You are a student affairs analyst at Aga Khan University.
+IMPORTANT: This report is STRICTLY for ${focusCampus === "All" ? "ALL campuses combined" : `${focusCampus} campus ONLY`} and ${year === "All" ? "all years" : `the year ${year} ONLY`}.
+Do NOT mention or compare other campuses unless this is an all-campus report.
 Write a ${toneMap[tone]} report. ${typeMap[reportType]}
-Tone: ${tone}. Include ONLY these sections: ${sectionInstructions}
+Include ONLY these sections: ${sectionInstructions}
 Use ## for section headers, **bold** for key numbers, - for bullet points.
-Only use the data provided below. Be specific with numbers.
+Only use the data below. Be specific with numbers. Do not invent data.
 
-DATA:
+DATA (${focusCampus === "All" ? "All Campuses" : focusCampus} | ${year === "All" ? "All Years" : year}):
 ${dataSnapshot}`.trim();
 
   // ── Call Gemini API ──
