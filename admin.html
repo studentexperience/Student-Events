@@ -273,6 +273,14 @@
       overflow: hidden;
       box-shadow: var(--shadow);
     }
+    .table-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .table-scroll::-webkit-scrollbar { height: 5px; }
+    .table-scroll::-webkit-scrollbar-track { background: #f3f4f6; }
+    .table-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 999px; }
+    .table-scroll::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
     .table-toolbar {
       padding: 14px 18px;
       border-bottom: 1px solid var(--border);
@@ -294,6 +302,7 @@
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
+      min-width: 860px;
     }
     th {
       background: var(--bg);
@@ -3255,6 +3264,14 @@ function esc(str){
 }
 
 /* ══ INIT ══ */
+// Wrap all tables in a scroll container for horizontal scrolling on small screens
+document.querySelectorAll(".table-wrap table").forEach(table => {
+  const wrapper = document.createElement("div");
+  wrapper.className = "table-scroll";
+  table.parentNode.insertBefore(wrapper, table);
+  wrapper.appendChild(table);
+});
+
 checkSession();
 </script>
 </body>
