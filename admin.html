@@ -637,6 +637,36 @@
       height: 280px;
     }
 
+    /* Campus multi-checkbox */
+    .campus-check-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: background .12s;
+      border: 1.5px solid transparent;
+    }
+    .campus-check-row:hover { background: #eff6ff; }
+    .campus-check-row input[type="checkbox"] {
+      width: 16px; height: 16px;
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .campus-check-row input[type="checkbox"]:checked ~ .campus-check-label {
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .campus-check-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink);
+      transition: color .12s;
+    }
+
     /* ── PERMISSIONS EDITOR ── */
     .perms-grid {
       display: grid;
@@ -1519,16 +1549,32 @@
       <input type="hidden" id="permissionsAdminId" />
       <p id="permissionsAdminEmail" style="font-size:13px;color:var(--muted);margin-bottom:16px;"></p>
 
-      <!-- Campus access -->
-      <div class="field" style="margin-bottom:18px;">
-        <label>Campus Access</label>
-        <select id="permCampus" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;width:100%;background:white;">
-          <option value="All">All Campuses</option>
-          <option value="Karachi">Karachi</option>
-          <option value="Nairobi">Nairobi</option>
-          <option value="Kampala">Kampala</option>
-          <option value="Dar es Salaam">Dar es Salaam</option>
-        </select>
+      <!-- Campus access — multi-select checkboxes -->
+      <div style="margin-bottom:18px;">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;">Campus Access</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <label class="campus-check-row">
+            <input type="checkbox" id="permCampusAll" onchange="handleAllCampusToggle(this)" />
+            <span class="campus-check-label">🌍 All Campuses</span>
+          </label>
+          <label class="campus-check-row">
+            <input type="checkbox" id="permCampusKarachi" class="campus-check" value="Karachi" onchange="handleCampusCheck()" />
+            <span class="campus-check-label">📍 Karachi</span>
+          </label>
+          <label class="campus-check-row">
+            <input type="checkbox" id="permCampusNairobi" class="campus-check" value="Nairobi" onchange="handleCampusCheck()" />
+            <span class="campus-check-label">📍 Nairobi</span>
+          </label>
+          <label class="campus-check-row">
+            <input type="checkbox" id="permCampusKampala" class="campus-check" value="Kampala" onchange="handleCampusCheck()" />
+            <span class="campus-check-label">📍 Kampala</span>
+          </label>
+          <label class="campus-check-row">
+            <input type="checkbox" id="permCampusDar" class="campus-check" value="Dar es Salaam" onchange="handleCampusCheck()" />
+            <span class="campus-check-label">📍 Dar es Salaam</span>
+          </label>
+        </div>
+        <div id="campusCheckError" style="font-size:12px;color:var(--danger);margin-top:8px;display:none;">Please select at least one campus.</div>
       </div>
 
       <!-- Permission toggles -->
@@ -1744,15 +1790,24 @@ const DEFAULT_PERMS = {
 };
 
 function buildPermissions(role, permsJson){
-  // Super admins always get everything
-  if(role === "super_admin") return { ...DEFAULT_PERMS };
-  // Merge stored permissions with defaults (so new permissions default to true)
-  return { ...DEFAULT_PERMS, ...(permsJson || {}) };
+  if(role === "super_admin") return { ...DEFAULT_PERMS, campus: ["All"] };
+  const merged = { ...DEFAULT_PERMS, ...(permsJson || {}) };
+  // Normalise campus to always be an array
+  if(!Array.isArray(merged.campus)){
+    merged.campus = merged.campus ? [merged.campus] : ["All"];
+  }
+  return merged;
 }
 
 function hasPermission(key){
   if(currentRole === "super_admin") return true;
   return currentPermissions[key] !== false;
+}
+
+function canAccessCampus(campus){
+  if(currentRole === "super_admin") return true;
+  const camps = currentPermissions.campus || ["All"];
+  return camps.includes("All") || camps.includes(campus);
 }
 
 function showAdminPanel(){
@@ -2459,9 +2514,11 @@ function renderAdmins(list){
     return;
   }
   el.innerHTML = list.map(a => {
+    const rawCampus = a.permissions?.campus || a.campus || ["All"];
+    const campuses  = Array.isArray(rawCampus) ? rawCampus : [rawCampus];
+    const campusLabel = campuses.includes("All") ? "All Campuses" : campuses.join(", ");
     const isSuperAdmin = a.role === "super_admin";
     const isMe         = a.email === currentUser.email;
-    const campus       = a.permissions?.campus || a.campus || "All";
     return `
       <div class="admin-item">
         <div class="admin-avatar" style="background:${isSuperAdmin ? '#fef3c7' : 'var(--accent-light)'};color:${isSuperAdmin ? '#92400e' : 'var(--accent)'}">
@@ -2471,7 +2528,7 @@ function renderAdmins(list){
           <div class="admin-email">${esc(a.email)}</div>
           <div style="display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;">
             <span class="role-badge ${a.role || 'admin'}">${isSuperAdmin ? 'Super Admin' : 'Admin'}</span>
-            <span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:999px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;">📍 ${esc(campus)}</span>
+            <span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:999px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;">📍 ${esc(campusLabel)}</span>
             ${!isSuperAdmin ? `
               <span style="font-size:10px;color:var(--muted);">
                 ${[
@@ -2499,25 +2556,78 @@ function openPermissionsModal(id, email, permsRaw){
     : (permsRaw || {});
   const p = { ...DEFAULT_PERMS, ...perms };
 
-  document.getElementById("permissionsAdminId").value    = id;
+  document.getElementById("permissionsAdminId").value       = id;
   document.getElementById("permissionsAdminEmail").textContent = `Editing permissions for: ${email}`;
-  document.getElementById("permCampus").value            = p.campus || "All";
-  document.getElementById("permEvents").checked          = p.manage_events   !== false;
-  document.getElementById("permClubs").checked           = p.manage_clubs    !== false;
-  document.getElementById("permNews").checked            = p.manage_news     !== false;
-  document.getElementById("permForms").checked           = p.manage_forms    !== false;
-  document.getElementById("permHome").checked            = p.edit_home       !== false;
-  document.getElementById("permDashboard").checked       = p.view_dashboard  !== false;
-  document.getElementById("permDownload").checked        = p.download_charts !== false;
-  document.getElementById("permImport").checked          = p.import_csv      !== false;
+
+  // Campus — normalise to array
+  let campuses = p.campus;
+  if(!campuses) campuses = ["All"];
+  else if(!Array.isArray(campuses)) campuses = [campuses];
+
+  const isAll = campuses.includes("All");
+  document.getElementById("permCampusAll").checked     = isAll;
+  document.getElementById("permCampusKarachi").checked = isAll || campuses.includes("Karachi");
+  document.getElementById("permCampusNairobi").checked = isAll || campuses.includes("Nairobi");
+  document.getElementById("permCampusKampala").checked = isAll || campuses.includes("Kampala");
+  document.getElementById("permCampusDar").checked     = isAll || campuses.includes("Dar es Salaam");
+
+  // Disable individual checkboxes when All is checked
+  toggleIndividualCampuses(isAll);
+
+  document.getElementById("permEvents").checked    = p.manage_events   !== false;
+  document.getElementById("permClubs").checked     = p.manage_clubs    !== false;
+  document.getElementById("permNews").checked      = p.manage_news     !== false;
+  document.getElementById("permForms").checked     = p.manage_forms    !== false;
+  document.getElementById("permHome").checked      = p.edit_home       !== false;
+  document.getElementById("permDashboard").checked = p.view_dashboard  !== false;
+  document.getElementById("permDownload").checked  = p.download_charts !== false;
+  document.getElementById("permImport").checked    = p.import_csv      !== false;
+  document.getElementById("campusCheckError").style.display = "none";
 
   document.getElementById("permissionsModal").classList.add("open");
 }
 
+function handleAllCampusToggle(cb){
+  const isAll = cb.checked;
+  document.querySelectorAll(".campus-check").forEach(c => {
+    c.checked  = isAll;
+    c.disabled = isAll;
+  });
+  toggleIndividualCampuses(isAll);
+}
+
+function handleCampusCheck(){
+  const allChecked = [...document.querySelectorAll(".campus-check")].every(c => c.checked);
+  document.getElementById("permCampusAll").checked = allChecked;
+  document.getElementById("campusCheckError").style.display = "none";
+}
+
+function toggleIndividualCampuses(disabled){
+  document.querySelectorAll(".campus-check").forEach(c => {
+    c.disabled = disabled;
+    c.closest(".campus-check-row").style.opacity = disabled ? ".55" : "1";
+  });
+}
+
+function getSelectedCampuses(){
+  if(document.getElementById("permCampusAll").checked) return ["All"];
+  const selected = [...document.querySelectorAll(".campus-check")]
+    .filter(c => c.checked)
+    .map(c => c.value);
+  return selected;
+}
+
 async function savePermissions(){
-  const id = document.getElementById("permissionsAdminId").value;
+  const id      = document.getElementById("permissionsAdminId").value;
+  const campuses = getSelectedCampuses();
+
+  if(campuses.length === 0){
+    document.getElementById("campusCheckError").style.display = "block";
+    return;
+  }
+
   const perms = {
-    campus:          document.getElementById("permCampus").value,
+    campus:          campuses,
     manage_events:   document.getElementById("permEvents").checked,
     manage_clubs:    document.getElementById("permClubs").checked,
     manage_news:     document.getElementById("permNews").checked,
@@ -2528,8 +2638,11 @@ async function savePermissions(){
     import_csv:      document.getElementById("permImport").checked,
   };
 
-  const { error } = await sb.from("admins").update({ permissions: perms, campus: perms.campus }).eq("id", id);
-  if(error){ showToast("Failed to save permissions: " + error.message, "error"); return; }
+  const { error } = await sb.from("admins")
+    .update({ permissions: perms, campus: campuses.includes("All") ? "All" : campuses.join(", ") })
+    .eq("id", id);
+
+  if(error){ showToast("Failed to save: " + error.message, "error"); return; }
   showToast("Permissions saved!");
   closeModal("permissionsModal");
   loadAdmins();
