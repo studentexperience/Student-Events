@@ -3638,24 +3638,12 @@ ${dataSnapshot}`.trim();
 
     const text = data.choices?.[0]?.message?.content || "No report generated.";
 
-    // Render markdown-style formatting
-    const html = text
-      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/^- (.+)$/gm, '<li>$1</li>')
-      .replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`)
-      .replace(/\n\n/g, '</p><p>')
-      .replace(/^(?!<[hup])/gm, '')
-      .trim();
-
+    // ── Render in Headline → Insights → Chart format ──
     generatingEl.classList.remove("visible");
-    outputEl.innerHTML = `<p>${html}</p>`;
+    outputEl.innerHTML = renderReportSections(text, filtered, campusBreakdown, monthlyBreakdown, categoryBreakdown);
     outputEl.classList.add("visible");
-    document.getElementById("copyReportBtn").style.display    = "inline-flex";
+    document.getElementById("copyReportBtn").style.display     = "inline-flex";
     document.getElementById("downloadReportBtn").style.display = "inline-flex";
-
-    // Store raw text for download
     outputEl.dataset.raw = text;
 
   } catch(err){
@@ -3672,156 +3660,225 @@ ${dataSnapshot}`.trim();
   }
 }
 
+/* ── Report section renderer — Headline → Insights → Chart ── */
+function renderReportSections(text, filtered, campusBreakdown, monthlyBreakdown, categoryBreakdown){
+  const today = new Date().toISOString().split("T")[0];
+
+  // Split AI text into sections by ## headings
+  const rawSections = text.split(/^## /m).filter(Boolean);
+
+  // Chart data helpers
+  const chartDataMap = {
+    "campus":   { labels: campusBreakdown.map(c=>c.campus), data: campusBreakdown.map(c=>c.total),   colors: ["#2563eb","#16a34a","#f59e0b","#9333ea"], type:"doughnut" },
+    "monthly":  { labels: MONTHS, data: MONTHS.map((_,mi)=>filtered.filter(e=>e.event_date && new Date(e.event_date).getMonth()===mi).length), colors: ["#6366f1"], type:"bar" },
+    "category": { labels: categoryBreakdown.map(c=>c.category), data: categoryBreakdown.map(c=>c.count), colors: ["#6366f1","#f59e0b","#10b981","#ef4444","#3b82f6","#f97316","#8b5cf6","#14b8a6"], type:"bar" },
+    "clubs":    { labels: CAMPUSES, data: CAMPUSES.map(c=>allClubs.filter(cl=>cl.campus===c).length), colors: ["#2563eb","#16a34a","#f59e0b","#9333ea"], type:"bar" },
+  };
+
+  // Match section title to chart
+  function getChartKey(title){
+    const t = title.toLowerCase();
+    if(t.includes("campus")) return "campus";
+    if(t.includes("month") || t.includes("trend")) return "monthly";
+    if(t.includes("category") || t.includes("categor")) return "category";
+    if(t.includes("club")) return "clubs";
+    return null;
+  }
+
+  let html = "";
+  let chartIndex = 0;
+
+  rawSections.forEach(section => {
+    const lines      = section.trim().split("\n");
+    const headline   = lines[0].trim();
+    const bodyLines  = lines.slice(1).join("\n").trim();
+    const chartKey   = getChartKey(headline);
+    const canvasId   = `reportChart_${chartIndex++}`;
+
+    // Convert body markdown to HTML
+    const bodyHtml = bodyLines
+      .replace(/^### (.+)$/gm, '<div style="font-weight:700;font-size:13px;margin:10px 0 4px;color:#374151;">$1</div>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>\n?)+/gs, m => `<ul style="padding-left:18px;margin:8px 0;">${m}</ul>`)
+      .replace(/\n\n/g, '<br/>')
+      .trim();
+
+    html += `
+      <div style="margin-bottom:28px;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;">
+        <!-- Headline -->
+        <div style="background:linear-gradient(135deg,#2563eb,#7c3aed);padding:14px 20px;">
+          <div style="font-size:15px;font-weight:700;color:white;">## ${headline}</div>
+        </div>
+        <!-- Insights -->
+        <div style="padding:16px 20px;font-size:13px;line-height:1.7;color:#374151;border-bottom:${chartKey ? "1px solid #e5e7eb" : "none"}">
+          ${bodyHtml || "<p style='color:#9ca3af;'>No insights available for this section.</p>"}
+        </div>
+        ${chartKey ? `
+        <!-- Chart -->
+        <div style="padding:16px 20px;background:#f8fafc;">
+          <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;">📊 Data Visualisation</div>
+          <div style="height:200px;position:relative;">
+            <canvas id="${canvasId}"></canvas>
+          </div>
+        </div>` : ""}
+      </div>`;
+
+    // Render mini chart after DOM update
+    if(chartKey){
+      const cd = chartDataMap[chartKey];
+      setTimeout(() => {
+        const canvas = document.getElementById(canvasId);
+        if(!canvas) return;
+        new Chart(canvas.getContext("2d"), {
+          type: cd.type,
+          data: {
+            labels: cd.labels,
+            datasets: [{
+              data: cd.data,
+              backgroundColor: cd.type === "bar"
+                ? cd.colors[0] + "cc"
+                : cd.colors,
+              borderColor: cd.type === "bar" ? cd.colors[0] : "#fff",
+              borderWidth: 2,
+              borderRadius: cd.type === "bar" ? 6 : 0,
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { display: cd.type !== "bar", position:"bottom", labels:{ font:{size:10}, padding:8 } }
+            },
+            scales: cd.type === "bar" ? {
+              y: { beginAtZero:true, ticks:{ stepSize:1, font:{size:10} }, grid:{ color:"#f3f4f6" } },
+              x: { grid:{ display:false }, ticks:{ font:{size:10} } }
+            } : {}
+          }
+        });
+      }, 100);
+    }
+  });
+
+  return html || `<p style="color:var(--muted);">Report generated but could not be parsed into sections.</p>`;
+}
+
 function copyReport(){
   const raw = document.getElementById("reportOutput").dataset.raw || "";
   navigator.clipboard.writeText(raw).then(() => showToast("Report copied to clipboard!"));
 }
 
 async function downloadReport(){
-  const raw      = document.getElementById("reportOutput").dataset.raw || "";
+  const raw = document.getElementById("reportOutput").dataset.raw || "";
+  if(!raw){ showToast("Generate a report first.", "error"); return; }
+
   const campus   = document.getElementById("reportCampus").value;
   const year     = document.getElementById("reportYear").value;
-  const tone     = document.getElementById("reportTone").value;
   const date     = new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
   const filename = `AKU-Student-Experience-Report-${campus}-${year}.docx`;
 
-  const {
-    Document, Packer, Paragraph, TextRun, HeadingLevel,
-    AlignmentType, BorderStyle, LevelFormat
-  } = docx;
+  try {
+    const {
+      Document, Packer, Paragraph, TextRun, HeadingLevel,
+      AlignmentType, BorderStyle, LevelFormat
+    } = window.docx;
 
-  // Parse the raw markdown-style text into docx paragraphs
-  const children = [];
+    const children = [];
 
-  // ── Cover / Title block ──
-  children.push(
-    new Paragraph({
-      children: [new TextRun({ text: "Aga Khan University", bold: true, size: 28, color: "2563EB", font: "Arial" })],
-      spacing: { before: 0, after: 120 }
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: "Student Experience Office", size: 22, color: "6B7280", font: "Arial" })],
-      spacing: { before: 0, after: 480 }
-    }),
-    new Paragraph({
-      heading: HeadingLevel.HEADING_1,
-      children: [new TextRun({ text: "Student Events & Activities Report", bold: true, size: 44, font: "Arial", color: "111827" })],
-      spacing: { before: 0, after: 200 },
-      border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: "2563EB", space: 1 } }
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({ text: `Campus: `, bold: true, size: 22, font: "Arial", color: "374151" }),
-        new TextRun({ text: campus === "All" ? "All Campuses" : campus, size: 22, font: "Arial", color: "374151" }),
-        new TextRun({ text: `   |   Period: `, bold: true, size: 22, font: "Arial", color: "374151" }),
-        new TextRun({ text: year === "All" ? "All Years" : year, size: 22, font: "Arial", color: "374151" }),
-        new TextRun({ text: `   |   Generated: `, bold: true, size: 22, font: "Arial", color: "374151" }),
-        new TextRun({ text: date, size: 22, font: "Arial", color: "374151" }),
-      ],
-      spacing: { before: 160, after: 600 }
-    })
-  );
+    // ── Title block ──
+    children.push(
+      new Paragraph({ children:[new TextRun({text:"Aga Khan University",bold:true,size:28,color:"2563EB",font:"Arial"})], spacing:{before:0,after:120} }),
+      new Paragraph({ children:[new TextRun({text:"Student Experience Office",size:22,color:"6B7280",font:"Arial"})], spacing:{before:0,after:480} }),
+      new Paragraph({
+        heading: HeadingLevel.HEADING_1,
+        children:[new TextRun({text:"Student Events & Activities Report",bold:true,size:44,font:"Arial",color:"111827"})],
+        spacing:{before:0,after:200},
+        border:{bottom:{style:BorderStyle.SINGLE,size:6,color:"2563EB",space:1}}
+      }),
+      new Paragraph({
+        children:[
+          new TextRun({text:`Campus: `,bold:true,size:22,font:"Arial",color:"374151"}),
+          new TextRun({text:campus==="All"?"All Campuses":campus,size:22,font:"Arial",color:"374151"}),
+          new TextRun({text:`   |   Period: `,bold:true,size:22,font:"Arial",color:"374151"}),
+          new TextRun({text:year==="All"?"All Years":year,size:22,font:"Arial",color:"374151"}),
+          new TextRun({text:`   |   Generated: `,bold:true,size:22,font:"Arial",color:"374151"}),
+          new TextRun({text:date,size:22,font:"Arial",color:"374151"}),
+        ],
+        spacing:{before:160,after:600}
+      })
+    );
 
-  // ── Parse report text into paragraphs ──
-  const lines = raw.split("\n");
-  for(let i = 0; i < lines.length; i++){
-    const line = lines[i];
-
-    if(line.startsWith("## ")){
-      children.push(new Paragraph({
-        heading: HeadingLevel.HEADING_2,
-        children: [new TextRun({ text: line.replace(/^## /, ""), bold: true, size: 32, font: "Arial", color: "2563EB" })],
-        spacing: { before: 360, after: 160 },
-        border: { bottom: { style: BorderStyle.SINGLE, size: 2, color: "E5E7EB", space: 1 } }
-      }));
-    } else if(line.startsWith("### ")){
-      children.push(new Paragraph({
-        heading: HeadingLevel.HEADING_3,
-        children: [new TextRun({ text: line.replace(/^### /, ""), bold: true, size: 26, font: "Arial", color: "374151" })],
-        spacing: { before: 240, after: 120 }
-      }));
-    } else if(line.startsWith("- ") || line.startsWith("* ")){
-      const text = line.replace(/^[-*] /, "").replace(/\*\*(.+?)\*\*/g, "$1");
-      children.push(new Paragraph({
-        numbering: { reference: "bullets", level: 0 },
-        children: buildRuns(line.replace(/^[-*] /, "")),
-        spacing: { before: 40, after: 40 }
-      }));
-    } else if(line.trim() === ""){
-      children.push(new Paragraph({ children: [new TextRun("")], spacing: { before: 80, after: 80 } }));
-    } else {
-      children.push(new Paragraph({
-        children: buildRuns(line),
-        spacing: { before: 80, after: 80 }
-      }));
+    // ── Parse markdown ──
+    const lines = raw.split("\n");
+    for(const line of lines){
+      if(line.startsWith("## ")){
+        children.push(new Paragraph({
+          heading: HeadingLevel.HEADING_2,
+          children:[new TextRun({text:line.replace(/^## /,""),bold:true,size:32,font:"Arial",color:"2563EB"})],
+          spacing:{before:360,after:160},
+          border:{bottom:{style:BorderStyle.SINGLE,size:2,color:"E5E7EB",space:1}}
+        }));
+      } else if(line.startsWith("### ")){
+        children.push(new Paragraph({
+          heading: HeadingLevel.HEADING_3,
+          children:[new TextRun({text:line.replace(/^### /,""),bold:true,size:26,font:"Arial",color:"374151"})],
+          spacing:{before:240,after:120}
+        }));
+      } else if(line.startsWith("- ")||line.startsWith("* ")){
+        children.push(new Paragraph({
+          numbering:{reference:"bullets",level:0},
+          children:buildRuns(line.replace(/^[-*] /,"")),
+          spacing:{before:40,after:40}
+        }));
+      } else if(line.trim()===""){
+        children.push(new Paragraph({children:[new TextRun("")],spacing:{before:60,after:60}}));
+      } else {
+        children.push(new Paragraph({children:buildRuns(line),spacing:{before:80,after:80}}));
+      }
     }
-  }
 
-  // ── Footer note ──
-  children.push(
-    new Paragraph({ children: [new TextRun("")], spacing: { before: 480 } }),
-    new Paragraph({
-      children: [new TextRun({ text: "This report was generated automatically using aggregated dashboard data. No personal student information was used.", size: 18, color: "9CA3AF", font: "Arial", italics: true })],
-      alignment: AlignmentType.CENTER,
-      border: { top: { style: BorderStyle.SINGLE, size: 2, color: "E5E7EB", space: 4 } },
-      spacing: { before: 160 }
-    })
-  );
+    // ── Footer ──
+    children.push(
+      new Paragraph({children:[new TextRun("")],spacing:{before:480}}),
+      new Paragraph({
+        children:[new TextRun({text:"Generated automatically from aggregated dashboard data. No personal student information was used.",size:18,color:"9CA3AF",font:"Arial",italics:true})],
+        alignment:AlignmentType.CENTER,
+        border:{top:{style:BorderStyle.SINGLE,size:2,color:"E5E7EB",space:4}},
+        spacing:{before:160}
+      })
+    );
 
-  const doc = new Document({
-    numbering: {
-      config: [{
-        reference: "bullets",
-        levels: [{
-          level: 0,
-          format: LevelFormat.BULLET,
-          text: "•",
-          alignment: AlignmentType.LEFT,
-          style: { paragraph: { indent: { left: 720, hanging: 360 } } }
-        }]
-      }]
-    },
-    styles: {
-      default: { document: { run: { font: "Arial", size: 24 } } },
-      paragraphStyles: [
-        { id: "Heading1", name: "Heading 1", basedOn: "Normal", next: "Normal", quickFormat: true,
-          run: { size: 44, bold: true, font: "Arial", color: "111827" },
-          paragraph: { spacing: { before: 0, after: 200 }, outlineLevel: 0 } },
-        { id: "Heading2", name: "Heading 2", basedOn: "Normal", next: "Normal", quickFormat: true,
-          run: { size: 32, bold: true, font: "Arial", color: "2563EB" },
-          paragraph: { spacing: { before: 360, after: 160 }, outlineLevel: 1 } },
-        { id: "Heading3", name: "Heading 3", basedOn: "Normal", next: "Normal", quickFormat: true,
-          run: { size: 26, bold: true, font: "Arial", color: "374151" },
-          paragraph: { spacing: { before: 240, after: 120 }, outlineLevel: 2 } },
-      ]
-    },
-    sections: [{
-      properties: {
-        page: {
-          size: { width: 11906, height: 16838 },
-          margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
-        }
+    const doc = new Document({
+      numbering:{config:[{reference:"bullets",levels:[{level:0,format:LevelFormat.BULLET,text:"•",alignment:AlignmentType.LEFT,style:{paragraph:{indent:{left:720,hanging:360}}}}]}]},
+      styles:{
+        default:{document:{run:{font:"Arial",size:24}}},
+        paragraphStyles:[
+          {id:"Heading1",name:"Heading 1",basedOn:"Normal",next:"Normal",quickFormat:true,run:{size:44,bold:true,font:"Arial",color:"111827"},paragraph:{spacing:{before:0,after:200},outlineLevel:0}},
+          {id:"Heading2",name:"Heading 2",basedOn:"Normal",next:"Normal",quickFormat:true,run:{size:32,bold:true,font:"Arial",color:"2563EB"},paragraph:{spacing:{before:360,after:160},outlineLevel:1}},
+          {id:"Heading3",name:"Heading 3",basedOn:"Normal",next:"Normal",quickFormat:true,run:{size:26,bold:true,font:"Arial",color:"374151"},paragraph:{spacing:{before:240,after:120},outlineLevel:2}},
+        ]
       },
-      children
-    }]
-  });
+      sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:1440,right:1440,bottom:1440,left:1440}}},children}]
+    });
 
-  const blob = await Packer.toBlob(doc);
-  const a    = document.createElement("a");
-  a.href     = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  showToast("Word report downloaded!");
+    const blob = await Packer.toBlob(doc);
+    const a    = document.createElement("a");
+    a.href     = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    showToast("Word report downloaded!");
+
+  } catch(err){
+    showToast("Download failed: " + err.message, "error");
+    console.error(err);
+  }
 }
 
-// Parses **bold** markdown inline and returns TextRun array
 function buildRuns(text){
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
   return parts.map(part => {
-    if(part.startsWith("**") && part.endsWith("**")){
-      return new docx.TextRun({ text: part.slice(2,-2), bold: true, font: "Arial", size: 24 });
-    }
-    return new docx.TextRun({ text: part, font: "Arial", size: 24 });
+    if(part.startsWith("**")&&part.endsWith("**"))
+      return new window.docx.TextRun({text:part.slice(2,-2),bold:true,font:"Arial",size:24});
+    return new window.docx.TextRun({text:part,font:"Arial",size:24});
   });
 }
 // Wrap all tables in a scroll container for horizontal scrolling on small screens
