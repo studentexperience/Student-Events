@@ -568,16 +568,18 @@
     .charts-grid.full { grid-template-columns: 1fr; }
     .chart-card {
       background: white;
-      border-radius: 14px;
+      border-radius: 18px;
       border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-      padding: 20px 24px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.07);
+      padding: 22px 24px;
+      transition: box-shadow .2s;
     }
+    .chart-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,.12); }
     .chart-card-header {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
       flex-wrap: wrap;
       gap: 10px;
     }
@@ -589,12 +591,13 @@
     .chart-card-sub {
       font-size: 12px;
       color: var(--muted);
-      margin-top: 2px;
+      margin-top: 3px;
     }
-    .chart-filter-row {
+    .chart-controls {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
+      align-items: center;
     }
     .chart-select {
       padding: 5px 10px;
@@ -606,11 +609,32 @@
       background: white;
       cursor: pointer;
       outline: none;
+      transition: border .15s;
     }
     .chart-select:focus { border-color: var(--accent); }
+    .chart-download-btn {
+      padding: 5px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      background: white;
+      cursor: pointer;
+      color: var(--muted);
+      transition: all .15s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .chart-download-btn:hover {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
     .chart-wrap {
       position: relative;
-      height: 260px;
+      height: 280px;
     }
 
     /* ── PAGES EDITOR ── */
@@ -842,12 +866,13 @@
                 <div class="chart-card-title">Events by Campus</div>
                 <div class="chart-card-sub">Total events per campus</div>
               </div>
-              <div class="chart-filter-row">
+              <div class="chart-controls">
                 <select class="chart-select" id="campusChartType" onchange="renderCampusChart()">
                   <option value="bar">Bar</option>
                   <option value="doughnut">Doughnut</option>
                   <option value="pie">Pie</option>
                 </select>
+                <button class="chart-download-btn" onclick="downloadChart('chartByCampus','Events by Campus')">⬇ PNG</button>
               </div>
             </div>
             <div class="chart-wrap"><canvas id="chartByCampus"></canvas></div>
@@ -859,12 +884,13 @@
                 <div class="chart-card-title">Events by Month</div>
                 <div class="chart-card-sub">All campuses combined</div>
               </div>
-              <div class="chart-filter-row">
+              <div class="chart-controls">
                 <select class="chart-select" id="monthChartYear" onchange="renderMonthChart()"></select>
                 <select class="chart-select" id="monthChartType" onchange="renderMonthChart()">
                   <option value="bar">Bar</option>
                   <option value="line">Line</option>
                 </select>
+                <button class="chart-download-btn" onclick="downloadChart('chartByMonth','Events by Month')">⬇ PNG</button>
               </div>
             </div>
             <div class="chart-wrap"><canvas id="chartByMonth"></canvas></div>
@@ -879,12 +905,13 @@
                 <div class="chart-card-title">Events by Campus by Month</div>
                 <div class="chart-card-sub">Breakdown per campus across months</div>
               </div>
-              <div class="chart-filter-row">
+              <div class="chart-controls">
                 <select class="chart-select" id="campusMonthYear" onchange="renderCampusMonthChart()"></select>
                 <select class="chart-select" id="campusMonthType" onchange="renderCampusMonthChart()">
                   <option value="bar">Grouped Bar</option>
                   <option value="line">Line</option>
                 </select>
+                <button class="chart-download-btn" onclick="downloadChart('chartCampusByMonth','Events by Campus by Month')">⬇ PNG</button>
               </div>
             </div>
             <div class="chart-wrap" style="height:300px;"><canvas id="chartCampusByMonth"></canvas></div>
@@ -899,7 +926,7 @@
                 <div class="chart-card-title">Events by Category</div>
                 <div class="chart-card-sub">Distribution across all campuses</div>
               </div>
-              <div class="chart-filter-row">
+              <div class="chart-controls">
                 <select class="chart-select" id="categoryChartCampus" onchange="renderCategoryChart()">
                   <option value="">All Campuses</option>
                   <option>Karachi</option>
@@ -913,6 +940,7 @@
                   <option value="bar">Bar</option>
                   <option value="polarArea">Polar Area</option>
                 </select>
+                <button class="chart-download-btn" onclick="downloadChart('chartByCategory','Events by Category')">⬇ PNG</button>
               </div>
             </div>
             <div class="chart-wrap" style="height:300px;"><canvas id="chartByCategory"></canvas></div>
@@ -1643,26 +1671,64 @@ const CAMPUSES = ['Karachi', 'Nairobi', 'Kampala', 'Dar es Salaam'];
 const CAMPUS_COLORS = {
   'Karachi':       '#2563eb',
   'Nairobi':       '#16a34a',
-  'Kampala':       '#d97706',
+  'Kampala':       '#f59e0b',
   'Dar es Salaam': '#9333ea',
 };
-const CAMPUS_COLORS_LIGHT = {
-  'Karachi':       'rgba(37,99,235,0.15)',
-  'Nairobi':       'rgba(22,163,74,0.15)',
-  'Kampala':       'rgba(217,119,6,0.15)',
-  'Dar es Salaam': 'rgba(147,51,234,0.15)',
-};
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const CATEGORY_PALETTE = ['#6366f1','#f59e0b','#10b981','#ef4444','#3b82f6','#f97316','#8b5cf6','#14b8a6'];
 
-// Chart instances — stored so we can destroy before re-rendering
 const chartInstances = {};
+let dashEventData = [];
+
+/* ── Global Chart.js defaults ── */
+Chart.defaults.font.family = "'Poppins', sans-serif";
+Chart.defaults.font.size   = 12;
+Chart.defaults.color       = '#6b7280';
+Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(17,24,39,0.92)';
+Chart.defaults.plugins.tooltip.padding         = 10;
+Chart.defaults.plugins.tooltip.cornerRadius    = 10;
+Chart.defaults.plugins.tooltip.titleFont       = { size: 13, weight: '700' };
+Chart.defaults.plugins.tooltip.bodyFont        = { size: 12 };
+Chart.defaults.plugins.tooltip.displayColors   = true;
+Chart.defaults.plugins.tooltip.boxPadding      = 4;
+Chart.defaults.animation                        = { duration: 700, easing: 'easeInOutQuart' };
 
 function destroyChart(id){
   if(chartInstances[id]){ chartInstances[id].destroy(); delete chartInstances[id]; }
 }
 
-// All events data used by charts
-let dashEventData = [];
+/* ── Gradient helpers ── */
+function makeGradient(ctx, color, alpha1 = 0.85, alpha2 = 0.25){
+  const hex = color.replace('#','');
+  const r   = parseInt(hex.substring(0,2),16);
+  const g   = parseInt(hex.substring(2,4),16);
+  const b   = parseInt(hex.substring(4,6),16);
+  const gr  = ctx.createLinearGradient(0, 0, 0, 320);
+  gr.addColorStop(0, `rgba(${r},${g},${b},${alpha1})`);
+  gr.addColorStop(1, `rgba(${r},${g},${b},${alpha2})`);
+  return gr;
+}
+
+/* ── Download chart as PNG ── */
+function downloadChart(canvasId, label){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+
+  // Draw on a white background canvas
+  const out = document.createElement("canvas");
+  out.width  = canvas.width;
+  out.height = canvas.height;
+  const octx = out.getContext("2d");
+  octx.fillStyle = "#ffffff";
+  octx.fillRect(0, 0, out.width, out.height);
+  octx.drawImage(canvas, 0, 0);
+
+  const a    = document.createElement("a");
+  a.href     = out.toDataURL("image/png");
+  a.download = `${label.replace(/\s+/g,"-").toLowerCase()}-${new Date().toISOString().split("T")[0]}.png`;
+  a.click();
+  showToast(`Downloaded: ${label}`);
+}
 
 async function loadDashboard(){
   const today = new Date().toISOString().split("T")[0];
@@ -1675,10 +1741,10 @@ async function loadDashboard(){
     { data: allClubsData },
     { data: eventsData },
   ] = await Promise.all([
-    sb.from("clubs").select("*", { count: "exact", head: true }),
-    sb.from("events").select("*", { count: "exact", head: true }),
-    sb.from("admins").select("*", { count: "exact", head: true }),
-    sb.from("news").select("*", { count: "exact", head: true }),
+    sb.from("clubs").select("*",  { count:"exact", head:true }),
+    sb.from("events").select("*", { count:"exact", head:true }),
+    sb.from("admins").select("*", { count:"exact", head:true }),
+    sb.from("news").select("*",   { count:"exact", head:true }),
     sb.from("events").select("event_date").gte("event_date", today),
     sb.from("clubs").select("campus"),
     sb.from("events").select("campus, event_date, category"),
@@ -1708,24 +1774,22 @@ async function loadDashboard(){
       </div>`;
   }).join("");
 
-  // Store events for charts
   dashEventData = eventsData || [];
 
-  // Populate year dropdowns
   const years = [...new Set(dashEventData
     .filter(e => e.event_date)
     .map(e => new Date(e.event_date).getFullYear())
   )].sort((a,b) => b - a);
-
   const currentYear = new Date().getFullYear();
   if(!years.includes(currentYear)) years.unshift(currentYear);
 
   ["monthChartYear","campusMonthYear"].forEach(selId => {
     const sel = document.getElementById(selId);
-    sel.innerHTML = years.map(y => `<option value="${y}" ${y === currentYear ? "selected" : ""}>${y}</option>`).join("");
+    sel.innerHTML = years.map(y =>
+      `<option value="${y}" ${y === currentYear ? "selected":""}>${y}</option>`
+    ).join("");
   });
 
-  // Render all charts
   renderCampusChart();
   renderMonthChart();
   renderCampusMonthChart();
@@ -1738,8 +1802,13 @@ function renderCampusChart(){
   const type   = document.getElementById("campusChartType").value;
   const counts = CAMPUSES.map(c => dashEventData.filter(e => e.campus === c).length);
   const colors = CAMPUSES.map(c => CAMPUS_COLORS[c] || "#999");
+  const canvas = document.getElementById("chartByCampus");
+  const ctx    = canvas.getContext("2d");
 
-  const ctx = document.getElementById("chartByCampus").getContext("2d");
+  const bgColors = type === "bar"
+    ? colors.map(c => makeGradient(ctx, c))
+    : colors;
+
   chartInstances["chartByCampus"] = new Chart(ctx, {
     type,
     data: {
@@ -1747,21 +1816,22 @@ function renderCampusChart(){
       datasets: [{
         label: "Events",
         data: counts,
-        backgroundColor: type === "bar" ? colors.map(c => c + "cc") : colors,
-        borderColor: colors,
-        borderWidth: type === "bar" ? 0 : 2,
-        borderRadius: type === "bar" ? 8 : 0,
+        backgroundColor: bgColors,
+        borderColor: type === "bar" ? colors : "#fff",
+        borderWidth: type === "bar" ? 0 : 2.5,
+        borderRadius: type === "bar" ? 10 : 0,
+        hoverOffset: type !== "bar" ? 10 : 0,
       }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { display: type !== "bar", position: "bottom" },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y ?? ctx.parsed} events` } }
+        legend: { display: type !== "bar", position:"bottom", labels:{ usePointStyle:true, padding:16 } },
+        tooltip: { callbacks: { label: c => ` ${c.parsed.y ?? c.parsed ?? c.raw} events` } }
       },
       scales: type === "bar" ? {
-        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: "#f3f4f6" } },
-        x: { grid: { display: false } }
+        y: { beginAtZero:true, ticks:{ stepSize:1, color:"#9ca3af" }, grid:{ color:"#f3f4f6" }, border:{ dash:[4,4] } },
+        x: { grid:{ display:false }, ticks:{ color:"#374151", font:{ weight:"600" } } }
       } : {}
     }
   });
@@ -1772,7 +1842,7 @@ function renderMonthChart(){
   destroyChart("chartByMonth");
   const year   = parseInt(document.getElementById("monthChartYear").value);
   const type   = document.getElementById("monthChartType").value;
-  const counts = MONTHS.map((_, mi) =>
+  const counts = MONTHS.map((_,mi) =>
     dashEventData.filter(e => {
       if(!e.event_date) return false;
       const d = new Date(e.event_date);
@@ -1780,7 +1850,11 @@ function renderMonthChart(){
     }).length
   );
 
-  const ctx = document.getElementById("chartByMonth").getContext("2d");
+  const canvas = document.getElementById("chartByMonth");
+  const ctx    = canvas.getContext("2d");
+  const color  = "#6366f1";
+  const bg     = type === "bar" ? makeGradient(ctx, color) : makeGradient(ctx, color, 0.3, 0.02);
+
   chartInstances["chartByMonth"] = new Chart(ctx, {
     type,
     data: {
@@ -1788,21 +1862,25 @@ function renderMonthChart(){
       datasets: [{
         label: `Events in ${year}`,
         data: counts,
-        backgroundColor: type === "bar" ? "rgba(37,99,235,0.7)" : "rgba(37,99,235,0.15)",
-        borderColor: "#2563eb",
-        borderWidth: 2,
-        borderRadius: type === "bar" ? 8 : 0,
+        backgroundColor: bg,
+        borderColor: color,
+        borderWidth: 2.5,
+        borderRadius: type === "bar" ? 10 : 0,
         fill: type === "line",
-        tension: 0.4,
-        pointBackgroundColor: "#2563eb",
+        tension: 0.45,
+        pointBackgroundColor: "#fff",
+        pointBorderColor: color,
+        pointBorderWidth: 2.5,
+        pointRadius: type === "line" ? 5 : 0,
+        pointHoverRadius: type === "line" ? 7 : 0,
       }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: { legend:{ display:false } },
       scales: {
-        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: "#f3f4f6" } },
-        x: { grid: { display: false } }
+        y: { beginAtZero:true, ticks:{ stepSize:1, color:"#9ca3af" }, grid:{ color:"#f3f4f6" }, border:{ dash:[4,4] } },
+        x: { grid:{ display:false }, ticks:{ color:"#374151" } }
       }
     }
   });
@@ -1811,47 +1889,53 @@ function renderMonthChart(){
 /* ── Chart 3: Events by Campus by Month ── */
 function renderCampusMonthChart(){
   destroyChart("chartCampusByMonth");
-  const year = parseInt(document.getElementById("campusMonthYear").value);
-  const type = document.getElementById("campusMonthType").value === "line" ? "line" : "bar";
+  const year    = parseInt(document.getElementById("campusMonthYear").value);
+  const type    = document.getElementById("campusMonthType").value === "line" ? "line" : "bar";
+  const canvas  = document.getElementById("chartCampusByMonth");
+  const ctx     = canvas.getContext("2d");
 
   const datasets = CAMPUSES.map(campus => {
     const color = CAMPUS_COLORS[campus] || "#999";
-    const data  = MONTHS.map((_, mi) =>
+    const data  = MONTHS.map((_,mi) =>
       dashEventData.filter(e => {
         if(!e.event_date || e.campus !== campus) return false;
         const d = new Date(e.event_date);
         return d.getFullYear() === year && d.getMonth() === mi;
       }).length
     );
+    const bg = type === "bar" ? makeGradient(ctx, color, 0.8, 0.4) : makeGradient(ctx, color, 0.2, 0.02);
     return {
       label: campus,
       data,
-      backgroundColor: type === "bar" ? color + "cc" : CAMPUS_COLORS_LIGHT[campus],
+      backgroundColor: bg,
       borderColor: color,
-      borderWidth: 2,
-      borderRadius: type === "bar" ? 6 : 0,
+      borderWidth: 2.5,
+      borderRadius: type === "bar" ? 8 : 0,
       fill: type === "line",
-      tension: 0.4,
-      pointBackgroundColor: color,
+      tension: 0.45,
+      pointBackgroundColor: "#fff",
+      pointBorderColor: color,
+      pointBorderWidth: 2,
+      pointRadius: type === "line" ? 4 : 0,
+      pointHoverRadius: type === "line" ? 6 : 0,
     };
   });
 
-  const ctx = document.getElementById("chartCampusByMonth").getContext("2d");
   chartInstances["chartCampusByMonth"] = new Chart(ctx, {
     type,
     data: { labels: MONTHS, datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: "bottom", labels: { usePointStyle: true, padding: 16 } } },
+      plugins: { legend:{ position:"bottom", labels:{ usePointStyle:true, padding:18, font:{ size:12 } } } },
       scales: {
-        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: "#f3f4f6" } },
-        x: { grid: { display: false } }
+        y: { beginAtZero:true, ticks:{ stepSize:1, color:"#9ca3af" }, grid:{ color:"#f3f4f6" }, border:{ dash:[4,4] } },
+        x: { grid:{ display:false }, ticks:{ color:"#374151" } }
       }
     }
   });
 }
 
-/* ── Chart 5: Events by Category ── */
+/* ── Chart 4: Events by Category ── */
 function renderCategoryChart(){
   destroyChart("chartByCategory");
   const campus   = document.getElementById("categoryChartCampus").value;
@@ -1859,12 +1943,17 @@ function renderCategoryChart(){
   const filtered = campus ? dashEventData.filter(e => e.campus === campus) : dashEventData;
   const cats     = [...new Set(filtered.map(e => e.category).filter(Boolean))].sort();
   const counts   = cats.map(c => filtered.filter(e => e.category === c).length);
-
-  const palette  = ["#2563eb","#16a34a","#d97706","#9333ea","#dc2626","#0891b2","#ca8a04","#15803d"];
-  const colors   = cats.map((_,i) => palette[i % palette.length]);
+  const colors   = cats.map((_,i) => CATEGORY_PALETTE[i % CATEGORY_PALETTE.length]);
   const isRadial = ["doughnut","pie","polarArea"].includes(type);
 
-  const ctx = document.getElementById("chartByCategory").getContext("2d");
+  const canvas = document.getElementById("chartByCategory");
+  const ctx    = canvas.getContext("2d");
+
+  // Bar gets gradients, radial gets solid
+  const bgColors = type === "bar"
+    ? colors.map(c => makeGradient(ctx, c))
+    : colors;
+
   chartInstances["chartByCategory"] = new Chart(ctx, {
     type,
     data: {
@@ -1872,27 +1961,25 @@ function renderCategoryChart(){
       datasets: [{
         label: "Events",
         data:  counts.length ? counts : [1],
-        backgroundColor: cats.length
-          ? (type === "bar" ? colors.map(c => c + "cc") : colors)
-          : ["#e5e7eb"],
-        borderColor:  type === "bar" ? colors : "#fff",
-        borderWidth:  type === "bar" ? 0 : 2,
-        borderRadius: type === "bar" ? 8 : 0,
+        backgroundColor: cats.length ? bgColors : ["#e5e7eb"],
+        borderColor:  type === "bar" ? "transparent" : "#fff",
+        borderWidth:  type === "bar" ? 0 : 2.5,
+        borderRadius: type === "bar" ? 10 : 0,
+        hoverOffset:  isRadial ? 10 : 0,
       }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: {
           display: isRadial,
           position: "bottom",
-          labels: { usePointStyle: true, padding: 14, font: { size: 11 } }
+          labels: { usePointStyle:true, padding:14, font:{ size:11 } }
         },
         tooltip: {
           callbacks: {
-            label: ctx => {
-              const val   = ctx.parsed.y ?? ctx.parsed ?? ctx.raw ?? 0;
+            label: c => {
+              const val   = c.parsed.y ?? c.parsed ?? c.raw ?? 0;
               const total = counts.reduce((a,b) => a+b, 0);
               const pct   = total ? Math.round((val / total) * 100) : 0;
               return ` ${val} events (${pct}%)`;
@@ -1901,10 +1988,10 @@ function renderCategoryChart(){
         }
       },
       scales: type === "bar" ? {
-        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: "#f3f4f6" } },
-        x: { grid: { display: false } }
+        y: { beginAtZero:true, ticks:{ stepSize:1, color:"#9ca3af" }, grid:{ color:"#f3f4f6" }, border:{ dash:[4,4] } },
+        x: { grid:{ display:false }, ticks:{ color:"#374151", font:{ weight:"600" } } }
       } : {},
-      cutout: type === "doughnut" ? "60%" : undefined,
+      cutout: type === "doughnut" ? "62%" : undefined,
     }
   });
 }
