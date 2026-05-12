@@ -1549,6 +1549,22 @@
       <input type="hidden" id="permissionsAdminId" />
       <p id="permissionsAdminEmail" style="font-size:13px;color:var(--muted);margin-bottom:16px;"></p>
 
+      <!-- Role selector -->
+      <div class="field" style="margin-bottom:20px;">
+        <label>Role</label>
+        <select id="permRole" onchange="handlePermRoleChange(this)"
+          style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;width:100%;background:white;outline:none;">
+          <option value="admin">Admin</option>
+          <option value="super_admin">Super Admin</option>
+        </select>
+        <div id="superAdminNote" style="font-size:11px;color:var(--muted);margin-top:6px;padding:8px 12px;background:#fef9c3;border-radius:8px;display:none;">
+          ⚠️ Super Admins have full access to all campuses and features. Campus and feature restrictions below will be ignored.
+        </div>
+      </div>
+
+      <!-- Campus & feature permissions — greyed out when Super Admin selected -->
+      <div id="permRestrictedSection">
+
       <!-- Campus access — multi-select checkboxes -->
       <div style="margin-bottom:18px;">
         <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;">Campus Access</div>
@@ -1613,6 +1629,8 @@
           <label class="toggle-switch"><input type="checkbox" id="permImport" /><span class="toggle-slider"></span></label>
         </div>
       </div>
+
+      </div><!-- /permRestrictedSection -->
 
       <div class="form-actions">
         <button class="btn btn-secondary" onclick="closeModal('permissionsModal')">Cancel</button>
@@ -2597,6 +2615,13 @@ function renderAdmins(list){
   }).join("");
 }
 
+function handlePermRoleChange(sel){
+  const isSuperAdmin = sel.value === "super_admin";
+  document.getElementById("superAdminNote").style.display     = isSuperAdmin ? "block" : "none";
+  document.getElementById("permRestrictedSection").style.opacity  = isSuperAdmin ? "0.4"  : "1";
+  document.getElementById("permRestrictedSection").style.pointerEvents = isSuperAdmin ? "none" : "";
+}
+
 /* ══ PERMISSIONS MODAL ══ */
 function openPermissionsModal(id, email, permsRaw){
   const perms = typeof permsRaw === "string"
@@ -2604,8 +2629,16 @@ function openPermissionsModal(id, email, permsRaw){
     : (permsRaw || {});
   const p = { ...DEFAULT_PERMS, ...perms };
 
-  document.getElementById("permissionsAdminId").value       = id;
+  document.getElementById("permissionsAdminId").value          = id;
   document.getElementById("permissionsAdminEmail").textContent = `Editing permissions for: ${email}`;
+
+  // Find the admin's current role from allAdmins list
+  const adminRecord = allAdmins.find(a => a.id === id);
+  const currentAdminRole = adminRecord?.role || "admin";
+  document.getElementById("permRole").value = currentAdminRole;
+
+  // Trigger role UI update
+  handlePermRoleChange(document.getElementById("permRole"));
 
   // Campus — normalise to array
   let campuses = p.campus;
@@ -2618,8 +2651,6 @@ function openPermissionsModal(id, email, permsRaw){
   document.getElementById("permCampusNairobi").checked = isAll || campuses.includes("Nairobi");
   document.getElementById("permCampusKampala").checked = isAll || campuses.includes("Kampala");
   document.getElementById("permCampusDar").checked     = isAll || campuses.includes("Dar es Salaam");
-
-  // Disable individual checkboxes when All is checked
   toggleIndividualCampuses(isAll);
 
   document.getElementById("permEvents").checked    = p.manage_events   !== false;
@@ -2666,32 +2697,41 @@ function getSelectedCampuses(){
 }
 
 async function savePermissions(){
-  const id      = document.getElementById("permissionsAdminId").value;
-  const campuses = getSelectedCampuses();
+  const id   = document.getElementById("permissionsAdminId").value;
+  const role = document.getElementById("permRole").value;
 
-  if(campuses.length === 0){
+  // If upgrading to super_admin, no campus check needed
+  const campuses = role === "super_admin" ? ["All"] : getSelectedCampuses();
+
+  if(role !== "super_admin" && campuses.length === 0){
     document.getElementById("campusCheckError").style.display = "block";
     return;
   }
 
-  const perms = {
-    campus:          campuses,
-    manage_events:   document.getElementById("permEvents").checked,
-    manage_clubs:    document.getElementById("permClubs").checked,
-    manage_news:     document.getElementById("permNews").checked,
-    manage_forms:    document.getElementById("permForms").checked,
-    edit_home:       document.getElementById("permHome").checked,
-    view_dashboard:  document.getElementById("permDashboard").checked,
-    download_charts: document.getElementById("permDownload").checked,
-    import_csv:      document.getElementById("permImport").checked,
-  };
+  const perms = role === "super_admin"
+    ? { ...DEFAULT_PERMS, campus: ["All"] }
+    : {
+        campus:          campuses,
+        manage_events:   document.getElementById("permEvents").checked,
+        manage_clubs:    document.getElementById("permClubs").checked,
+        manage_news:     document.getElementById("permNews").checked,
+        manage_forms:    document.getElementById("permForms").checked,
+        edit_home:       document.getElementById("permHome").checked,
+        view_dashboard:  document.getElementById("permDashboard").checked,
+        download_charts: document.getElementById("permDownload").checked,
+        import_csv:      document.getElementById("permImport").checked,
+      };
 
   const { error } = await sb.from("admins")
-    .update({ permissions: perms, campus: campuses.includes("All") ? "All" : campuses.join(", ") })
+    .update({
+      role,
+      permissions: perms,
+      campus: campuses.includes("All") ? "All" : campuses.join(", ")
+    })
     .eq("id", id);
 
   if(error){ showToast("Failed to save: " + error.message, "error"); return; }
-  showToast("Permissions saved!");
+  showToast(role === "super_admin" ? "Promoted to Super Admin!" : "Permissions saved!");
   closeModal("permissionsModal");
   loadAdmins();
 }
