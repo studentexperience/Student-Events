@@ -717,6 +717,97 @@
     .toggle-switch input:checked + .toggle-slider { background: var(--accent); }
     .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
 
+    /* ── AI REPORT GENERATOR ── */
+    .report-modal .modal { max-width: 760px; }
+    .report-config {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .report-config .full { grid-column: 1 / -1; }
+    .report-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .report-option {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      background: white;
+      transition: all .15s;
+    }
+    .report-option input { accent-color: var(--accent); }
+    .report-option:has(input:checked) {
+      border-color: var(--accent);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+    .report-output {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--ink);
+      min-height: 200px;
+      max-height: 440px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      display: none;
+    }
+    .report-output.visible { display: block; }
+    .report-output h2 { font-size: 16px; font-weight: 700; margin: 16px 0 6px; color: var(--accent); }
+    .report-output h3 { font-size: 14px; font-weight: 700; margin: 12px 0 4px; }
+    .report-output p  { margin-bottom: 10px; }
+    .report-output ul { padding-left: 18px; margin-bottom: 10px; }
+    .report-output li { margin-bottom: 4px; }
+    .report-generating {
+      display: none;
+      text-align: center;
+      padding: 32px;
+      color: var(--muted);
+    }
+    .report-generating.visible { display: block; }
+    .report-spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .api-key-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      font-size: 12px;
+    }
+    .api-key-row input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      outline: none;
+    }
+
     /* ── PAGES EDITOR ── */
     .pages-grid {
       display: grid;
@@ -899,7 +990,10 @@
             <div class="section-title">Dashboard</div>
             <div class="section-subtitle">Overview of your campus content</div>
           </div>
-          <button class="btn btn-secondary" onclick="loadDashboard()">↺ Refresh</button>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-secondary" onclick="loadDashboard()">↺ Refresh</button>
+            <button class="btn btn-primary" onclick="openReportModal()" id="btn-generate-report">✨ Generate AI Report</button>
+          </div>
         </div>
 
         <!-- Stat cards -->
@@ -1645,6 +1739,92 @@
         <button class="btn btn-secondary" onclick="closeModal('permissionsModal')">Cancel</button>
         <button class="btn btn-primary" onclick="savePermissions()">Save Permissions</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ AI REPORT MODAL ══ -->
+<div class="modal-backdrop report-modal" id="reportModal">
+  <div class="modal" style="max-width:720px;">
+    <div class="modal-header">
+      <div class="modal-title">✨ AI Report Generator</div>
+      <button class="modal-close" onclick="closeModal('reportModal')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- API Key input -->
+      <div class="api-key-row">
+        <span>🔑</span>
+        <input type="password" id="geminiKey" placeholder="Paste your Gemini API key here (get free key at aistudio.google.com)" />
+        <button class="btn btn-secondary btn-sm" onclick="saveGeminiKey()">Save</button>
+      </div>
+
+      <!-- Report config -->
+      <div class="report-config">
+        <div class="field">
+          <label>Report Type</label>
+          <select id="reportType" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;background:white;">
+            <option value="summary">Executive Summary</option>
+            <option value="detailed">Detailed Analysis</option>
+            <option value="recommendation">Recommendations Only</option>
+            <option value="comparison">Campus Comparison</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Focus Campus</label>
+          <select id="reportCampus" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;background:white;">
+            <option value="All">All Campuses</option>
+            <option>Karachi</option>
+            <option>Nairobi</option>
+            <option>Kampala</option>
+            <option>Dar es Salaam</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Time Period</label>
+          <select id="reportYear" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;background:white;">
+          </select>
+        </div>
+        <div class="field">
+          <label>Tone</label>
+          <select id="reportTone" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;background:white;">
+            <option value="formal">Formal (Board Report)</option>
+            <option value="concise">Concise (Management)</option>
+            <option value="friendly">Friendly (Team Update)</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label>Include Sections</label>
+          <div class="report-options">
+            <label class="report-option"><input type="checkbox" id="incOverview" checked /> Overview</label>
+            <label class="report-option"><input type="checkbox" id="incCampus" checked /> Campus Breakdown</label>
+            <label class="report-option"><input type="checkbox" id="incMonthly" checked /> Monthly Trends</label>
+            <label class="report-option"><input type="checkbox" id="incCategory" checked /> Category Analysis</label>
+            <label class="report-option"><input type="checkbox" id="incClubs" checked /> Clubs Summary</label>
+            <label class="report-option"><input type="checkbox" id="incRecommend" checked /> Recommendations</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generate button -->
+      <div style="display:flex;gap:10px;margin-bottom:16px;">
+        <button class="btn btn-primary" onclick="generateReport()" id="generateReportBtn" style="flex:1;">
+          ✨ Generate Report
+        </button>
+        <button class="btn btn-secondary" id="copyReportBtn" onclick="copyReport()" style="display:none;">📋 Copy</button>
+        <button class="btn btn-secondary" id="downloadReportBtn" onclick="downloadReport()" style="display:none;">⬇ Download</button>
+      </div>
+
+      <!-- Generating spinner -->
+      <div class="report-generating" id="reportGenerating">
+        <div class="report-spinner"></div>
+        <div style="font-size:14px;font-weight:600;">Analysing your data…</div>
+        <div style="font-size:12px;margin-top:6px;">Gemini is reading your dashboard and writing the report</div>
+      </div>
+
+      <!-- Report output -->
+      <div class="report-output" id="reportOutput"></div>
+
     </div>
   </div>
 </div>
@@ -3263,7 +3443,253 @@ function esc(str){
     .replaceAll(">","&gt;").replaceAll('"',"&quot;");
 }
 
-/* ══ INIT ══ */
+/* ══ AI REPORT GENERATOR ══ */
+
+function openReportModal(){
+  // Populate year dropdown
+  const years = [...new Set(dashEventData
+    .filter(e => e.event_date)
+    .map(e => new Date(e.event_date).getFullYear())
+  )].sort((a,b) => b-a);
+  const currentYear = new Date().getFullYear();
+  if(!years.includes(currentYear)) years.unshift(currentYear);
+
+  const reportYear = document.getElementById("reportYear");
+  reportYear.innerHTML = `<option value="All">All Years</option>` +
+    years.map(y => `<option value="${y}" ${y===currentYear?"selected":""}>${y}</option>`).join("");
+
+  // Load saved API key
+  const saved = localStorage.getItem("geminiKey");
+  if(saved) document.getElementById("geminiKey").value = saved;
+
+  // Reset output
+  document.getElementById("reportOutput").classList.remove("visible");
+  document.getElementById("reportOutput").innerHTML = "";
+  document.getElementById("reportGenerating").classList.remove("visible");
+  document.getElementById("copyReportBtn").style.display = "none";
+  document.getElementById("downloadReportBtn").style.display = "none";
+
+  document.getElementById("reportModal").classList.add("open");
+}
+
+function saveGeminiKey(){
+  const key = document.getElementById("geminiKey").value.trim();
+  if(key){ localStorage.setItem("geminiKey", key); showToast("API key saved!"); }
+}
+
+async function generateReport(){
+  const apiKey = document.getElementById("geminiKey").value.trim();
+  if(!apiKey){
+    showToast("Please enter your Gemini API key first.", "error");
+    return;
+  }
+
+  const reportType  = document.getElementById("reportType").value;
+  const focusCampus = document.getElementById("reportCampus").value;
+  const year        = document.getElementById("reportYear").value;
+  const tone        = document.getElementById("reportTone").value;
+
+  // Sections to include
+  const sections = {
+    overview:    document.getElementById("incOverview").checked,
+    campus:      document.getElementById("incCampus").checked,
+    monthly:     document.getElementById("incMonthly").checked,
+    category:    document.getElementById("incCategory").checked,
+    clubs:       document.getElementById("incClubs").checked,
+    recommend:   document.getElementById("incRecommend").checked,
+  };
+
+  // ── Build data snapshot (aggregated counts only — no personal data) ──
+  const today   = new Date().toISOString().split("T")[0];
+  let filtered  = dashEventData;
+  if(focusCampus !== "All") filtered = filtered.filter(e => e.campus === focusCampus);
+  if(year !== "All") filtered = filtered.filter(e => e.event_date && new Date(e.event_date).getFullYear() === parseInt(year));
+
+  // Campus breakdown
+  const campusBreakdown = CAMPUSES.map(c => ({
+    campus:   c,
+    total:    filtered.filter(e => e.campus === c).length,
+    upcoming: filtered.filter(e => e.campus === c && e.event_date >= today).length,
+    past:     filtered.filter(e => e.campus === c && e.event_date < today).length,
+  }));
+
+  // Monthly breakdown
+  const monthlyBreakdown = MONTHS.map((m, mi) => ({
+    month: m,
+    count: filtered.filter(e => {
+      if(!e.event_date) return false;
+      return new Date(e.event_date).getMonth() === mi;
+    }).length
+  }));
+
+  // Category breakdown
+  const cats = [...new Set(filtered.map(e => e.category).filter(Boolean))].sort();
+  const categoryBreakdown = cats.map(c => ({
+    category: c,
+    count: filtered.filter(e => e.category === c).length,
+    pct: Math.round((filtered.filter(e => e.category === c).length / (filtered.length || 1)) * 100)
+  }));
+
+  // Peak month
+  const peakMonth = monthlyBreakdown.reduce((a,b) => a.count > b.count ? a : b, {month:"N/A",count:0});
+  const mostActiveCampus = campusBreakdown.reduce((a,b) => a.total > b.total ? a : b, {campus:"N/A",total:0});
+
+  // Clubs count per campus
+  const clubsByC = CAMPUSES.map(c => ({
+    campus: c,
+    clubs: allClubs.filter(cl => cl.campus === c).length
+  }));
+
+  const dataSnapshot = `
+DASHBOARD DATA SNAPSHOT — Aga Khan University Student Experience
+Generated: ${new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"})}
+Focus: ${focusCampus === "All" ? "All Campuses" : focusCampus} | Period: ${year === "All" ? "All time" : year}
+
+OVERALL STATS:
+- Total events in selection: ${filtered.length}
+- Upcoming events: ${filtered.filter(e => e.event_date >= today).length}
+- Past events: ${filtered.filter(e => e.event_date < today).length}
+- Total clubs (all campuses): ${allClubs.length}
+- Peak activity month: ${peakMonth.month} (${peakMonth.count} events)
+- Most active campus: ${mostActiveCampus.campus} (${mostActiveCampus.total} events)
+
+CAMPUS BREAKDOWN:
+${campusBreakdown.map(c => `- ${c.campus}: ${c.total} total (${c.upcoming} upcoming, ${c.past} past)`).join("\n")}
+
+MONTHLY TREND:
+${monthlyBreakdown.filter(m => m.count > 0).map(m => `- ${m.month}: ${m.count} events`).join("\n")}
+
+CATEGORY DISTRIBUTION:
+${categoryBreakdown.map(c => `- ${c.category}: ${c.count} events (${c.pct}%)`).join("\n")}
+
+CLUBS PER CAMPUS:
+${clubsByC.map(c => `- ${c.campus}: ${c.clubs} clubs`).join("\n")}
+  `.trim();
+
+  // ── Build the prompt ──
+  const toneMap = {
+    formal:   "formal and professional, suitable for a university board or executive report",
+    concise:  "concise and data-driven, suitable for senior management briefings",
+    friendly: "friendly and engaging, suitable for a team update or newsletter"
+  };
+
+  const typeMap = {
+    summary:        "Write an executive summary with key highlights.",
+    detailed:       "Write a detailed analytical report with in-depth observations for each section.",
+    recommendation: "Focus only on strategic recommendations based on the data.",
+    comparison:     "Write a comparative analysis across all four campuses."
+  };
+
+  const sectionInstructions = [
+    sections.overview    && "1. Overview — key numbers and overall performance",
+    sections.campus      && "2. Campus Breakdown — individual campus performance",
+    sections.monthly     && "3. Monthly Trends — patterns and peak periods",
+    sections.category    && "4. Category Analysis — which event types dominate",
+    sections.clubs       && "5. Clubs & Societies — activity summary",
+    sections.recommend   && "6. Recommendations — data-driven suggestions for improvement",
+  ].filter(Boolean).join("\n");
+
+  const prompt = `You are an expert student affairs analyst at Aga Khan University.
+You have been given aggregated dashboard data (no personal information) about student events and clubs.
+Write a ${toneMap[tone]} report.
+${typeMap[reportType]}
+
+Include these sections:
+${sectionInstructions}
+
+Use markdown formatting: ## for section headers, **bold** for key figures, bullet points for lists.
+Be specific with the numbers. Identify trends, highlight achievements, and flag areas needing attention.
+Keep the tone consistent throughout. Do not make up data — only use what is provided.
+
+HERE IS THE DATA:
+${dataSnapshot}`;
+
+  // ── Call Gemini API ──
+  const outputEl     = document.getElementById("reportOutput");
+  const generatingEl = document.getElementById("reportGenerating");
+  const generateBtn  = document.getElementById("generateReportBtn");
+
+  outputEl.classList.remove("visible");
+  outputEl.innerHTML = "";
+  generatingEl.classList.add("visible");
+  generateBtn.disabled = true;
+  generateBtn.textContent = "Generating…";
+  document.getElementById("copyReportBtn").style.display    = "none";
+  document.getElementById("downloadReportBtn").style.display = "none";
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+        })
+      }
+    );
+
+    const data = await res.json();
+
+    if(data.error){
+      throw new Error(data.error.message);
+    }
+
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "No report generated.";
+
+    // Render markdown-style formatting
+    const html = text
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`)
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/^(?!<[hup])/gm, '')
+      .trim();
+
+    generatingEl.classList.remove("visible");
+    outputEl.innerHTML = `<p>${html}</p>`;
+    outputEl.classList.add("visible");
+    document.getElementById("copyReportBtn").style.display    = "inline-flex";
+    document.getElementById("downloadReportBtn").style.display = "inline-flex";
+
+    // Store raw text for download
+    outputEl.dataset.raw = text;
+
+  } catch(err){
+    generatingEl.classList.remove("visible");
+    outputEl.innerHTML = `<div style="color:var(--danger);font-weight:600;">❌ Error: ${err.message}</div>
+      <div style="margin-top:8px;font-size:12px;color:var(--muted);">
+        Check your API key is correct and has access to Gemini 1.5 Flash.
+        Get a free key at <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a>
+      </div>`;
+    outputEl.classList.add("visible");
+  } finally {
+    generateBtn.disabled = false;
+    generateBtn.textContent = "✨ Generate Report";
+  }
+}
+
+function copyReport(){
+  const raw = document.getElementById("reportOutput").dataset.raw || "";
+  navigator.clipboard.writeText(raw).then(() => showToast("Report copied to clipboard!"));
+}
+
+function downloadReport(){
+  const raw      = document.getElementById("reportOutput").dataset.raw || "";
+  const campus   = document.getElementById("reportCampus").value;
+  const year     = document.getElementById("reportYear").value;
+  const date     = new Date().toISOString().split("T")[0];
+  const filename = `AKU-Student-Experience-Report-${campus}-${year}-${date}.txt`;
+  const blob     = new Blob([raw], { type: "text/plain" });
+  const a        = document.createElement("a");
+  a.href         = URL.createObjectURL(blob);
+  a.download     = filename;
+  a.click();
+  showToast("Report downloaded!");
+}
 // Wrap all tables in a scroll container for horizontal scrolling on small screens
 document.querySelectorAll(".table-wrap table").forEach(table => {
   const wrapper = document.createElement("div");
