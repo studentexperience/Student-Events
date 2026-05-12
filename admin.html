@@ -1709,42 +1709,86 @@ function makeGradient(ctx, color, alpha1 = 0.85, alpha2 = 0.25){
   return gr;
 }
 
-/* ── Download chart as high-res PNG ── */
+/* ── Download chart as high-res PNG (PowerPoint-quality) ── */
 function downloadChart(canvasId, label){
-  const sourceCanvas = document.getElementById(canvasId);
-  if(!sourceCanvas) return;
-
   const chartInst = chartInstances[canvasId];
-  if(!chartInst) return;
+  if(!chartInst){ showToast("Chart not ready", "error"); return; }
 
-  // Export at 3× resolution for crisp print/presentation quality
-  const SCALE  = 3;
-  const W      = sourceCanvas.offsetWidth  * SCALE;
-  const H      = sourceCanvas.offsetHeight * SCALE;
+  // Chart.js toBase64Image() gives full internal resolution (devicePixelRatio × CSS size)
+  const chartDataUrl = chartInst.toBase64Image("image/png", 1.0);
 
-  const out    = document.createElement("canvas");
-  out.width    = W;
-  out.height   = H;
-  const octx   = out.getContext("2d");
+  const img = new Image();
+  img.onload = () => {
+    const PADDING    = 40;
+    const HEADER_H   = 64;
+    const FOOTER_H   = 36;
+    const totalW     = img.width  + PADDING * 2;
+    const totalH     = img.height + HEADER_H + FOOTER_H + PADDING;
 
-  // White background
-  octx.fillStyle = "#ffffff";
-  octx.fillRect(0, 0, W, H);
+    const out  = document.createElement("canvas");
+    out.width  = totalW;
+    out.height = totalH;
+    const ctx  = out.getContext("2d");
 
-  // Scale up and draw the chart
-  octx.scale(SCALE, SCALE);
-  octx.drawImage(sourceCanvas, 0, 0, sourceCanvas.offsetWidth, sourceCanvas.offsetHeight);
+    // ── Background ──
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, totalW, totalH);
 
-  // Add a subtle title watermark at the top
-  octx.font = "bold 13px 'Poppins', sans-serif";
-  octx.fillStyle = "#6b7280";
-  octx.fillText(`AKU Campus Life · ${label} · ${new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"})}`, 12, 16);
+    // ── Top accent bar ──
+    const barGrad = ctx.createLinearGradient(0, 0, totalW, 0);
+    barGrad.addColorStop(0, "#2563eb");
+    barGrad.addColorStop(1, "#9333ea");
+    ctx.fillStyle = barGrad;
+    ctx.fillRect(0, 0, totalW, 6);
 
-  const a    = document.createElement("a");
-  a.href     = out.toDataURL("image/png", 1.0);
-  a.download = `${label.replace(/\s+/g,"-").toLowerCase()}-${new Date().toISOString().split("T")[0]}.png`;
-  a.click();
-  showToast(`Downloaded high-res: ${label}`);
+    // ── Header area ──
+    // Title
+    ctx.fillStyle  = "#111827";
+    ctx.font       = `bold ${Math.round(img.width * 0.022)}px 'Arial', sans-serif`;
+    ctx.fillText(label, PADDING, HEADER_H * 0.55);
+
+    // Subtitle / date
+    ctx.fillStyle  = "#6b7280";
+    ctx.font       = `${Math.round(img.width * 0.014)}px 'Arial', sans-serif`;
+    const dateStr  = new Date().toLocaleDateString("en-GB", { day:"numeric", month:"long", year:"numeric" });
+    ctx.fillText(`AKU Campus Life  ·  ${dateStr}`, PADDING, HEADER_H * 0.85);
+
+    // ── Divider line ──
+    ctx.strokeStyle = "#e5e7eb";
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(PADDING, HEADER_H);
+    ctx.lineTo(totalW - PADDING, HEADER_H);
+    ctx.stroke();
+
+    // ── Chart image ──
+    ctx.drawImage(img, PADDING, HEADER_H + 10, img.width, img.height);
+
+    // ── Footer ──
+    const footerY = HEADER_H + 10 + img.height + 16;
+    ctx.strokeStyle = "#e5e7eb";
+    ctx.beginPath();
+    ctx.moveTo(PADDING, footerY);
+    ctx.lineTo(totalW - PADDING, footerY);
+    ctx.stroke();
+
+    ctx.fillStyle = "#9ca3af";
+    ctx.font      = `${Math.round(img.width * 0.012)}px 'Arial', sans-serif`;
+    ctx.fillText("Aga Khan University — Student Experience", PADDING, footerY + 20);
+
+    // Right-align "Confidential"
+    const confText = "For Internal Use";
+    const confW    = ctx.measureText(confText).width;
+    ctx.fillText(confText, totalW - PADDING - confW, footerY + 20);
+
+    // ── Save ──
+    const a    = document.createElement("a");
+    a.href     = out.toDataURL("image/png", 1.0);
+    a.download = `${label.replace(/\s+/g,"-").toLowerCase()}-${new Date().toISOString().split("T")[0]}.png`;
+    a.click();
+    showToast(`Downloaded: ${label}`);
+  };
+  img.src = chartDataUrl;
 }
 
 async function loadDashboard(){
