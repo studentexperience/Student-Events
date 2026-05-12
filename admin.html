@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
   <style>
     :root {
@@ -549,6 +550,69 @@
       border: 1px solid #bfdbfe;
     }
 
+    /* ── CHARTS ── */
+    .charts-section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      margin: 28px 0 16px;
+    }
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .charts-grid.full { grid-template-columns: 1fr; }
+    .chart-card {
+      background: white;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 20px 24px;
+    }
+    .chart-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .chart-card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .chart-card-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .chart-filter-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .chart-select {
+      padding: 5px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      background: white;
+      cursor: pointer;
+      outline: none;
+    }
+    .chart-select:focus { border-color: var(--accent); }
+    .chart-wrap {
+      position: relative;
+      height: 260px;
+    }
+
     /* ── PAGES EDITOR ── */
     .pages-grid {
       display: grid;
@@ -731,7 +795,10 @@
             <div class="section-title">Dashboard</div>
             <div class="section-subtitle">Overview of your campus content</div>
           </div>
+          <button class="btn btn-secondary" onclick="loadDashboard()">↺ Refresh</button>
         </div>
+
+        <!-- Stat cards -->
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-label">Total Clubs</div>
@@ -760,9 +827,102 @@
           </div>
         </div>
 
-        <!-- Per-campus breakdown -->
-        <div style="margin-top:8px;margin-bottom:16px;font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;">By Campus</div>
-        <div id="campusStatsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;"></div>
+        <!-- Per-campus stat cards -->
+        <div class="charts-section-title">By Campus — Summary</div>
+        <div id="campusStatsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:28px;"></div>
+
+        <!-- ── CHARTS ── -->
+        <div class="charts-section-title">Events Analytics</div>
+
+        <!-- Row 1: Events by Campus + Events by Month -->
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <div class="chart-card-title">Events by Campus</div>
+                <div class="chart-card-sub">Total events per campus</div>
+              </div>
+              <div class="chart-filter-row">
+                <select class="chart-select" id="campusChartType" onchange="renderCampusChart()">
+                  <option value="bar">Bar</option>
+                  <option value="doughnut">Doughnut</option>
+                  <option value="pie">Pie</option>
+                </select>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="chartByCampus"></canvas></div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <div class="chart-card-title">Events by Month</div>
+                <div class="chart-card-sub">All campuses combined</div>
+              </div>
+              <div class="chart-filter-row">
+                <select class="chart-select" id="monthChartYear" onchange="renderMonthChart()"></select>
+                <select class="chart-select" id="monthChartType" onchange="renderMonthChart()">
+                  <option value="bar">Bar</option>
+                  <option value="line">Line</option>
+                </select>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="chartByMonth"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Row 2: Events by Campus by Month (full width) -->
+        <div class="charts-grid full">
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <div class="chart-card-title">Events by Campus by Month</div>
+                <div class="chart-card-sub">Breakdown per campus across months</div>
+              </div>
+              <div class="chart-filter-row">
+                <select class="chart-select" id="campusMonthYear" onchange="renderCampusMonthChart()"></select>
+                <select class="chart-select" id="campusMonthType" onchange="renderCampusMonthChart()">
+                  <option value="bar">Grouped Bar</option>
+                  <option value="line">Line</option>
+                </select>
+              </div>
+            </div>
+            <div class="chart-wrap" style="height:300px;"><canvas id="chartCampusByMonth"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Row 3: Upcoming vs Past + Events by Category -->
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <div class="chart-card-title">Upcoming vs Past Events</div>
+                <div class="chart-card-sub">By campus</div>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="chartUpcomingVsPast"></canvas></div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <div class="chart-card-title">Events by Category</div>
+                <div class="chart-card-sub">Distribution across all campuses</div>
+              </div>
+              <div class="chart-filter-row">
+                <select class="chart-select" id="categoryChartCampus" onchange="renderCategoryChart()">
+                  <option value="">All Campuses</option>
+                  <option>Karachi</option>
+                  <option>Nairobi</option>
+                  <option>Kampala</option>
+                  <option>Dar es Salaam</option>
+                </select>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="chartByCategory"></canvas></div>
+          </div>
+        </div>
+
       </div>
 
       <!-- ── CLUBS ── -->
@@ -1484,32 +1644,62 @@ function showToast(msg, type = "success"){
 
 /* ══ DASHBOARD ══ */
 const CAMPUSES = ['Karachi', 'Nairobi', 'Kampala', 'Dar es Salaam'];
+const CAMPUS_COLORS = {
+  'Karachi':       '#2563eb',
+  'Nairobi':       '#16a34a',
+  'Kampala':       '#d97706',
+  'Dar es Salaam': '#9333ea',
+};
+const CAMPUS_COLORS_LIGHT = {
+  'Karachi':       'rgba(37,99,235,0.15)',
+  'Nairobi':       'rgba(22,163,74,0.15)',
+  'Kampala':       'rgba(217,119,6,0.15)',
+  'Dar es Salaam': 'rgba(147,51,234,0.15)',
+};
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// Chart instances — stored so we can destroy before re-rendering
+const chartInstances = {};
+
+function destroyChart(id){
+  if(chartInstances[id]){ chartInstances[id].destroy(); delete chartInstances[id]; }
+}
+
+// All events data used by charts
+let dashEventData = [];
 
 async function loadDashboard(){
   const today = new Date().toISOString().split("T")[0];
-  const [{ count: clubCount }, { count: eventCount }, { count: adminCount }, { count: newsCount }, { data: upcomingData }, { data: allClubsData }, { data: allEventsData }] = await Promise.all([
+  const [
+    { count: clubCount },
+    { count: eventCount },
+    { count: adminCount },
+    { count: newsCount },
+    { data: upcomingData },
+    { data: allClubsData },
+    { data: eventsData },
+  ] = await Promise.all([
     sb.from("clubs").select("*", { count: "exact", head: true }),
     sb.from("events").select("*", { count: "exact", head: true }),
     sb.from("admins").select("*", { count: "exact", head: true }),
     sb.from("news").select("*", { count: "exact", head: true }),
     sb.from("events").select("event_date").gte("event_date", today),
     sb.from("clubs").select("campus"),
-    sb.from("events").select("campus, event_date"),
+    sb.from("events").select("campus, event_date, category"),
   ]);
 
-  document.getElementById("statClubs").textContent    = clubCount ?? "—";
-  document.getElementById("statEvents").textContent   = eventCount ?? "—";
-  document.getElementById("statAdmins").textContent   = adminCount ?? "—";
-  document.getElementById("statNews").textContent     = newsCount ?? "—";
+  document.getElementById("statClubs").textContent    = clubCount    ?? "—";
+  document.getElementById("statEvents").textContent   = eventCount   ?? "—";
+  document.getElementById("statAdmins").textContent   = adminCount   ?? "—";
+  document.getElementById("statNews").textContent     = newsCount    ?? "—";
   document.getElementById("statUpcoming").textContent = upcomingData?.length ?? "—";
 
-  // Per-campus breakdown
+  // Per-campus summary cards
   const campusGrid = document.getElementById("campusStatsGrid");
-  const CAMPUS_COLORS = { Karachi:"#2563eb", Nairobi:"#16a34a", Kampala:"#d97706", "Dar es Salaam":"#9333ea" };
   campusGrid.innerHTML = CAMPUSES.map(c => {
-    const clubs    = (allClubsData  || []).filter(x => x.campus === c).length;
-    const events   = (allEventsData || []).filter(x => x.campus === c).length;
-    const upcoming = (allEventsData || []).filter(x => x.campus === c && x.event_date >= today).length;
+    const clubs    = (allClubsData || []).filter(x => x.campus === c).length;
+    const events   = (eventsData   || []).filter(x => x.campus === c).length;
+    const upcoming = (eventsData   || []).filter(x => x.campus === c && x.event_date >= today).length;
     const color    = CAMPUS_COLORS[c] || "#555";
     return `
       <div class="stat-card" style="border-top:4px solid ${color};">
@@ -1521,6 +1711,226 @@ async function loadDashboard(){
         </div>
       </div>`;
   }).join("");
+
+  // Store events for charts
+  dashEventData = eventsData || [];
+
+  // Populate year dropdowns
+  const years = [...new Set(dashEventData
+    .filter(e => e.event_date)
+    .map(e => new Date(e.event_date).getFullYear())
+  )].sort((a,b) => b - a);
+
+  const currentYear = new Date().getFullYear();
+  if(!years.includes(currentYear)) years.unshift(currentYear);
+
+  ["monthChartYear","campusMonthYear"].forEach(selId => {
+    const sel = document.getElementById(selId);
+    sel.innerHTML = years.map(y => `<option value="${y}" ${y === currentYear ? "selected" : ""}>${y}</option>`).join("");
+  });
+
+  // Render all charts
+  renderCampusChart();
+  renderMonthChart();
+  renderCampusMonthChart();
+  renderUpcomingVsPast(today);
+  renderCategoryChart();
+}
+
+/* ── Chart 1: Events by Campus ── */
+function renderCampusChart(){
+  destroyChart("chartByCampus");
+  const type   = document.getElementById("campusChartType").value;
+  const counts = CAMPUSES.map(c => dashEventData.filter(e => e.campus === c).length);
+  const colors = CAMPUSES.map(c => CAMPUS_COLORS[c] || "#999");
+
+  const ctx = document.getElementById("chartByCampus").getContext("2d");
+  chartInstances["chartByCampus"] = new Chart(ctx, {
+    type,
+    data: {
+      labels: CAMPUSES,
+      datasets: [{
+        label: "Events",
+        data: counts,
+        backgroundColor: type === "bar" ? colors.map(c => c + "cc") : colors,
+        borderColor: colors,
+        borderWidth: type === "bar" ? 0 : 2,
+        borderRadius: type === "bar" ? 8 : 0,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: type !== "bar", position: "bottom" },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y ?? ctx.parsed} events` } }
+      },
+      scales: type === "bar" ? {
+        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: "#f3f4f6" } },
+        x: { grid: { display: false } }
+      } : {}
+    }
+  });
+}
+
+/* ── Chart 2: Events by Month ── */
+function renderMonthChart(){
+  destroyChart("chartByMonth");
+  const year   = parseInt(document.getElementById("monthChartYear").value);
+  const type   = document.getElementById("monthChartType").value;
+  const counts = MONTHS.map((_, mi) =>
+    dashEventData.filter(e => {
+      if(!e.event_date) return false;
+      const d = new Date(e.event_date);
+      return d.getFullYear() === year && d.getMonth() === mi;
+    }).length
+  );
+
+  const ctx = document.getElementById("chartByMonth").getContext("2d");
+  chartInstances["chartByMonth"] = new Chart(ctx, {
+    type,
+    data: {
+      labels: MONTHS,
+      datasets: [{
+        label: `Events in ${year}`,
+        data: counts,
+        backgroundColor: type === "bar" ? "rgba(37,99,235,0.7)" : "rgba(37,99,235,0.15)",
+        borderColor: "#2563eb",
+        borderWidth: 2,
+        borderRadius: type === "bar" ? 8 : 0,
+        fill: type === "line",
+        tension: 0.4,
+        pointBackgroundColor: "#2563eb",
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: "#f3f4f6" } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+/* ── Chart 3: Events by Campus by Month ── */
+function renderCampusMonthChart(){
+  destroyChart("chartCampusByMonth");
+  const year = parseInt(document.getElementById("campusMonthYear").value);
+  const type = document.getElementById("campusMonthType").value === "line" ? "line" : "bar";
+
+  const datasets = CAMPUSES.map(campus => {
+    const color = CAMPUS_COLORS[campus] || "#999";
+    const data  = MONTHS.map((_, mi) =>
+      dashEventData.filter(e => {
+        if(!e.event_date || e.campus !== campus) return false;
+        const d = new Date(e.event_date);
+        return d.getFullYear() === year && d.getMonth() === mi;
+      }).length
+    );
+    return {
+      label: campus,
+      data,
+      backgroundColor: type === "bar" ? color + "cc" : CAMPUS_COLORS_LIGHT[campus],
+      borderColor: color,
+      borderWidth: 2,
+      borderRadius: type === "bar" ? 6 : 0,
+      fill: type === "line",
+      tension: 0.4,
+      pointBackgroundColor: color,
+    };
+  });
+
+  const ctx = document.getElementById("chartCampusByMonth").getContext("2d");
+  chartInstances["chartCampusByMonth"] = new Chart(ctx, {
+    type,
+    data: { labels: MONTHS, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: "bottom", labels: { usePointStyle: true, padding: 16 } } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: "#f3f4f6" } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+/* ── Chart 4: Upcoming vs Past by Campus ── */
+function renderUpcomingVsPast(today){
+  destroyChart("chartUpcomingVsPast");
+  const t = today || new Date().toISOString().split("T")[0];
+
+  const upcomingCounts = CAMPUSES.map(c =>
+    dashEventData.filter(e => e.campus === c && e.event_date >= t).length
+  );
+  const pastCounts = CAMPUSES.map(c =>
+    dashEventData.filter(e => e.campus === c && e.event_date < t).length
+  );
+
+  const ctx = document.getElementById("chartUpcomingVsPast").getContext("2d");
+  chartInstances["chartUpcomingVsPast"] = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: CAMPUSES,
+      datasets: [
+        {
+          label: "Upcoming",
+          data: upcomingCounts,
+          backgroundColor: "rgba(37,99,235,0.75)",
+          borderRadius: 6,
+          borderSkipped: false,
+        },
+        {
+          label: "Past",
+          data: pastCounts,
+          backgroundColor: "rgba(107,114,128,0.4)",
+          borderRadius: 6,
+          borderSkipped: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: "bottom", labels: { usePointStyle: true, padding: 16 } } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: "#f3f4f6" }, stacked: false },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+/* ── Chart 5: Events by Category ── */
+function renderCategoryChart(){
+  destroyChart("chartByCategory");
+  const campus   = document.getElementById("categoryChartCampus").value;
+  const filtered = campus ? dashEventData.filter(e => e.campus === campus) : dashEventData;
+  const cats     = [...new Set(filtered.map(e => e.category).filter(Boolean))].sort();
+  const counts   = cats.map(c => filtered.filter(e => e.category === c).length);
+
+  const palette = ["#2563eb","#16a34a","#d97706","#9333ea","#dc2626","#0891b2","#ca8a04","#15803d"];
+
+  const ctx = document.getElementById("chartByCategory").getContext("2d");
+  chartInstances["chartByCategory"] = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: cats.length ? cats : ["No data"],
+      datasets: [{
+        data: counts.length ? counts : [1],
+        backgroundColor: cats.length ? cats.map((_,i) => palette[i % palette.length]) : ["#e5e7eb"],
+        borderWidth: 2,
+        borderColor: "#fff",
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: "bottom", labels: { usePointStyle: true, padding: 12, font: { size: 11 } } }
+      },
+      cutout: "60%",
+    }
+  });
 }
 
 /* ══ CLUBS ══ */
