@@ -637,6 +637,47 @@
       height: 280px;
     }
 
+    /* ── PERMISSIONS EDITOR ── */
+    .perms-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 4px;
+    }
+    .perm-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 12px 14px;
+      gap: 10px;
+    }
+    .perm-label { font-size: 13px; font-weight: 600; color: var(--ink); }
+    .perm-sub   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    /* Toggle switch */
+    .toggle-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0;
+      background: #d1d5db;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .toggle-slider::before {
+      content: "";
+      position: absolute;
+      width: 18px; height: 18px;
+      left: 3px; top: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: transform .2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .toggle-switch input:checked + .toggle-slider { background: var(--accent); }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+
     /* ── PAGES EDITOR ── */
     .pages-grid {
       display: grid;
@@ -782,24 +823,24 @@
     <!-- Sidebar -->
     <div class="sidebar">
       <div class="sidebar-label">Overview</div>
-      <button class="nav-item active" onclick="showSection('dashboard', this)">
+      <button class="nav-item active" data-section="section-dashboard" onclick="showSection('dashboard', this)">
         <span class="nav-icon">📊</span> Dashboard
       </button>
 
       <div class="sidebar-label">Content</div>
-      <button class="nav-item" onclick="showSection('clubs', this)">
+      <button class="nav-item" data-section="section-clubs" onclick="showSection('clubs', this)">
         <span class="nav-icon">🎭</span> Clubs
       </button>
-      <button class="nav-item" onclick="showSection('events', this)">
+      <button class="nav-item" data-section="section-events" onclick="showSection('events', this)">
         <span class="nav-icon">📅</span> Events
       </button>
-      <button class="nav-item" onclick="showSection('news', this)">
+      <button class="nav-item" data-section="section-news" onclick="showSection('news', this)">
         <span class="nav-icon">📰</span> News
       </button>
-      <button class="nav-item" onclick="showSection('forms', this)">
+      <button class="nav-item" data-section="section-forms" onclick="showSection('forms', this)">
         <span class="nav-icon">📋</span> Forms
       </button>
-      <button class="nav-item" onclick="showSection('home', this)">
+      <button class="nav-item" data-section="section-home" onclick="showSection('home', this)">
         <span class="nav-icon">🏠</span> Home Page
       </button>
 
@@ -957,8 +998,8 @@
             <div class="section-subtitle">Manage all registered clubs</div>
           </div>
           <div style="display:flex;gap:10px;">
-            <button class="btn btn-secondary" onclick="importClubsCSV()">📥 Import CSV</button>
-            <button class="btn btn-primary" onclick="openClubModal()">+ Add Club</button>
+            <button id="btn-import-clubs" class="btn btn-secondary" onclick="importClubsCSV()">📥 Import CSV</button>
+            <button id="btn-add-club" class="btn btn-primary" onclick="openClubModal()">+ Add Club</button>
           </div>
         </div>
         <div class="table-wrap">
@@ -991,8 +1032,8 @@
             <div class="section-subtitle">Manage all campus events</div>
           </div>
           <div style="display:flex;gap:10px;">
-            <button class="btn btn-secondary" onclick="importEventsCSV()">📥 Import CSV</button>
-            <button class="btn btn-primary" onclick="openEventModal()">+ Add Event</button>
+            <button id="btn-import-events" class="btn btn-secondary" onclick="importEventsCSV()">📥 Import CSV</button>
+            <button id="btn-add-event" class="btn btn-primary" onclick="openEventModal()">+ Add Event</button>
           </div>
         </div>
         <div class="table-wrap">
@@ -1065,7 +1106,7 @@
             <div class="section-title">News</div>
             <div class="section-subtitle">Manage news articles, achievements and announcements</div>
           </div>
-          <button class="btn btn-primary" onclick="openNewsModal()">+ Add Article</button>
+          <button id="btn-add-news" class="btn btn-primary" onclick="openNewsModal()">+ Add Article</button>
         </div>
         <div class="table-wrap">
           <div class="table-toolbar">
@@ -1098,7 +1139,7 @@
             <div class="section-title">Forms</div>
             <div class="section-subtitle">Manage important forms and links</div>
           </div>
-          <button class="btn btn-primary" onclick="openFormModal()">+ Add Form</button>
+          <button id="btn-add-form" class="btn btn-primary" onclick="openFormModal()">+ Add Form</button>
         </div>
         <div class="table-wrap">
           <div class="table-toolbar">
@@ -1467,6 +1508,74 @@
   </div>
 </div>
 
+<!-- ══ PERMISSIONS MODAL ══ -->
+<div class="modal-backdrop" id="permissionsModal">
+  <div class="modal" style="max-width:580px;">
+    <div class="modal-header">
+      <div class="modal-title" id="permissionsModalTitle">Edit Permissions</div>
+      <button class="modal-close" onclick="closeModal('permissionsModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="permissionsAdminId" />
+      <p id="permissionsAdminEmail" style="font-size:13px;color:var(--muted);margin-bottom:16px;"></p>
+
+      <!-- Campus access -->
+      <div class="field" style="margin-bottom:18px;">
+        <label>Campus Access</label>
+        <select id="permCampus" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;width:100%;background:white;">
+          <option value="All">All Campuses</option>
+          <option value="Karachi">Karachi</option>
+          <option value="Nairobi">Nairobi</option>
+          <option value="Kampala">Kampala</option>
+          <option value="Dar es Salaam">Dar es Salaam</option>
+        </select>
+      </div>
+
+      <!-- Permission toggles -->
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;">Feature Permissions</div>
+      <div class="perms-grid">
+        <div class="perm-row">
+          <div><div class="perm-label">Manage Events</div><div class="perm-sub">Add, edit, delete events</div></div>
+          <label class="toggle-switch"><input type="checkbox" id="permEvents" /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="perm-row">
+          <div><div class="perm-label">Manage Clubs</div><div class="perm-sub">Add, edit, delete clubs</div></div>
+          <label class="toggle-switch"><input type="checkbox" id="permClubs" /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="perm-row">
+          <div><div class="perm-label">Manage News</div><div class="perm-sub">Add, edit, delete articles</div></div>
+          <label class="toggle-switch"><input type="checkbox" id="permNews" /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="perm-row">
+          <div><div class="perm-label">Manage Forms</div><div class="perm-sub">Add, edit, delete forms</div></div>
+          <label class="toggle-switch"><input type="checkbox" id="permForms" /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="perm-row">
+          <div><div class="perm-label">Edit Home Page</div><div class="perm-sub">Edit welcome content</div></div>
+          <label class="toggle-switch"><input type="checkbox" id="permHome" /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="perm-row">
+          <div><div class="perm-label">View Dashboard</div><div class="perm-sub">See analytics & stats</div></div>
+          <label class="toggle-switch"><input type="checkbox" id="permDashboard" /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="perm-row">
+          <div><div class="perm-label">Download Charts</div><div class="perm-sub">Export PNG reports</div></div>
+          <label class="toggle-switch"><input type="checkbox" id="permDownload" /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="perm-row">
+          <div><div class="perm-label">Import CSV</div><div class="perm-sub">Bulk import events & clubs</div></div>
+          <label class="toggle-switch"><input type="checkbox" id="permImport" /><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="closeModal('permissionsModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="savePermissions()">Save Permissions</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ CHANGE PASSWORD MODAL ══ -->
 <div class="modal-backdrop" id="changePasswordModal">
   <div class="modal" style="max-width:420px;">
@@ -1503,8 +1612,14 @@ const SUPABASE_URL = "https://dgzuqvffnbfybngoadse.supabase.co";
 const SUPABASE_KEY = "sb_publishable_77t5gCD7M620CzcMwESN-A_oAuqz6B8";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let currentUser = null;
-let currentRole = null; // 'super_admin' or 'admin'
+let currentUser        = null;
+let currentRole        = null;
+let currentPermissions = {
+  campus: "All",
+  manage_events: true, manage_clubs: true, manage_news: true,
+  manage_forms: true,  edit_home: true,    view_dashboard: true,
+  download_charts: true, import_csv: true
+};
 let csvImportTarget = null;
 
 let authMode = "login"; // or "signup"
@@ -1583,8 +1698,7 @@ async function handleLogin(){
     return;
   }
 
-  // Check if this email is in the admins table
-  const { data: adminRow } = await sb.from("admins").select("email, role").eq("email", email).single();
+  const { data: adminRow } = await sb.from("admins").select("email, role, permissions").eq("email", email).single();
   if(!adminRow){
     await sb.auth.signOut();
     msg.textContent = "Access denied. Your email is not an authorised admin.";
@@ -1594,8 +1708,9 @@ async function handleLogin(){
     return;
   }
 
-  currentUser = data.user;
-  currentRole = adminRow.role || "admin";
+  currentUser        = data.user;
+  currentRole        = adminRow.role || "admin";
+  currentPermissions = buildPermissions(adminRow.role, adminRow.permissions);
   showAdminPanel();
   checkFirstLogin(data.session);
 }
@@ -1611,13 +1726,33 @@ async function handleLogout(){
 async function checkSession(){
   const { data: { session } } = await sb.auth.getSession();
   if(session){
-    const { data: adminRow } = await sb.from("admins").select("email, role").eq("email", session.user.email).single();
+    const { data: adminRow } = await sb.from("admins").select("email, role, permissions").eq("email", session.user.email).single();
     if(adminRow){
-      currentUser = session.user;
-      currentRole = adminRow.role || "admin";
+      currentUser        = session.user;
+      currentRole        = adminRow.role || "admin";
+      currentPermissions = buildPermissions(adminRow.role, adminRow.permissions);
       showAdminPanel();
     }
   }
+}
+
+/* ── Permission helpers ── */
+const DEFAULT_PERMS = {
+  campus:"All", manage_events:true, manage_clubs:true,
+  manage_news:true, manage_forms:true, edit_home:true,
+  view_dashboard:true, download_charts:true, import_csv:true
+};
+
+function buildPermissions(role, permsJson){
+  // Super admins always get everything
+  if(role === "super_admin") return { ...DEFAULT_PERMS };
+  // Merge stored permissions with defaults (so new permissions default to true)
+  return { ...DEFAULT_PERMS, ...(permsJson || {}) };
+}
+
+function hasPermission(key){
+  if(currentRole === "super_admin") return true;
+  return currentPermissions[key] !== false;
 }
 
 function showAdminPanel(){
@@ -1625,7 +1760,7 @@ function showAdminPanel(){
   document.getElementById("adminShell").classList.add("visible");
   document.getElementById("userEmail").textContent = currentUser.email;
 
-  // Set topbar badge
+  // Topbar badge
   const badge = document.getElementById("topbarBadge");
   if(currentRole === "super_admin"){
     badge.textContent = "SUPER ADMIN";
@@ -1635,19 +1770,56 @@ function showAdminPanel(){
     badge.textContent = "ADMIN";
   }
 
-  // Hide Admins section from regular admins
+  // ── Apply permissions to sidebar nav ──
+  const navMap = {
+    "section-dashboard": "view_dashboard",
+    "section-clubs":     "manage_clubs",
+    "section-events":    "manage_events",
+    "section-news":      "manage_news",
+    "section-forms":     "manage_forms",
+    "section-home":      "edit_home",
+  };
+
+  // Hide nav items the admin doesn't have access to
+  document.querySelectorAll(".nav-item[data-section]").forEach(btn => {
+    const section = btn.dataset.section;
+    const perm    = navMap[section];
+    btn.style.display = (!perm || hasPermission(perm)) ? "" : "none";
+  });
+
+  // Hide Admins nav from regular admins
   if(currentRole !== "super_admin"){
-    document.getElementById("adminsNavBtn").style.display   = "none";
-    document.getElementById("settingsNavLabel").style.display = "none";
+    document.getElementById("adminsNavBtn").style.display      = "none";
+    document.getElementById("settingsNavLabel").style.display  = "none";
   }
 
+  // ── Apply permissions to action buttons ──
+  // Clubs: hide Add/Edit/Delete/Import if no manage_clubs
+  applyActionPermission("manage_clubs",  ["#btn-add-club","#btn-import-clubs"]);
+  applyActionPermission("manage_events", ["#btn-add-event","#btn-import-events"]);
+  applyActionPermission("manage_news",   ["#btn-add-news"]);
+  applyActionPermission("manage_forms",  ["#btn-add-form"]);
+  applyActionPermission("download_charts",
+    document.querySelectorAll(".chart-download-btn")
+  );
+
   loadDashboard();
-  loadClubs();
-  loadEvents();
-  loadNews();
-  loadForms();
-  loadPages();
-  if(currentRole === "super_admin") loadAdmins();
+  if(hasPermission("manage_clubs"))  loadClubs();
+  if(hasPermission("manage_events")) loadEvents();
+  if(hasPermission("manage_news"))   loadNews();
+  if(hasPermission("manage_forms"))  loadForms();
+  if(hasPermission("edit_home"))     loadPages();
+  if(currentRole === "super_admin")  loadAdmins();
+}
+
+function applyActionPermission(permKey, selectors){
+  const show = hasPermission(permKey);
+  const els  = typeof selectors === "string"
+    ? [document.querySelector(selectors)]
+    : selectors instanceof NodeList
+      ? [...selectors]
+      : selectors.map(s => document.querySelector(s));
+  els.filter(Boolean).forEach(el => el.style.display = show ? "" : "none");
 }
 
 /* ══ NAVIGATION ══ */
@@ -2286,29 +2458,81 @@ function renderAdmins(list){
     el.innerHTML = `<div class="empty-state"><div class="empty-state-icon">👤</div><div class="empty-state-text">No admins found.</div></div>`;
     return;
   }
-  el.innerHTML = list.map(a => `
-    <div class="admin-item">
-      <div class="admin-avatar" style="background:${a.role === 'super_admin' ? '#fef3c7' : 'var(--accent-light)'};color:${a.role === 'super_admin' ? '#92400e' : 'var(--accent)'}">
-        ${a.email[0].toUpperCase()}
-      </div>
-      <div>
-        <div class="admin-email">${esc(a.email)}</div>
-        <div class="admin-date" style="display:flex;align-items:center;gap:6px;margin-top:3px;">
-          <span class="role-badge ${a.role || 'admin'}">${a.role === 'super_admin' ? 'Super Admin' : 'Admin'}</span>
-          ${a.campus ? `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:999px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;">📍 ${esc(a.campus)}</span>` : ""}
-          <span>Added ${new Date(a.created_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</span>
+  el.innerHTML = list.map(a => {
+    const isSuperAdmin = a.role === "super_admin";
+    const isMe         = a.email === currentUser.email;
+    const campus       = a.permissions?.campus || a.campus || "All";
+    return `
+      <div class="admin-item">
+        <div class="admin-avatar" style="background:${isSuperAdmin ? '#fef3c7' : 'var(--accent-light)'};color:${isSuperAdmin ? '#92400e' : 'var(--accent)'}">
+          ${a.email[0].toUpperCase()}
         </div>
-      </div>
-      <div class="admin-actions">
-        ${a.email === currentUser.email
-          ? `<span style="font-size:12px;color:var(--muted);">You</span>`
-          : currentRole === "super_admin"
-            ? `<button class="btn btn-danger btn-sm" onclick="confirmDelete('admin','${a.id}','${esc(a.email)}')">Remove</button>`
-            : ""
-        }
-      </div>
-    </div>
-  `).join("");
+        <div style="flex:1;min-width:0;">
+          <div class="admin-email">${esc(a.email)}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;">
+            <span class="role-badge ${a.role || 'admin'}">${isSuperAdmin ? 'Super Admin' : 'Admin'}</span>
+            <span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:999px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;">📍 ${esc(campus)}</span>
+            ${!isSuperAdmin ? `
+              <span style="font-size:10px;color:var(--muted);">
+                ${[
+                  a.permissions?.manage_events !== false ? "Events" : "",
+                  a.permissions?.manage_clubs  !== false ? "Clubs"  : "",
+                  a.permissions?.manage_news   !== false ? "News"   : "",
+                  a.permissions?.manage_forms  !== false ? "Forms"  : "",
+                ].filter(Boolean).join(" · ") || "No permissions"}
+              </span>` : '<span style="font-size:10px;color:var(--muted);">Full Access</span>'}
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px;">Added ${new Date(a.created_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</div>
+        </div>
+        <div class="admin-actions" style="display:flex;gap:8px;flex-shrink:0;">
+          ${!isSuperAdmin ? `<button class="btn btn-secondary btn-sm" onclick="openPermissionsModal('${a.id}','${esc(a.email)}',${JSON.stringify(a.permissions||{}).replace(/"/g,'&quot;')})">⚙️ Permissions</button>` : ""}
+          ${!isMe ? `<button class="btn btn-danger btn-sm" onclick="confirmDelete('admin','${a.id}','${esc(a.email)}')">Remove</button>` : `<span style="font-size:12px;color:var(--muted);">You</span>`}
+        </div>
+      </div>`;
+  }).join("");
+}
+
+/* ══ PERMISSIONS MODAL ══ */
+function openPermissionsModal(id, email, permsRaw){
+  const perms = typeof permsRaw === "string"
+    ? JSON.parse(permsRaw.replace(/&quot;/g, '"'))
+    : (permsRaw || {});
+  const p = { ...DEFAULT_PERMS, ...perms };
+
+  document.getElementById("permissionsAdminId").value    = id;
+  document.getElementById("permissionsAdminEmail").textContent = `Editing permissions for: ${email}`;
+  document.getElementById("permCampus").value            = p.campus || "All";
+  document.getElementById("permEvents").checked          = p.manage_events   !== false;
+  document.getElementById("permClubs").checked           = p.manage_clubs    !== false;
+  document.getElementById("permNews").checked            = p.manage_news     !== false;
+  document.getElementById("permForms").checked           = p.manage_forms    !== false;
+  document.getElementById("permHome").checked            = p.edit_home       !== false;
+  document.getElementById("permDashboard").checked       = p.view_dashboard  !== false;
+  document.getElementById("permDownload").checked        = p.download_charts !== false;
+  document.getElementById("permImport").checked          = p.import_csv      !== false;
+
+  document.getElementById("permissionsModal").classList.add("open");
+}
+
+async function savePermissions(){
+  const id = document.getElementById("permissionsAdminId").value;
+  const perms = {
+    campus:          document.getElementById("permCampus").value,
+    manage_events:   document.getElementById("permEvents").checked,
+    manage_clubs:    document.getElementById("permClubs").checked,
+    manage_news:     document.getElementById("permNews").checked,
+    manage_forms:    document.getElementById("permForms").checked,
+    edit_home:       document.getElementById("permHome").checked,
+    view_dashboard:  document.getElementById("permDashboard").checked,
+    download_charts: document.getElementById("permDownload").checked,
+    import_csv:      document.getElementById("permImport").checked,
+  };
+
+  const { error } = await sb.from("admins").update({ permissions: perms, campus: perms.campus }).eq("id", id);
+  if(error){ showToast("Failed to save permissions: " + error.message, "error"); return; }
+  showToast("Permissions saved!");
+  closeModal("permissionsModal");
+  loadAdmins();
 }
 
 async function addAdmin(){
