@@ -1714,16 +1714,24 @@ function downloadChart(canvasId, label){
   const chartInst = chartInstances[canvasId];
   if(!chartInst){ showToast("Chart not ready", "error"); return; }
 
-  // Chart.js toBase64Image() gives full internal resolution (devicePixelRatio × CSS size)
   const chartDataUrl = chartInst.toBase64Image("image/png", 1.0);
 
   const img = new Image();
   img.onload = () => {
-    const PADDING    = 40;
-    const HEADER_H   = 64;
-    const FOOTER_H   = 36;
-    const totalW     = img.width  + PADDING * 2;
-    const totalH     = img.height + HEADER_H + FOOTER_H + PADDING;
+    // Use the chart's native pixel dimensions
+    const CW = img.width;
+    const CH = img.height;
+
+    // Scale all UI elements relative to chart width so nothing overlaps
+    const SCALE    = Math.max(1, CW / 800); // normalise to 800px base
+    const PAD      = Math.round(48 * SCALE);
+    const HEADER_H = Math.round(90 * SCALE);
+    const FOOTER_H = Math.round(56 * SCALE);
+    const DIVIDER  = Math.round(1.5 * SCALE);
+    const GAP      = Math.round(16 * SCALE);
+
+    const totalW = CW + PAD * 2;
+    const totalH = CH + HEADER_H + FOOTER_H + PAD;
 
     const out  = document.createElement("canvas");
     out.width  = totalW;
@@ -1734,52 +1742,56 @@ function downloadChart(canvasId, label){
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, totalW, totalH);
 
-    // ── Top accent bar ──
+    // ── Top gradient bar ──
+    const barH    = Math.round(8 * SCALE);
     const barGrad = ctx.createLinearGradient(0, 0, totalW, 0);
     barGrad.addColorStop(0, "#2563eb");
     barGrad.addColorStop(1, "#9333ea");
     ctx.fillStyle = barGrad;
-    ctx.fillRect(0, 0, totalW, 6);
+    ctx.fillRect(0, 0, totalW, barH);
 
-    // ── Header area ──
-    // Title
-    ctx.fillStyle  = "#111827";
-    ctx.font       = `bold ${Math.round(img.width * 0.022)}px 'Arial', sans-serif`;
-    ctx.fillText(label, PADDING, HEADER_H * 0.55);
+    // ── Title ──
+    const titleSize = Math.round(22 * SCALE);
+    ctx.fillStyle   = "#111827";
+    ctx.font        = `bold ${titleSize}px Arial, sans-serif`;
+    ctx.fillText(label, PAD, barH + Math.round(36 * SCALE));
 
-    // Subtitle / date
+    // ── Subtitle ──
+    const subSize  = Math.round(14 * SCALE);
     ctx.fillStyle  = "#6b7280";
-    ctx.font       = `${Math.round(img.width * 0.014)}px 'Arial', sans-serif`;
+    ctx.font       = `${subSize}px Arial, sans-serif`;
     const dateStr  = new Date().toLocaleDateString("en-GB", { day:"numeric", month:"long", year:"numeric" });
-    ctx.fillText(`AKU Campus Life  ·  ${dateStr}`, PADDING, HEADER_H * 0.85);
+    ctx.fillText(`AKU Campus Life  ·  ${dateStr}`, PAD, barH + Math.round(62 * SCALE));
 
-    // ── Divider line ──
+    // ── Top divider ──
     ctx.strokeStyle = "#e5e7eb";
-    ctx.lineWidth   = 1.5;
+    ctx.lineWidth   = DIVIDER;
     ctx.beginPath();
-    ctx.moveTo(PADDING, HEADER_H);
-    ctx.lineTo(totalW - PADDING, HEADER_H);
+    ctx.moveTo(PAD, HEADER_H);
+    ctx.lineTo(totalW - PAD, HEADER_H);
     ctx.stroke();
 
-    // ── Chart image ──
-    ctx.drawImage(img, PADDING, HEADER_H + 10, img.width, img.height);
+    // ── Chart image — placed below header with gap ──
+    ctx.drawImage(img, PAD, HEADER_H + GAP, CW, CH);
 
-    // ── Footer ──
-    const footerY = HEADER_H + 10 + img.height + 16;
+    // ── Bottom divider ──
+    const footerY = HEADER_H + GAP + CH + GAP;
     ctx.strokeStyle = "#e5e7eb";
+    ctx.lineWidth   = DIVIDER;
     ctx.beginPath();
-    ctx.moveTo(PADDING, footerY);
-    ctx.lineTo(totalW - PADDING, footerY);
+    ctx.moveTo(PAD, footerY);
+    ctx.lineTo(totalW - PAD, footerY);
     ctx.stroke();
 
-    ctx.fillStyle = "#9ca3af";
-    ctx.font      = `${Math.round(img.width * 0.012)}px 'Arial', sans-serif`;
-    ctx.fillText("Aga Khan University — Student Experience", PADDING, footerY + 20);
+    // ── Footer text ──
+    const footSize = Math.round(12 * SCALE);
+    ctx.font       = `${footSize}px Arial, sans-serif`;
+    ctx.fillStyle  = "#9ca3af";
+    ctx.fillText("Aga Khan University — Student Experience", PAD, footerY + Math.round(26 * SCALE));
 
-    // Right-align "Confidential"
     const confText = "For Internal Use";
     const confW    = ctx.measureText(confText).width;
-    ctx.fillText(confText, totalW - PADDING - confW, footerY + 20);
+    ctx.fillText(confText, totalW - PAD - confW, footerY + Math.round(26 * SCALE));
 
     // ── Save ──
     const a    = document.createElement("a");
