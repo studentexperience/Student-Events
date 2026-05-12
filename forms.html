@@ -436,14 +436,13 @@ function render(){
   grid.innerHTML = list.map(f => `
     <div class="form-card" onclick="openForm('${esc(f.form_url)}')">
       <div class="form-card-top">
-        <div class="form-icon">${esc(f.icon || "📋")}</div>
+        <div class="form-title">${esc(f.title)}</div>
         <div class="form-arrow">→</div>
       </div>
-      <div class="form-title">${esc(f.title)}</div>
       ${f.description ? `<div class="form-description">${esc(f.description)}</div>` : ""}
       <div class="form-meta">
         ${f.category ? `<span class="form-badge category">${esc(f.category)}</span>` : ""}
-        ${f.campus && f.campus !== "All" ? `<span class="form-badge campus">📍 ${esc(f.campus)}</span>` : ""}
+        ${f.campus && f.campus !== "All" ? `<span class="form-badge campus">${esc(f.campus)}</span>` : ""}
       </div>
       <a class="form-open-btn" href="${esc(f.form_url)}" target="_blank" onclick="event.stopPropagation()">
         Open Form ↗
