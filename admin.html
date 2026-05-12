@@ -2091,6 +2091,17 @@ function showSection(name, btn){
   document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
   document.getElementById(`section-${name}`).classList.add("active");
   btn.classList.add("active");
+
+  // Re-render charts when dashboard becomes visible
+  // Charts lose their canvas context when hidden via display:none
+  if(name === "dashboard" && dashEventData.length > 0){
+    setTimeout(() => {
+      renderCampusChart();
+      renderMonthChart();
+      renderCampusMonthChart();
+      renderCategoryChart();
+    }, 50);
+  }
 }
 
 /* ══ TOAST ══ */
