@@ -796,6 +796,95 @@
       .cal-today-btn { padding: 6px 12px; font-size: 11px; }
     }
 
+    /* Mobile day detail modal */
+    .cal-mobile-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .cal-mobile-modal.open { display: flex; }
+    .cal-mobile-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+    }
+    .cal-mobile-sheet {
+      position: relative;
+      background: white;
+      width: 100%;
+      max-height: 80vh;
+      border-radius: 20px 20px 0 0;
+      overflow-y: auto;
+      padding: 0 0 32px;
+      animation: slideUp .25s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    .cal-mobile-handle {
+      width: 40px; height: 4px;
+      background: #d1d5db;
+      border-radius: 999px;
+      margin: 12px auto 16px;
+    }
+    .cal-mobile-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .cal-mobile-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .cal-mobile-close {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: #f3f4f6;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .cal-mobile-events { padding: 14px 16px; display: grid; gap: 10px; }
+    .cal-mobile-event {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .cal-mobile-color {
+      width: 4px;
+      align-self: stretch;
+      border-radius: 999px;
+      flex-shrink: 0;
+    }
+    .cal-mobile-name {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: var(--ink);
+    }
+    .cal-mobile-meta {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .cal-mobile-actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+
     @media (max-width: 360px) {
       .cal-day { min-height: 46px; }
     }
@@ -908,6 +997,19 @@
       </div>
     </main>
   </div>
+
+<!-- Mobile calendar day modal -->
+<div class="cal-mobile-modal" id="calMobileModal">
+  <div class="cal-mobile-backdrop" onclick="closeMobileCalModal()"></div>
+  <div class="cal-mobile-sheet" id="calMobileSheet">
+    <div class="cal-mobile-handle"></div>
+    <div class="cal-mobile-header">
+      <div class="cal-mobile-title" id="calMobileTitle">Events</div>
+      <button class="cal-mobile-close" onclick="closeMobileCalModal()">✕</button>
+    </div>
+    <div class="cal-mobile-events" id="calMobileEvents"></div>
+  </div>
+</div>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
@@ -1312,67 +1414,118 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ══ ADD TO CALENDAR (.ics) ══ */
   function pad(n){ return String(n).padStart(2, "0"); }
 
-  function dateToICS(date, time){
-    // date is a JS Date, time is "HH:MM" string or empty
+  function toUTCString(date){
+    // Returns UTC timestamp in iCal format: YYYYMMDDTHHMMSSZ
+    return date.getUTCFullYear()
+      + pad(date.getUTCMonth() + 1)
+      + pad(date.getUTCDate())
+      + "T" + pad(date.getUTCHours())
+      + pad(date.getUTCMinutes())
+      + pad(date.getUTCSeconds()) + "Z";
+  }
+
+  function parseEventDateTime(date, timeStr){
+    // Build a proper Date object from the event date + time string
     const d = new Date(date);
     let hours = 9, mins = 0;
-    if(time){
-      const parts = time.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+    if(timeStr){
+      const parts = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
       if(parts){
         hours = parseInt(parts[1]);
         mins  = parseInt(parts[2]);
-        if(parts[3] && parts[3].toUpperCase() === "PM" && hours < 12) hours += 12;
-        if(parts[3] && parts[3].toUpperCase() === "AM" && hours === 12) hours = 0;
+        const meridiem = (parts[3] || "").toUpperCase();
+        if(meridiem === "PM" && hours < 12) hours += 12;
+        if(meridiem === "AM" && hours === 12) hours = 0;
       }
     }
-    return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(hours)}${pad(mins)}00`;
+    d.setHours(hours, mins, 0, 0);
+    return d;
   }
 
-  function generateICS(event){
-    const startDt  = dateToICS(event.date, event.time);
-    // Default 1 hour duration
-    const endDate  = new Date(event.date);
-    const hrs      = event.time ? parseInt(event.time.split(":")[0]) : 9;
-    endDate.setHours(hrs + 1);
-    const endDt    = dateToICS(endDate, null);
-    const now      = dateToICS(new Date(), null);
-    const uid      = `${event.id || Math.random().toString(36).slice(2)}@akucampuslife`;
-    const location = event.venue ? event.venue.replace(/,/g, "\\,") : "";
-    const desc     = [
-      event.organiser ? `Organised by: ${event.organiser}` : "",
-      event.campus    ? `Campus: ${event.campus}`           : "",
-      event.category  ? `Category: ${event.category}`      : "",
+  function escapeICS(str){
+    // ICS requires escaping of special chars
+    return (str || "")
+      .replace(/\\/g, "\\\\")
+      .replace(/;/g, "\\;")
+      .replace(/,/g, "\\,")
+      .replace(/\n/g, "\\n");
+  }
+
+  function foldICSLine(line){
+    // ICS spec: lines must be max 75 octets, fold with CRLF + single space
+    if(line.length <= 75) return line;
+    let out = "";
+    while(line.length > 75){
+      out += line.slice(0, 75) + "\r\n ";
+      line = line.slice(75);
+    }
+    return out + line;
+  }
+
+  function generateICS(ev){
+    const startDate = parseEventDateTime(ev.date, ev.time);
+    const endDate   = new Date(startDate.getTime() + 60 * 60 * 1000); // +1 hour
+    const now       = new Date();
+    const uid       = `${ev.id || Math.random().toString(36).slice(2)}@akucampuslife.edu`;
+
+    const desc = [
+      ev.organiser ? `Organised by: ${ev.organiser}` : "",
+      ev.campus    ? `Campus: ${ev.campus}`           : "",
+      ev.category  ? `Category: ${ev.category}`       : "",
+      "AKU Campus Life — studentexperience.github.io/Student-Events/",
     ].filter(Boolean).join("\\n");
 
-    return [
+    const lines = [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
       "PRODID:-//AKU Campus Life//EN",
       "CALSCALE:GREGORIAN",
       "METHOD:PUBLISH",
+      "X-WR-CALNAME:AKU Campus Life",
       "BEGIN:VEVENT",
       `UID:${uid}`,
-      `DTSTAMP:${now}`,
-      `DTSTART:${startDt}`,
-      `DTEND:${endDt}`,
-      `SUMMARY:${event.name.replace(/,/g, "\\,")}`,
+      `DTSTAMP:${toUTCString(now)}`,
+      `DTSTART:${toUTCString(startDate)}`,
+      `DTEND:${toUTCString(endDate)}`,
+      `SUMMARY:${escapeICS(ev.name)}`,
       `DESCRIPTION:${desc}`,
-      `LOCATION:${location}`,
+      `LOCATION:${escapeICS(ev.venue || "")}`,
+      "STATUS:CONFIRMED",
+      "TRANSP:OPAQUE",
       "END:VEVENT",
-      "END:VCALENDAR"
-    ].join("\r\n");
+      "END:VCALENDAR",
+    ];
+
+    return lines.map(foldICSLine).join("\r\n");
   }
 
   window.downloadICS = function(eventId){
-    const event = allEvents.find(e => e.id === eventId);
-    if(!event || !event.date) return;
-    const ics      = generateICS(event);
-    const blob     = new Blob([ics], { type: "text/calendar;charset=utf-8" });
-    const a        = document.createElement("a");
-    a.href         = URL.createObjectURL(blob);
-    a.download     = `${event.name.replace(/[^a-z0-9]/gi,"_")}.ics`;
-    a.click();
-    URL.revokeObjectURL(a.href);
+    const ev = allEvents.find(e => e.id === eventId);
+    if(!ev || !ev.date){ alert("Event details not available."); return; }
+
+    const ics      = generateICS(ev);
+    const filename = (ev.name || "event").replace(/[^a-z0-9]/gi, "_") + ".ics";
+
+    // iOS Safari doesn't support Blob + a.download
+    // Use data: URI which works across all browsers and mobile
+    const dataUri  = "data:text/calendar;charset=utf-8," + encodeURIComponent(ics);
+
+    // Try modern Blob approach first (works on Android, desktop)
+    // Fall back to data: URI for iOS Safari
+    try {
+      const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch(e){
+      // Fallback: open data URI directly (iOS opens in calendar)
+      window.open(dataUri);
+    }
   };
 
   /* ══ CALENDAR ══ */
@@ -1523,15 +1676,51 @@ document.addEventListener("DOMContentLoaded", () => {
   // Expose day click handler
   window.selectCalDay = function(isoDate){
     calSelected = new Date(isoDate);
+
+    // Mobile — show slide-up modal instead of bottom panel
+    if(window.innerWidth <= 768){
+      const evts = eventsOnDate(calSelected);
+      if(!evts.length) return;
+      showMobileCalModal(calSelected, evts);
+      return;
+    }
+
     renderCalendar();
-    // Scroll detail into view on mobile
-    setTimeout(() => {
-      const detailEl = document.getElementById("calDetail");
-      if(detailEl && window.innerWidth < 768){
-        detailEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      }
-    }, 100);
   };
+
+  window.closeMobileCalModal = function(){
+    document.getElementById("calMobileModal").classList.remove("open");
+    document.body.style.overflow = "";
+  };
+
+  function showMobileCalModal(date, evts){
+    const dateLabel = date.toLocaleDateString("en-GB", {
+      weekday: "long", day: "numeric", month: "long"
+    });
+    document.getElementById("calMobileTitle").textContent = dateLabel;
+    document.getElementById("calMobileEvents").innerHTML = evts.map((e, i) => {
+      const color  = colorForEvent(e, i);
+      const tm     = e.time  ? `<span>⏰ ${escapeHtml(e.time)}</span>`  : "";
+      const vn     = e.venue ? `<span>📍 ${escapeHtml(e.venue)}</span>` : "";
+      const og     = e.organiser ? `<span>🎭 ${escapeHtml(e.organiser)}</span>` : "";
+      const icsBtn = e.id ? `<button class="add-to-cal-btn" onclick="downloadICS('${e.id}')">📆 Add to Calendar</button>` : "";
+      const clubLink = e.organiser
+        ? `<a href="clubs.html?club=${encodeURIComponent(e.organiser)}" style="color:#2563eb;font-size:12px;font-weight:600;text-decoration:none;">View Club →</a>`
+        : "";
+      return `
+        <div class="cal-mobile-event">
+          <div class="cal-mobile-color" style="background:${color};"></div>
+          <div style="flex:1;min-width:0;">
+            <div class="cal-mobile-name">${escapeHtml(e.name)}</div>
+            <div class="cal-mobile-meta">${tm}${vn}${og}</div>
+            <div class="cal-mobile-actions">${icsBtn}${clubLink}</div>
+          </div>
+        </div>`;
+    }).join("");
+
+    document.getElementById("calMobileModal").classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
 
   // Calendar nav
   document.getElementById("calPrev").addEventListener("click", () => {
@@ -1549,6 +1738,11 @@ document.addEventListener("DOMContentLoaded", () => {
     calSelected = new Date();
     calSelected.setHours(0,0,0,0);
     renderCalendar();
+  });
+
+  // Close mobile modal on Escape
+  document.addEventListener("keydown", e => {
+    if(e.key === "Escape") window.closeMobileCalModal();
   });
 
 });
