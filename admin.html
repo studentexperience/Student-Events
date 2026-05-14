@@ -974,6 +974,10 @@
       <button class="nav-item" data-section="section-home" onclick="showSection('home', this)">
         <span class="nav-icon">🏠</span> Home Page
       </button>
+      <button class="nav-item" data-section="section-clubs-approval" onclick="showSection('clubs-approval', this)" id="clubsApprovalNavBtn">
+        <span class="nav-icon">✅</span> Club Approvals
+        <span id="pendingClubsBadge" style="display:none;margin-left:auto;background:#ef4444;color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;"></span>
+      </button>
 
       <div class="sidebar-label" id="settingsNavLabel">Settings</div>
       <button class="nav-item" id="adminsNavBtn" onclick="showSection('admins', this)">
@@ -1321,6 +1325,62 @@
             <span class="editor-saved-msg" id="editorSavedMsg">✅ Saved!</span>
             <button class="btn btn-secondary" onclick="loadPageContent('home')">↺ Reset</button>
             <button class="btn btn-primary" onclick="savePage()">Save Home Page</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CLUB APPROVALS ── -->
+      <div class="section" id="section-clubs-approval">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Club Approvals</div>
+            <div class="section-subtitle">Review and approve club access requests for Event Hub</div>
+          </div>
+          <button class="btn btn-secondary" onclick="loadClubApprovals()">↺ Refresh</button>
+        </div>
+
+        <!-- Pending -->
+        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;">⏳ Pending Requests</div>
+        <div class="table-wrap" style="margin-bottom:28px;">
+          <div class="table-scroll">
+            <table id="clubs-pending-table">
+              <thead><tr>
+                <th>Club Name</th><th>Email</th><th>Campus</th><th>Requested</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="clubs-pending-tbody">
+                <tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-text">Loading…</div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Approved -->
+        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;">✅ Approved Clubs</div>
+        <div class="table-wrap" style="margin-bottom:28px;">
+          <div class="table-scroll">
+            <table id="clubs-approved-table">
+              <thead><tr>
+                <th>Club Name</th><th>Email</th><th>Campus</th><th>Approved By</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="clubs-approved-tbody">
+                <tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-text">No approved clubs yet.</div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Rejected -->
+        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;">❌ Rejected Requests</div>
+        <div class="table-wrap">
+          <div class="table-scroll">
+            <table id="clubs-rejected-table">
+              <thead><tr>
+                <th>Club Name</th><th>Email</th><th>Campus</th><th>Reason</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="clubs-rejected-tbody">
+                <tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">No rejected requests.</div></div></td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -1830,6 +1890,28 @@
   </div>
 </div>
 
+<!-- ══ REJECT CLUB MODAL ══ -->
+<div class="modal-backdrop" id="rejectClubModal">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header">
+      <div class="modal-title">Reject Access Request</div>
+      <button class="modal-close" onclick="closeModal('rejectClubModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="rejectClubId" />
+      <p id="rejectClubName" style="font-size:13px;color:var(--muted);margin-bottom:16px;"></p>
+      <div class="field">
+        <label>Reason for rejection (optional)</label>
+        <textarea id="rejectReason" rows="3" placeholder="e.g. Duplicate club, please contact OSE office directly…"></textarea>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="closeModal('rejectClubModal')">Cancel</button>
+        <button class="btn btn-danger" onclick="confirmRejectClub()">Reject Request</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ CHANGE PASSWORD MODAL ══ -->
 <div class="modal-backdrop" id="changePasswordModal">
   <div class="modal" style="max-width:420px;">
@@ -2072,6 +2154,7 @@ function showAdminPanel(){
   if(hasPermission("manage_news"))   loadNews();
   if(hasPermission("manage_forms"))  loadForms();
   if(hasPermission("edit_home"))     loadPages();
+  loadClubApprovals();
   if(currentRole === "super_admin")  loadAdmins();
 }
 
@@ -3310,7 +3393,152 @@ function insertLink(){
   }
 }
 
-/* ══ CSV IMPORT ══ */
+/* ══ CLUB APPROVALS ══ */
+let allClubAccounts = [];
+
+async function loadClubApprovals(){
+  const { data, error } = await sb.from("club_accounts").select("*").order("created_at", { ascending: false });
+  if(error){ showToast("Failed to load club requests", "error"); return; }
+  allClubAccounts = data || [];
+
+  const pending  = allClubAccounts.filter(c => c.status === "pending");
+  const approved = allClubAccounts.filter(c => c.status === "approved");
+  const rejected = allClubAccounts.filter(c => c.status === "rejected");
+
+  // Update pending badge in sidebar
+  const badge = document.getElementById("pendingClubsBadge");
+  if(pending.length > 0){
+    badge.textContent = pending.length;
+    badge.style.display = "inline-block";
+  } else {
+    badge.style.display = "none";
+  }
+
+  renderClubTable("clubs-pending-tbody",  pending,  "pending",  5);
+  renderClubTable("clubs-approved-tbody", approved, "approved", 5);
+  renderClubTable("clubs-rejected-tbody", rejected, "rejected", 5);
+}
+
+function renderClubTable(tbodyId, list, type, cols){
+  const tbody = document.getElementById(tbodyId);
+  if(!list.length){
+    const msgs = { pending:"No pending requests.", approved:"No approved clubs yet.", rejected:"No rejected requests." };
+    const icons = { pending:"⏳", approved:"✅", rejected:"❌" };
+    tbody.innerHTML = `<tr><td colspan="${cols}"><div class="empty-state"><div class="empty-state-icon">${icons[type]}</div><div class="empty-state-text">${msgs[type]}</div></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(c => {
+    const date = c.created_at ? new Date(c.created_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "—";
+
+    if(type === "pending"){
+      return `<tr>
+        <td><strong>${esc(c.club_name)}</strong></td>
+        <td>${esc(c.email)}</td>
+        <td>${c.campus ? `<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#eff6ff;color:#2563eb;">${esc(c.campus)}</span>` : "—"}</td>
+        <td>${date}</td>
+        <td><div class="td-actions">
+          <button class="btn btn-primary btn-sm" onclick="approveClub('${c.id}','${esc(c.club_name)}','${esc(c.email)}')">✅ Approve</button>
+          <button class="btn btn-danger btn-sm" onclick="openRejectClub('${c.id}','${esc(c.club_name)}')">❌ Reject</button>
+        </div></td>
+      </tr>`;
+    }
+    if(type === "approved"){
+      return `<tr>
+        <td><strong>${esc(c.club_name)}</strong></td>
+        <td>${esc(c.email)}</td>
+        <td>${c.campus ? `<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#f0fdf4;color:#15803d;">${esc(c.campus)}</span>` : "—"}</td>
+        <td>${esc(c.reviewed_by || "—")}</td>
+        <td><div class="td-actions">
+          <button class="btn btn-danger btn-sm" onclick="revokeClub('${c.id}','${esc(c.club_name)}')">Revoke</button>
+        </div></td>
+      </tr>`;
+    }
+    // rejected
+    return `<tr>
+      <td><strong>${esc(c.club_name)}</strong></td>
+      <td>${esc(c.email)}</td>
+      <td>${c.campus ? `<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#fef2f2;color:#dc2626;">${esc(c.campus)}</span>` : "—"}</td>
+      <td style="max-width:200px;font-size:12px;color:var(--muted);">${esc(c.rejection_reason || "—")}</td>
+      <td><div class="td-actions">
+        <button class="btn btn-secondary btn-sm" onclick="approveClub('${c.id}','${esc(c.club_name)}','${esc(c.email)}')">↩ Re-approve</button>
+      </div></td>
+    </tr>`;
+  }).join("");
+}
+
+async function approveClub(id, clubName, email){
+  const { error } = await sb.from("club_accounts").update({
+    status:      "approved",
+    authorized:  true,
+    reviewed_by: currentUser.email,
+    reviewed_at: new Date().toISOString(),
+    rejection_reason: null,
+  }).eq("id", id);
+
+  if(error){ showToast("Failed: " + error.message, "error"); return; }
+
+  // Notify the club
+  await sb.from("notifications").insert({
+    recipient: email,
+    type:      "club_approved",
+    title:     "🎉 Club Access Approved!",
+    message:   `${clubName} has been approved! You can now sign in to Event Hub and submit event proposals.`,
+    is_read:   false,
+  });
+
+  showToast(`✅ ${clubName} approved!`);
+  loadClubApprovals();
+}
+
+function openRejectClub(id, name){
+  document.getElementById("rejectClubId").value = id;
+  document.getElementById("rejectClubName").textContent = `Rejecting access for: ${name}`;
+  document.getElementById("rejectReason").value = "";
+  document.getElementById("rejectClubModal").classList.add("open");
+}
+
+async function confirmRejectClub(){
+  const id     = document.getElementById("rejectClubId").value;
+  const reason = document.getElementById("rejectReason").value.trim();
+  const club   = allClubAccounts.find(c => c.id === id);
+
+  const { error } = await sb.from("club_accounts").update({
+    status:           "rejected",
+    authorized:       false,
+    reviewed_by:      currentUser.email,
+    reviewed_at:      new Date().toISOString(),
+    rejection_reason: reason || null,
+  }).eq("id", id);
+
+  if(error){ showToast("Failed: " + error.message, "error"); return; }
+
+  // Notify the club
+  if(club){
+    await sb.from("notifications").insert({
+      recipient: club.email,
+      type:      "club_rejected",
+      title:     "❌ Club Access Request Declined",
+      message:   `Your access request for ${club.club_name} was declined.${reason ? " Reason: " + reason : " Please contact the OSE team for more information."}`,
+      is_read:   false,
+    });
+  }
+
+  showToast("Request rejected.");
+  closeModal("rejectClubModal");
+  loadClubApprovals();
+}
+
+async function revokeClub(id, name){
+  if(!confirm(`Revoke access for ${name}? They will no longer be able to log in to Event Hub.`)) return;
+  const { error } = await sb.from("club_accounts").update({
+    status: "rejected", authorized: false,
+    reviewed_by: currentUser.email, reviewed_at: new Date().toISOString(),
+  }).eq("id", id);
+  if(error){ showToast("Failed: " + error.message, "error"); return; }
+  showToast(`Access revoked for ${name}.`);
+  loadClubApprovals();
+}
 function importClubsCSV(){
   csvImportTarget = "clubs";
   document.getElementById("csvModalTitle").textContent = "Import Clubs CSV";
