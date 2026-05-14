@@ -815,7 +815,7 @@
     </div>
 
     <div class="login-note" id="loginNote">
-      🔒 Access is restricted to approved club emails. New clubs must request access and wait for admin approval before logging in.
+      🔒 Only clubs pre-registered by the OSE team can request access. If your club is not registered, contact the OSE office first.
     </div>
   </div>
 </div>
@@ -1142,29 +1142,46 @@ async function handleSignup(){
   if(pw.length < 8){ showMsg("Password must be at least 8 characters.", "error"); return; }
   if(pw !== pwConf){ showMsg("Passwords do not match.", "error"); return; }
 
-  btn.disabled = true; btn.textContent = "Submitting…";
+  btn.disabled = true; btn.textContent = "Checking…";
   hideMsg();
 
-  // Check if already registered
-  const { data: existing } = await sb.from("club_accounts").select("status, email").eq("email", email).single();
-  if(existing){
-    const msgs = {
-      pending:  "⏳ A request for this email is already pending approval.",
-      approved: "✅ This email already has an approved account. Please sign in.",
-      rejected: "❌ This email was previously rejected. Contact the OSE team.",
-    };
-    showMsg(msgs[existing.status] || "An account already exists for this email.", "error");
+  // Step 1 — Check if email is pre-registered in the backend by admin
+  const { data: existing } = await sb.from("club_accounts")
+    .select("*").eq("email", email).single();
+
+  // Email not in backend — automatically declined
+  if(!existing){
+    showMsg("❌ Your club email is not registered in our system. Please contact the OSE team to get your club added first.", "error");
     btn.disabled = false; btn.textContent = "Submit Access Request";
     return;
   }
 
-  // Insert pending club account
-  const { error: insertErr } = await sb.from("club_accounts").insert({
-    club_name: clubName, email, campus,
-    authorized: false, status: "pending",
-  });
-  if(insertErr){
-    showMsg("❌ " + insertErr.message, "error");
+  // Already approved
+  if(existing.status === "approved"){
+    showMsg("✅ Your club already has an approved account. Please sign in.", "success");
+    btn.disabled = false; btn.textContent = "Submit Access Request";
+    return;
+  }
+
+  // Already pending
+  if(existing.status === "pending"){
+    showMsg("⏳ Your access request is already pending approval. Please wait for the OSE team to review it.", "error");
+    btn.disabled = false; btn.textContent = "Submit Access Request";
+    return;
+  }
+
+  // Step 2 — Email matches backend, update to pending and create auth account
+  btn.textContent = "Submitting…";
+
+  const { error: updateErr } = await sb.from("club_accounts").update({
+    club_name:  clubName,
+    campus,
+    status:     "pending",
+    authorized: false,
+  }).eq("email", email);
+
+  if(updateErr){
+    showMsg("❌ " + updateErr.message, "error");
     btn.disabled = false; btn.textContent = "Submit Access Request";
     return;
   }
@@ -1177,15 +1194,15 @@ async function handleSignup(){
     return;
   }
 
-  // Notify all staff (admins, super admins, event leads)
+  // Step 3 — Notify all admins, super admins and event leads
   const { data: staffList } = await sb.from("admins").select("email");
   if(staffList?.length){
     await sb.from("notifications").insert(
       staffList.map(s => ({
         recipient: s.email,
         type:      "club_access_request",
-        title:     "🎭 New Club Access Request",
-        message:   `${clubName} (${campus}) has requested access to Event Hub. Email: ${email}`,
+        title:     "🎭 Club Access Request",
+        message:   `${clubName} (${campus}) has signed up and is requesting access to Event Hub. Email: ${email}`,
         is_read:   false,
       }))
     );
