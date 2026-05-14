@@ -779,16 +779,30 @@
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
     <div class="login-icon">🎭</div>
-    <div class="login-title">Welcome to Event Hub</div>
-    <div class="login-sub">Sign in with your official club email to submit and track event proposals.</div>
+    <div class="login-title" id="loginTitle">Welcome to Event Hub</div>
+    <div class="login-sub" id="loginSubTitle">Sign in with your official club email to submit and track event proposals.</div>
 
-    <label class="login-label" for="loginEmail">Club Email</label>
+    <!-- Signup-only fields -->
+    <div id="signupOnlyFields" style="display:none;">
+      <label class="login-label" for="signupClubName">Club / Society Name *</label>
+      <input class="login-input" id="signupClubName" type="text" placeholder="e.g. AKU Athletics Club" />
+      <label class="login-label" for="signupCampus">Campus *</label>
+      <select class="login-input" id="signupCampus" style="padding:11px 16px;">
+        <option value="">Select campus…</option>
+        <option>Karachi</option>
+        <option>Nairobi</option>
+        <option>Kampala</option>
+        <option>Dar es Salaam</option>
+      </select>
+    </div>
+
+    <label class="login-label" for="loginEmail">Club Email *</label>
     <input class="login-input" id="loginEmail" type="email" placeholder="yourclub@aku.edu" />
-    <label class="login-label" for="loginPassword">Password</label>
+    <label class="login-label" for="loginPassword">Password *</label>
     <input class="login-input" id="loginPassword" type="password" placeholder="••••••••" />
 
     <div id="signupRow" style="display:none;">
-      <label class="login-label" for="loginPasswordConfirm">Confirm Password</label>
+      <label class="login-label" for="loginPasswordConfirm">Confirm Password *</label>
       <input class="login-input" id="loginPasswordConfirm" type="password" placeholder="••••••••" />
     </div>
 
@@ -796,13 +810,29 @@
     <div class="login-msg" id="loginMsg" style="display:none;"></div>
 
     <div style="text-align:center;margin-top:16px;font-size:13px;color:var(--muted);">
-      <span id="authToggleText">First time here? </span>
-      <a href="#" id="authToggleLink" onclick="toggleAuthMode(event)" style="color:var(--accent);font-weight:700;">Create Account</a>
+      <span id="authToggleText">New club? </span>
+      <a href="#" id="authToggleLink" onclick="toggleAuthMode(event)" style="color:var(--accent);font-weight:700;">Request Access</a>
     </div>
 
-    <div class="login-note">
-      🔒 Access is restricted to authorised club emails only. If your club is not yet registered, contact the OSE team.
+    <div class="login-note" id="loginNote">
+      🔒 Access is restricted to approved club emails. New clubs must request access and wait for admin approval before logging in.
     </div>
+  </div>
+</div>
+
+<!-- ══ PENDING APPROVAL SCREEN ══ -->
+<div class="login-screen" id="pendingScreen" style="display:none;">
+  <div class="login-card" style="text-align:center;">
+    <div style="font-size:60px;margin-bottom:20px;">⏳</div>
+    <div class="login-title">Request Submitted!</div>
+    <div class="login-sub" style="margin-bottom:24px;">
+      Your club access request has been sent to the OSE team for review. You'll be able to log in once your account is approved.<br/><br/>
+      This usually takes <strong>1-2 business days</strong>.
+    </div>
+    <div style="background:#f5f3ff;border-radius:14px;padding:16px;font-size:13px;color:var(--accent);margin-bottom:20px;">
+      📧 You'll be notified when your account is approved.
+    </div>
+    <a href="index.html" class="login-btn" style="display:block;text-decoration:none;text-align:center;">← Back to Campus Life</a>
   </div>
 </div>
 
@@ -1018,10 +1048,16 @@ function toggleAuthMode(e){
   e.preventDefault();
   authMode = authMode === "login" ? "signup" : "login";
   const isSignup = authMode === "signup";
-  document.getElementById("loginBtn").textContent     = isSignup ? "Create Account" : "Sign In";
-  document.getElementById("authToggleText").textContent = isSignup ? "Already have an account? " : "First time here? ";
-  document.getElementById("authToggleLink").textContent = isSignup ? "Sign In" : "Create Account";
-  document.getElementById("signupRow").style.display   = isSignup ? "block" : "none";
+  document.getElementById("loginTitle").textContent         = isSignup ? "Request Club Access"    : "Welcome to Event Hub";
+  document.getElementById("loginSubTitle").textContent      = isSignup ? "Fill in your details to request access. An OSE admin will review and approve your account." : "Sign in with your official club email to submit and track event proposals.";
+  document.getElementById("loginBtn").textContent           = isSignup ? "Submit Access Request"  : "Sign In";
+  document.getElementById("authToggleText").textContent     = isSignup ? "Already have access? "  : "New club? ";
+  document.getElementById("authToggleLink").textContent     = isSignup ? "Sign In"                : "Request Access";
+  document.getElementById("signupRow").style.display        = isSignup ? "block" : "none";
+  document.getElementById("signupOnlyFields").style.display = isSignup ? "block" : "none";
+  document.getElementById("loginNote").textContent          = isSignup
+    ? "📋 Your request will be reviewed by the OSE team. You will be notified once approved."
+    : "🔒 Access is restricted to approved club emails. New clubs must request access first.";
   hideMsg();
 }
 
@@ -1048,19 +1084,35 @@ async function handleLogin(){
   btn.disabled = true; btn.textContent = "Signing in…";
   hideMsg();
 
-  const { data: clubRow } = await sb.from("club_accounts")
-    .select("*").eq("email", email).eq("authorized", true).single();
+  // Check if admin — redirect
+  const { data: adminRow } = await sb.from("admins").select("role").eq("email", email).single();
+  if(adminRow){
+    showMsg("✅ You're an admin. Redirecting to Admin Panel…", "success");
+    setTimeout(() => window.location.href = "admin.html", 1500);
+    btn.disabled = false; btn.textContent = "Sign In";
+    return;
+  }
+
+  // Check club account + status
+  const { data: clubRow } = await sb.from("club_accounts").select("*").eq("email", email).single();
 
   if(!clubRow){
-    // Check if this is an admin/event lead — redirect them to admin panel
-    const { data: adminRow } = await sb.from("admins").select("role").eq("email", email).single();
-    if(adminRow){
-      showMsg("✅ You're an admin. Redirecting to Admin Panel…", "success");
-      setTimeout(() => window.location.href = "admin.html", 1500);
-      btn.disabled = false; btn.textContent = "Sign In";
-      return;
-    }
-    showMsg("❌ This email is not authorised to access Event Hub. Contact the OSE team.", "error");
+    showMsg("❌ No account found. Use 'Request Access' to register your club.", "error");
+    btn.disabled = false; btn.textContent = "Sign In";
+    return;
+  }
+  if(clubRow.status === "pending"){
+    showMsg("⏳ Your account is pending approval. The OSE team will notify you once approved.", "error");
+    btn.disabled = false; btn.textContent = "Sign In";
+    return;
+  }
+  if(clubRow.status === "rejected"){
+    showMsg(`❌ Your access request was declined. ${clubRow.rejection_reason ? "Reason: " + clubRow.rejection_reason : "Contact the OSE team."}`, "error");
+    btn.disabled = false; btn.textContent = "Sign In";
+    return;
+  }
+  if(!clubRow.authorized || clubRow.status !== "approved"){
+    showMsg("❌ Account not yet approved. Contact the OSE team.", "error");
     btn.disabled = false; btn.textContent = "Sign In";
     return;
   }
@@ -1071,38 +1123,77 @@ async function handleLogin(){
     btn.disabled = false; btn.textContent = "Sign In";
     return;
   }
-
   currentSession = data.session;
-  currentClub    = clubRow || { email, club_name: email, campus: "All" };
+  currentClub    = clubRow;
   showPortal();
 }
 
 async function handleSignup(){
-  const email   = document.getElementById("loginEmail").value.trim();
-  const pw      = document.getElementById("loginPassword").value;
-  const pwConf  = document.getElementById("loginPasswordConfirm").value;
-  const btn     = document.getElementById("loginBtn");
+  const clubName = document.getElementById("signupClubName").value.trim();
+  const campus   = document.getElementById("signupCampus").value;
+  const email    = document.getElementById("loginEmail").value.trim();
+  const pw       = document.getElementById("loginPassword").value;
+  const pwConf   = document.getElementById("loginPasswordConfirm").value;
+  const btn      = document.getElementById("loginBtn");
 
-  if(!email || !pw){ showMsg("Please fill in all fields.", "error"); return; }
+  if(!clubName)    { showMsg("Club name is required.", "error"); return; }
+  if(!campus)      { showMsg("Please select a campus.", "error"); return; }
+  if(!email)       { showMsg("Club email is required.", "error"); return; }
   if(pw.length < 8){ showMsg("Password must be at least 8 characters.", "error"); return; }
   if(pw !== pwConf){ showMsg("Passwords do not match.", "error"); return; }
 
-  // Verify authorised
-  const { data: clubRow } = await sb.from("club_accounts")
-    .select("*").eq("email", email).eq("authorized", true).single();
-  if(!clubRow){
-    showMsg("❌ This email is not authorised. Contact the OSE team to get your club registered.", "error");
+  btn.disabled = true; btn.textContent = "Submitting…";
+  hideMsg();
+
+  // Check if already registered
+  const { data: existing } = await sb.from("club_accounts").select("status, email").eq("email", email).single();
+  if(existing){
+    const msgs = {
+      pending:  "⏳ A request for this email is already pending approval.",
+      approved: "✅ This email already has an approved account. Please sign in.",
+      rejected: "❌ This email was previously rejected. Contact the OSE team.",
+    };
+    showMsg(msgs[existing.status] || "An account already exists for this email.", "error");
+    btn.disabled = false; btn.textContent = "Submit Access Request";
     return;
   }
 
-  btn.disabled = true; btn.textContent = "Creating account…";
+  // Insert pending club account
+  const { error: insertErr } = await sb.from("club_accounts").insert({
+    club_name: clubName, email, campus,
+    authorized: false, status: "pending",
+  });
+  if(insertErr){
+    showMsg("❌ " + insertErr.message, "error");
+    btn.disabled = false; btn.textContent = "Submit Access Request";
+    return;
+  }
 
-  const { error } = await sb.auth.signUp({ email, password: pw });
-  if(error){ showMsg("❌ " + error.message, "error"); btn.disabled = false; btn.textContent = "Create Account"; return; }
+  // Create locked auth account
+  const { error: authErr } = await sb.auth.signUp({ email, password: pw });
+  if(authErr && !authErr.message.toLowerCase().includes("already")){
+    showMsg("❌ " + authErr.message, "error");
+    btn.disabled = false; btn.textContent = "Submit Access Request";
+    return;
+  }
 
-  showMsg("✅ Account created! You can now sign in.", "success");
-  toggleAuthMode({ preventDefault: ()=>{} });
-  btn.disabled = false;
+  // Notify all staff (admins, super admins, event leads)
+  const { data: staffList } = await sb.from("admins").select("email");
+  if(staffList?.length){
+    await sb.from("notifications").insert(
+      staffList.map(s => ({
+        recipient: s.email,
+        type:      "club_access_request",
+        title:     "🎭 New Club Access Request",
+        message:   `${clubName} (${campus}) has requested access to Event Hub. Email: ${email}`,
+        is_read:   false,
+      }))
+    );
+  }
+
+  // Show pending screen
+  document.getElementById("loginScreen").style.display  = "none";
+  document.getElementById("pendingScreen").style.display = "flex";
 }
 
 async function signOut(){
