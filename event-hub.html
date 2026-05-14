@@ -1048,18 +1048,21 @@ async function handleLogin(){
   btn.disabled = true; btn.textContent = "Signing in…";
   hideMsg();
 
-  // Check if email is an authorised club email
   const { data: clubRow } = await sb.from("club_accounts")
     .select("*").eq("email", email).eq("authorized", true).single();
 
   if(!clubRow){
-    // Also allow admins/event leads to access Event Hub
+    // Check if this is an admin/event lead — redirect them to admin panel
     const { data: adminRow } = await sb.from("admins").select("role").eq("email", email).single();
-    if(!adminRow){
-      showMsg("❌ This email is not authorised to access Event Hub. Contact the OSE team.", "error");
+    if(adminRow){
+      showMsg("✅ You're an admin. Redirecting to Admin Panel…", "success");
+      setTimeout(() => window.location.href = "admin.html", 1500);
       btn.disabled = false; btn.textContent = "Sign In";
       return;
     }
+    showMsg("❌ This email is not authorised to access Event Hub. Contact the OSE team.", "error");
+    btn.disabled = false; btn.textContent = "Sign In";
+    return;
   }
 
   const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
@@ -1404,21 +1407,23 @@ async function init(){
     const { data: clubRow } = await sb.from("club_accounts")
       .select("*").eq("email", session.user.email).single();
 
-    if(clubRow){
+    if(clubRow && clubRow.authorized){
       currentSession = session;
       currentClub    = clubRow;
       showPortal();
       return;
     }
 
-    // Check if admin/event lead
+    // If it's an admin, redirect to admin panel
     const { data: adminRow } = await sb.from("admins")
-      .select("email, club_name").eq("email", session.user.email).single();
+      .select("role").eq("email", session.user.email).single();
     if(adminRow){
-      currentSession = session;
-      currentClub    = { email: session.user.email, club_name: adminRow.email, campus: "All" };
-      showPortal();
+      window.location.href = "admin.html";
+      return;
     }
+
+    // Signed in but not authorised — sign them out
+    await sb.auth.signOut();
   }
 }
 init();
