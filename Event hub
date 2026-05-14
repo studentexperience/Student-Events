@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Campus Life · Event Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --ink: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --bg: #f5f3ff;
+      --panel: #ffffff;
+      --shadow: 0 6px 24px rgba(102,126,234,.12);
+      --accent: #7c3aed;
+      --accent2: #ec4899;
+      --success: #16a34a;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --grad: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      --grad-text: linear-gradient(135deg, #667eea, #764ba2);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
+
+    /* ── Topbar ── */
+    .topbar {
+      height: 60px;
+      background: white;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(102,126,234,.08);
+    }
+    .brand {
+      font-weight: 800;
+      font-size: 18px;
+      background: var(--grad-text);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .brand-sub {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      padding: 3px 10px;
+      background: #f5f3ff;
+      border-radius: 999px;
+      border: 1px solid #e9d5ff;
+    }
+    .topbar-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .topbar-user {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .topbar-user.visible { display: flex; }
+    .topbar-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--grad);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    /* Notification bell */
+    .notif-btn {
+      position: relative;
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      transition: all .2s ease;
+    }
+    .notif-btn:hover { border-color: var(--accent); background: #f5f3ff; }
+    .notif-badge {
+      position: absolute;
+      top: -3px; right: -3px;
+      width: 16px; height: 16px;
+      background: var(--danger);
+      color: white;
+      font-size: 9px;
+      font-weight: 700;
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid white;
+    }
+    .notif-badge.visible { display: flex; }
+
+    .sign-out-btn {
+      padding: 7px 16px;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      background: white;
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--muted);
+      transition: all .15s;
+    }
+    .sign-out-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+    .nav-back {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .15s;
+    }
+    .nav-back:hover { color: var(--accent); }
+
+    /* ══ LOGIN SCREEN ══ */
+    .login-screen {
+      min-height: calc(100vh - 60px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      background: linear-gradient(135deg, #f5f3ff 0%, #fdf4ff 50%, #fce7f3 100%);
+    }
+    .login-card {
+      background: white;
+      border-radius: 28px;
+      padding: 48px 44px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 20px 60px rgba(102,126,234,.18);
+    }
+    .login-icon {
+      width: 70px; height: 70px;
+      background: var(--grad);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 24px rgba(102,126,234,.35);
+    }
+    .login-title {
+      font-size: 26px;
+      font-weight: 800;
+      background: var(--grad-text);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 6px;
+    }
+    .login-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+    .login-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+    .login-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border .2s;
+      margin-bottom: 16px;
+    }
+    .login-input:focus { border-color: var(--accent); }
+    .login-btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--grad);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s ease;
+      box-shadow: 0 6px 20px rgba(102,126,234,.4);
+      margin-top: 4px;
+    }
+    .login-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(102,126,234,.5); }
+    .login-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+    .login-msg {
+      margin-top: 14px;
+      font-size: 13px;
+      text-align: center;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .login-msg.error   { background: #fef2f2; color: var(--danger); }
+    .login-msg.success { background: #f0fdf4; color: var(--success); }
+    .login-note {
+      margin-top: 20px;
+      font-size: 11.5px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 10px;
+    }
+
+    /* ══ MAIN PORTAL ══ */
+    .portal { display: none; }
+    .portal.visible { display: block; }
+
+    .portal-shell {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 20px;
+    }
+
+    /* Hero greeting */
+    .portal-hero {
+      background: var(--grad);
+      border-radius: 24px;
+      padding: 32px 36px;
+      color: white;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      box-shadow: 0 12px 40px rgba(102,126,234,.3);
+    }
+    .portal-hero-title {
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .portal-hero-sub {
+      font-size: 14px;
+      opacity: .85;
+    }
+    .new-proposal-btn {
+      padding: 12px 24px;
+      background: white;
+      color: var(--accent);
+      border: none;
+      border-radius: 12px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s cubic-bezier(.34,1.56,.64,1);
+      box-shadow: 0 4px 14px rgba(0,0,0,.15);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+    .new-proposal-btn:hover { transform: scale(1.05); box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+
+    /* Stats row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 16px;
+      padding: 18px 20px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(102,126,234,.08);
+    }
+    .stat-num {
+      font-size: 28px;
+      font-weight: 800;
+      background: var(--grad-text);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      margin-top: 2px;
+    }
+
+    /* Section header */
+    .section-title {
+      font-size: 17px;
+      font-weight: 800;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Proposal cards ── */
+    .proposals-list { display: grid; gap: 14px; }
+    .proposal-card {
+      background: white;
+      border-radius: 18px;
+      padding: 0;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      border: 1px solid rgba(102,126,234,.08);
+      transition: all .2s ease;
+    }
+    .proposal-card:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(102,126,234,.16); }
+    .proposal-card-top {
+      display: flex;
+      gap: 0;
+      padding: 20px 22px;
+      align-items: flex-start;
+    }
+    .proposal-status-bar {
+      width: 5px;
+      align-self: stretch;
+      border-radius: 999px;
+      margin-right: 16px;
+      flex-shrink: 0;
+    }
+    .proposal-body { flex: 1; min-width: 0; }
+    .proposal-name {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--ink);
+    }
+    .proposal-meta {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .proposal-meta span { display: inline-flex; align-items: center; gap: 4px; }
+    .proposal-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+
+    /* Status badges */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .3px;
+    }
+    .status-submitted    { background: #eff6ff; color: #2563eb; }
+    .status-under_review { background: #fef9c3; color: #854d0e; }
+    .status-needs_info   { background: #fff7ed; color: #c2410c; }
+    .status-approved     { background: #f0fdf4; color: #15803d; }
+    .status-assigned     { background: #f5f3ff; color: #7c3aed; }
+    .status-declined     { background: #fef2f2; color: #b91c1c; }
+    .status-postponed    { background: #f3f4f6; color: #374151; }
+    .status-cancelled    { background: #fef2f2; color: #9f1239; }
+
+    /* Timeline inside card */
+    .proposal-timeline {
+      border-top: 1px solid #f3f4f6;
+      padding: 14px 22px;
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+      align-items: center;
+    }
+    .timeline-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
+      min-width: 70px;
+      position: relative;
+    }
+    .timeline-step:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      width: 100%;
+      height: 2px;
+      background: #e5e7eb;
+    }
+    .timeline-step.done:not(:last-child)::after { background: var(--accent); }
+    .timeline-dot {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      border: 2px solid #e5e7eb;
+      background: white;
+      position: relative;
+      z-index: 1;
+      flex-shrink: 0;
+      transition: all .2s ease;
+    }
+    .timeline-step.done .timeline-dot {
+      background: var(--grad);
+      border-color: transparent;
+      color: white;
+      box-shadow: 0 2px 8px rgba(102,126,234,.35);
+    }
+    .timeline-step.current .timeline-dot {
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(124,58,237,.15);
+    }
+    .timeline-label {
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--muted);
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: .3px;
+    }
+    .timeline-step.done .timeline-label { color: var(--accent); }
+    .timeline-step.current .timeline-label { color: var(--accent); font-weight: 700; }
+
+    /* Admin note panel inside card */
+    .proposal-note {
+      margin: 0 22px 16px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .proposal-note.info    { background: #fff7ed; border: 1px solid #fed7aa; color: #92400e; }
+    .proposal-note.decline { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+    .proposal-note.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
+
+    /* ── Buttons ── */
+    .btn {
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all .15s ease;
+    }
+    .btn-primary {
+      background: var(--grad);
+      color: white;
+      box-shadow: 0 3px 10px rgba(102,126,234,.3);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(102,126,234,.4); }
+    .btn-secondary {
+      background: #f5f3ff;
+      color: var(--accent);
+      border: 1.5px solid #e9d5ff;
+    }
+    .btn-secondary:hover { background: #ede9fe; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn-danger { background: #fef2f2; color: var(--danger); border: 1.5px solid #fecaca; }
+    .btn-danger:hover { background: var(--danger); color: white; }
+
+    /* ── Proposal Form Modal ── */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 500;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 16px;
+      overflow-y: auto;
+      backdrop-filter: blur(4px);
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: white;
+      border-radius: 24px;
+      width: 100%;
+      max-width: 680px;
+      box-shadow: 0 24px 60px rgba(0,0,0,.22);
+      overflow: hidden;
+      margin: auto;
+    }
+    .modal-header {
+      padding: 24px 28px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #f0e6ff;
+      background: linear-gradient(135deg, #f5f3ff, #fdf4ff);
+    }
+    .modal-title {
+      font-size: 19px;
+      font-weight: 800;
+      background: var(--grad-text);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .modal-close {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: #ede9fe;
+      color: var(--accent);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      transition: all .15s;
+    }
+    .modal-close:hover { background: var(--accent); color: white; }
+    .modal-body { padding: 24px 28px; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field.full { grid-column: 1 / -1; }
+    label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink);
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+    input, select, textarea {
+      padding: 10px 14px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      outline: none;
+      transition: border .2s, box-shadow .2s;
+      background: white;
+      width: 100%;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(124,58,237,.1);
+    }
+    textarea { resize: vertical; min-height: 90px; }
+
+    /* Image upload */
+    .upload-area {
+      border: 2px dashed #d8b4fe;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .2s ease;
+      background: #faf5ff;
+    }
+    .upload-area:hover { border-color: var(--accent); background: #f5f3ff; }
+    .upload-area input { display: none; }
+    .upload-preview {
+      max-width: 100%;
+      max-height: 160px;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid #f3f4f6;
+    }
+
+    /* ── Notification panel ── */
+    .notif-panel {
+      display: none;
+      position: fixed;
+      top: 68px;
+      right: 16px;
+      width: 340px;
+      max-height: 480px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 16px 48px rgba(102,126,234,.22);
+      z-index: 300;
+      overflow: hidden;
+      border: 1px solid #f0e6ff;
+    }
+    .notif-panel.open { display: block; }
+    .notif-panel-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid #f0e6ff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(135deg, #f5f3ff, #fdf4ff);
+    }
+    .notif-panel-title {
+      font-size: 14px;
+      font-weight: 800;
+      background: var(--grad-text);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .notif-mark-read {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-family: 'Poppins', sans-serif;
+    }
+    .notif-list { overflow-y: auto; max-height: 400px; }
+    .notif-item {
+      padding: 14px 18px;
+      border-bottom: 1px solid #faf5ff;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .notif-item:hover { background: #faf5ff; }
+    .notif-item.unread { background: #f5f3ff; border-left: 3px solid var(--accent); }
+    .notif-item-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 3px;
+    }
+    .notif-item-msg {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .notif-item-time {
+      font-size: 10px;
+      color: #c4b5d4;
+      margin-top: 4px;
+    }
+    .notif-empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 64px 20px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+    }
+    .empty-emoji { font-size: 52px; margin-bottom: 14px; }
+    .empty-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .empty-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 14px 20px;
+      border-radius: 12px;
+      background: #1f2937;
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0,0,0,.2);
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all .3s ease;
+      z-index: 9999;
+      max-width: 320px;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { background: linear-gradient(135deg, #667eea, #764ba2); }
+    .toast.error { background: linear-gradient(135deg, #dc2626, #9f1239); }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .portal-hero { padding: 22px 20px; }
+      .portal-hero-title { font-size: 18px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-grid .field.full { grid-column: 1; }
+      .login-card { padding: 32px 24px; }
+      .notif-panel { right: 8px; left: 8px; width: auto; }
+      .modal-body { padding: 18px 20px; }
+      .modal-header { padding: 18px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Topbar ── -->
+<header class="topbar">
+  <a class="nav-back" href="index.html">← Campus Life</a>
+  <div class="brand">Event Hub</div>
+  <span class="brand-sub">Club Portal</span>
+  <div class="topbar-right">
+    <div class="topbar-user" id="topbarUser">
+      <div class="topbar-avatar" id="topbarAvatar">C</div>
+      <span id="topbarClubName" style="font-size:13px;font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+    </div>
+    <button class="notif-btn" id="notifBtn" style="display:none;">
+      🔔
+      <span class="notif-badge" id="notifBadge"></span>
+    </button>
+    <button class="sign-out-btn" id="signOutBtn" style="display:none;" onclick="signOut()">Sign Out</button>
+  </div>
+</header>
+
+<!-- ── Notification Panel ── -->
+<div class="notif-panel" id="notifPanel">
+  <div class="notif-panel-header">
+    <div class="notif-panel-title">Notifications</div>
+    <button class="notif-mark-read" onclick="markAllRead()">Mark all as read</button>
+  </div>
+  <div class="notif-list" id="notifList">
+    <div class="notif-empty">🔔 No notifications yet</div>
+  </div>
+</div>
+
+<!-- ══ LOGIN SCREEN ══ -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-icon">🎭</div>
+    <div class="login-title">Welcome to Event Hub</div>
+    <div class="login-sub">Sign in with your official club email to submit and track event proposals.</div>
+
+    <label class="login-label" for="loginEmail">Club Email</label>
+    <input class="login-input" id="loginEmail" type="email" placeholder="yourclub@aku.edu" />
+    <label class="login-label" for="loginPassword">Password</label>
+    <input class="login-input" id="loginPassword" type="password" placeholder="••••••••" />
+
+    <div id="signupRow" style="display:none;">
+      <label class="login-label" for="loginPasswordConfirm">Confirm Password</label>
+      <input class="login-input" id="loginPasswordConfirm" type="password" placeholder="••••••••" />
+    </div>
+
+    <button class="login-btn" id="loginBtn" onclick="handleAuth()">Sign In</button>
+    <div class="login-msg" id="loginMsg" style="display:none;"></div>
+
+    <div style="text-align:center;margin-top:16px;font-size:13px;color:var(--muted);">
+      <span id="authToggleText">First time here? </span>
+      <a href="#" id="authToggleLink" onclick="toggleAuthMode(event)" style="color:var(--accent);font-weight:700;">Create Account</a>
+    </div>
+
+    <div class="login-note">
+      🔒 Access is restricted to authorised club emails only. If your club is not yet registered, contact the OSE team.
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIN PORTAL ══ -->
+<div class="portal" id="portal">
+  <div class="portal-shell">
+
+    <!-- Hero -->
+    <div class="portal-hero">
+      <div>
+        <div class="portal-hero-title" id="heroTitle">Welcome back! 🎉</div>
+        <div class="portal-hero-sub">Submit and track your event proposals from here.</div>
+      </div>
+      <button class="new-proposal-btn" onclick="openProposalModal()">
+        ✦ New Event Proposal
+      </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row" id="statsRow">
+      <div class="stat-card">
+        <div class="stat-num" id="statTotal">0</div>
+        <div class="stat-label">Total Proposals</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statPending">0</div>
+        <div class="stat-label">Under Review</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statApproved">0</div>
+        <div class="stat-label">Approved</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statDeclined">0</div>
+        <div class="stat-label">Declined</div>
+      </div>
+    </div>
+
+    <!-- Proposals list -->
+    <div class="section-title">📋 Your Proposals</div>
+    <div id="proposalsList">
+      <div class="empty-state">
+        <div class="empty-emoji">💡</div>
+        <div class="empty-title">No proposals yet</div>
+        <div class="empty-sub">Submit your first event proposal and we'll take it from there.</div>
+        <button class="btn btn-primary" onclick="openProposalModal()">✦ Submit First Proposal</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ PROPOSAL MODAL ══ -->
+<div class="modal-backdrop" id="proposalModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="proposalModalTitle">New Event Proposal</div>
+      <button class="modal-close" onclick="closeModal('proposalModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="proposalId" />
+      <div class="form-grid">
+        <div class="field full">
+          <label>Event Name *</label>
+          <input id="fEventName" type="text" placeholder="e.g. AKU Sports Gala 2026" />
+        </div>
+        <div class="field">
+          <label>Category *</label>
+          <select id="fCategory">
+            <option value="">Select…</option>
+            <option>Recreational/Social</option>
+            <option>Sports</option>
+            <option>Competition</option>
+            <option>Workshop/Session</option>
+            <option>Orientation</option>
+            <option>Meeting</option>
+            <option>Welfare</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Campus *</label>
+          <select id="fCampus">
+            <option value="">Select…</option>
+            <option>Karachi</option>
+            <option>Nairobi</option>
+            <option>Kampala</option>
+            <option>Dar es Salaam</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Proposed Date *</label>
+          <input id="fDate" type="date" />
+        </div>
+        <div class="field">
+          <label>Proposed Time</label>
+          <input id="fTime" type="time" />
+        </div>
+        <div class="field full">
+          <label>Proposed Venue</label>
+          <input id="fVenue" type="text" placeholder="e.g. Medical College Auditorium" />
+        </div>
+        <div class="field">
+          <label>Expected Audience</label>
+          <input id="fAudience" type="text" placeholder="e.g. All students, MBBS Year 2" />
+        </div>
+        <div class="field">
+          <label>Expected Attendance</label>
+          <input id="fAttendance" type="number" placeholder="e.g. 150" min="1" />
+        </div>
+        <div class="field full">
+          <label>Event Description</label>
+          <textarea id="fDescription" placeholder="Briefly describe the event, its purpose and any special requirements…"></textarea>
+        </div>
+        <div class="field full">
+          <label>Cover Image <span style="font-weight:400;text-transform:none;color:var(--muted);">(optional)</span></label>
+          <div class="upload-area" onclick="document.getElementById('fImageFile').click()">
+            <input type="file" id="fImageFile" accept="image/*" onchange="previewProposalImage(this)" />
+            <div id="fImagePreview">📸 Click to upload cover image</div>
+          </div>
+          <input type="text" id="fImageUrl" placeholder="Or paste image URL" style="margin-top:8px;" />
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="closeModal('proposalModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="submitProposal()">Submit Proposal ✦</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ VIEW PROPOSAL MODAL ══ -->
+<div class="modal-backdrop" id="viewModal">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-header">
+      <div class="modal-title" id="viewModalTitle">Proposal Details</div>
+      <button class="modal-close" onclick="closeModal('viewModal')">✕</button>
+    </div>
+    <div class="modal-body" id="viewModalBody"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = "https://dgzuqvffnbfybngoadse.supabase.co";
+const SUPABASE_KEY = "sb_publishable_77t5gCD7M620CzcMwESN-A_oAuqz6B8";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ── State ── */
+let currentClub    = null; // { email, club_name, campus }
+let currentSession = null;
+let allProposals   = [];
+let authMode       = "login";
+
+/* ── Helpers ── */
+function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function showToast(msg, type="success"){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove("show"), 3500);
+}
+function closeModal(id){ document.getElementById(id).classList.remove("open"); }
+function formatDate(str){ if(!str) return ""; return new Date(str).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"}); }
+function timeAgo(str){
+  const diff = Date.now() - new Date(str).getTime();
+  const m = Math.floor(diff/60000), h = Math.floor(m/60), d = Math.floor(h/24);
+  if(d > 0) return `${d}d ago`;
+  if(h > 0) return `${h}h ago`;
+  if(m > 0) return `${m}m ago`;
+  return "just now";
+}
+
+/* ── Status helpers ── */
+const STATUS_CONFIG = {
+  submitted:    { label:"Submitted",     emoji:"📤", cls:"status-submitted" },
+  under_review: { label:"Under Review",  emoji:"🔍", cls:"status-under_review" },
+  needs_info:   { label:"Needs Info",    emoji:"💬", cls:"status-needs_info" },
+  approved:     { label:"Approved",      emoji:"✅", cls:"status-approved" },
+  assigned:     { label:"Assigned",      emoji:"📌", cls:"status-assigned" },
+  declined:     { label:"Declined",      emoji:"❌", cls:"status-declined" },
+  postponed:    { label:"Postponed",     emoji:"⏸️", cls:"status-postponed" },
+  cancelled:    { label:"Cancelled",     emoji:"🚫", cls:"status-cancelled" },
+};
+
+const TIMELINE_STEPS = [
+  { key:"submitted",    label:"Submitted",    emoji:"📤" },
+  { key:"under_review", label:"Reviewing",    emoji:"🔍" },
+  { key:"approved",     label:"Approved",     emoji:"✅" },
+  { key:"assigned",     label:"Assigned",     emoji:"📌" },
+];
+
+const STATUS_ORDER = ["submitted","under_review","approved","assigned"];
+
+function statusBadge(status){
+  const c = STATUS_CONFIG[status] || { label:status, emoji:"•", cls:"status-submitted" };
+  return `<span class="status-badge ${c.cls}">${c.emoji} ${c.label}</span>`;
+}
+
+function statusColor(status){
+  const map = {
+    submitted:"#2563eb", under_review:"#d97706", needs_info:"#c2410c",
+    approved:"#15803d", assigned:"#7c3aed", declined:"#b91c1c",
+    postponed:"#374151", cancelled:"#9f1239"
+  };
+  return map[status] || "#9ca3af";
+}
+
+/* ── Auth mode toggle ── */
+function toggleAuthMode(e){
+  e.preventDefault();
+  authMode = authMode === "login" ? "signup" : "login";
+  const isSignup = authMode === "signup";
+  document.getElementById("loginBtn").textContent     = isSignup ? "Create Account" : "Sign In";
+  document.getElementById("authToggleText").textContent = isSignup ? "Already have an account? " : "First time here? ";
+  document.getElementById("authToggleLink").textContent = isSignup ? "Sign In" : "Create Account";
+  document.getElementById("signupRow").style.display   = isSignup ? "block" : "none";
+  hideMsg();
+}
+
+function showMsg(msg, type){
+  const el = document.getElementById("loginMsg");
+  el.textContent = msg;
+  el.className = `login-msg ${type}`;
+  el.style.display = "block";
+}
+function hideMsg(){ document.getElementById("loginMsg").style.display = "none"; }
+
+/* ── Main auth handler ── */
+async function handleAuth(){
+  if(authMode === "signup") return handleSignup();
+  return handleLogin();
+}
+
+async function handleLogin(){
+  const email = document.getElementById("loginEmail").value.trim();
+  const pw    = document.getElementById("loginPassword").value;
+  const btn   = document.getElementById("loginBtn");
+  if(!email || !pw){ showMsg("Please fill in all fields.", "error"); return; }
+
+  btn.disabled = true; btn.textContent = "Signing in…";
+  hideMsg();
+
+  // Check if email is an authorised club email
+  const { data: clubRow } = await sb.from("club_accounts")
+    .select("*").eq("email", email).eq("authorized", true).single();
+
+  if(!clubRow){
+    // Also allow admins/event leads to access Event Hub
+    const { data: adminRow } = await sb.from("admins").select("role").eq("email", email).single();
+    if(!adminRow){
+      showMsg("❌ This email is not authorised to access Event Hub. Contact the OSE team.", "error");
+      btn.disabled = false; btn.textContent = "Sign In";
+      return;
+    }
+  }
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+  if(error){
+    showMsg("❌ " + error.message, "error");
+    btn.disabled = false; btn.textContent = "Sign In";
+    return;
+  }
+
+  currentSession = data.session;
+  currentClub    = clubRow || { email, club_name: email, campus: "All" };
+  showPortal();
+}
+
+async function handleSignup(){
+  const email   = document.getElementById("loginEmail").value.trim();
+  const pw      = document.getElementById("loginPassword").value;
+  const pwConf  = document.getElementById("loginPasswordConfirm").value;
+  const btn     = document.getElementById("loginBtn");
+
+  if(!email || !pw){ showMsg("Please fill in all fields.", "error"); return; }
+  if(pw.length < 8){ showMsg("Password must be at least 8 characters.", "error"); return; }
+  if(pw !== pwConf){ showMsg("Passwords do not match.", "error"); return; }
+
+  // Verify authorised
+  const { data: clubRow } = await sb.from("club_accounts")
+    .select("*").eq("email", email).eq("authorized", true).single();
+  if(!clubRow){
+    showMsg("❌ This email is not authorised. Contact the OSE team to get your club registered.", "error");
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = "Creating account…";
+
+  const { error } = await sb.auth.signUp({ email, password: pw });
+  if(error){ showMsg("❌ " + error.message, "error"); btn.disabled = false; btn.textContent = "Create Account"; return; }
+
+  showMsg("✅ Account created! You can now sign in.", "success");
+  toggleAuthMode({ preventDefault: ()=>{} });
+  btn.disabled = false;
+}
+
+async function signOut(){
+  await sb.auth.signOut();
+  currentClub = null; currentSession = null;
+  document.getElementById("portal").classList.remove("visible");
+  document.getElementById("loginScreen").style.display = "flex";
+  document.getElementById("topbarUser").classList.remove("visible");
+  document.getElementById("notifBtn").style.display = "none";
+  document.getElementById("signOutBtn").style.display = "none";
+}
+
+/* ── Show portal ── */
+function showPortal(){
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("portal").classList.add("visible");
+  document.getElementById("topbarUser").classList.add("visible");
+  document.getElementById("notifBtn").style.display = "flex";
+  document.getElementById("signOutBtn").style.display = "block";
+
+  const name = currentClub?.club_name || currentClub?.email || "";
+  document.getElementById("topbarAvatar").textContent = name.charAt(0).toUpperCase();
+  document.getElementById("topbarClubName").textContent = name;
+  document.getElementById("heroTitle").textContent = `Welcome, ${name}! 🎉`;
+
+  loadProposals();
+  loadNotifications();
+}
+
+/* ── Proposals ── */
+async function loadProposals(){
+  const { data, error } = await sb.from("event_proposals")
+    .select("*")
+    .eq("club_email", currentClub.email)
+    .order("submitted_at", { ascending: false });
+
+  if(error){ showToast("Failed to load proposals", "error"); return; }
+  allProposals = data || [];
+  renderProposals();
+  updateStats();
+}
+
+function updateStats(){
+  document.getElementById("statTotal").textContent    = allProposals.length;
+  document.getElementById("statPending").textContent  = allProposals.filter(p => ["submitted","under_review","needs_info"].includes(p.status)).length;
+  document.getElementById("statApproved").textContent = allProposals.filter(p => ["approved","assigned"].includes(p.status)).length;
+  document.getElementById("statDeclined").textContent = allProposals.filter(p => p.status === "declined").length;
+}
+
+function renderProposals(){
+  const el = document.getElementById("proposalsList");
+  if(!allProposals.length){
+    el.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-emoji">💡</div>
+        <div class="empty-title">No proposals yet</div>
+        <div class="empty-sub">Submit your first event proposal and we'll take it from there.</div>
+        <button class="btn btn-primary" onclick="openProposalModal()">✦ Submit First Proposal</button>
+      </div>`;
+    return;
+  }
+
+  el.innerHTML = `<div class="proposals-list">${allProposals.map(p => proposalCardHTML(p)).join("")}</div>`;
+}
+
+function proposalCardHTML(p){
+  const sc   = statusColor(p.status);
+  const meta = [
+    p.proposed_date ? `📅 ${formatDate(p.proposed_date)}`   : "",
+    p.proposed_time ? `⏰ ${esc(p.proposed_time)}`           : "",
+    p.proposed_venue? `📍 ${esc(p.proposed_venue)}`         : "",
+    p.campus        ? `🏫 ${esc(p.campus)}`                  : "",
+    p.category      ? `🏷️ ${esc(p.category)}`               : "",
+  ].filter(Boolean);
+
+  // Admin note display
+  let noteHtml = "";
+  if(p.status === "needs_info" && p.admin_note){
+    noteHtml = `<div class="proposal-note info">💬 <strong>More info needed:</strong> ${esc(p.admin_note)}</div>`;
+  } else if(p.status === "declined" && p.admin_note){
+    noteHtml = `<div class="proposal-note decline">❌ <strong>Declined:</strong> ${esc(p.admin_note)}</div>`;
+  } else if(p.status === "approved"){
+    noteHtml = `<div class="proposal-note success">🎉 Your event has been approved and will appear on the Campus Life website!</div>`;
+  } else if(p.status === "assigned" && p.assigned_to){
+    noteHtml = `<div class="proposal-note success">📌 Assigned to Event Lead: <strong>${esc(p.assigned_to)}</strong></div>`;
+  } else if((p.status === "postponed" || p.status === "cancelled") && p.status_reason){
+    noteHtml = `<div class="proposal-note decline">ℹ️ <strong>${p.status === "postponed" ? "Postponed" : "Cancelled"}:</strong> ${esc(p.status_reason)}</div>`;
+  }
+
+  // Action buttons
+  const canEdit = ["submitted","needs_info"].includes(p.status);
+  const actions = `
+    <button class="btn btn-secondary btn-sm" onclick="viewProposal('${p.id}')">View Details</button>
+    ${canEdit ? `<button class="btn btn-sm" style="background:#f5f3ff;color:var(--accent);border:1.5px solid #e9d5ff;" onclick="openProposalModal('${p.id}')">✏️ Edit</button>` : ""}
+  `;
+
+  // Timeline
+  const curIdx    = STATUS_ORDER.indexOf(p.status);
+  const timelineHtml = TIMELINE_STEPS.map((step, i) => {
+    const done    = curIdx > i || (curIdx === i && p.status !== "declined" && p.status !== "needs_info");
+    const current = i === curIdx;
+    const cls     = done ? "done" : current ? "current" : "";
+    return `
+      <div class="timeline-step ${cls}">
+        <div class="timeline-dot">${done ? "✓" : step.emoji}</div>
+        <div class="timeline-label">${step.label}</div>
+      </div>`;
+  }).join("");
+
+  return `
+    <div class="proposal-card">
+      <div class="proposal-card-top">
+        <div class="proposal-status-bar" style="background:${sc};"></div>
+        <div class="proposal-body">
+          <div class="proposal-name">${esc(p.event_name)}</div>
+          <div class="proposal-meta">
+            ${meta.map(m => `<span>${m}</span>`).join("")}
+            <span style="color:#c4b5d4;">${timeAgo(p.submitted_at)}</span>
+          </div>
+          ${statusBadge(p.status)}
+        </div>
+        <div class="proposal-actions">${actions}</div>
+      </div>
+      ${noteHtml}
+      <div class="proposal-timeline">${timelineHtml}</div>
+    </div>`;
+}
+
+/* ── View proposal detail ── */
+function viewProposal(id){
+  const p = allProposals.find(x => x.id === id);
+  if(!p) return;
+  document.getElementById("viewModalTitle").textContent = p.event_name;
+  document.getElementById("viewModalBody").innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
+      ${p.cover_image ? `<div style="grid-column:1/-1;"><img src="${esc(p.cover_image)}" style="width:100%;max-height:220px;object-fit:cover;border-radius:12px;" /></div>` : ""}
+      ${row("Status", statusBadge(p.status))}
+      ${row("Club", esc(p.club_name))}
+      ${row("Category", esc(p.category || "—"))}
+      ${row("Campus", esc(p.campus || "—"))}
+      ${row("Date", formatDate(p.proposed_date))}
+      ${row("Time", esc(p.proposed_time || "—"))}
+      ${row("Venue", esc(p.proposed_venue || "—"))}
+      ${row("Audience", esc(p.audience || "—"))}
+      ${row("Expected Attendance", esc(p.expected_attendance || "—"))}
+      ${p.description ? `<div style="grid-column:1/-1;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:4px;">Description</div><div style="line-height:1.7;">${esc(p.description)}</div></div>` : ""}
+      ${p.admin_note  ? `<div style="grid-column:1/-1;background:#fff7ed;border-radius:10px;padding:12px 14px;font-size:13px;color:#92400e;border:1px solid #fed7aa;"><strong>Admin Note:</strong> ${esc(p.admin_note)}</div>` : ""}
+      ${p.assigned_to ? `<div style="grid-column:1/-1;background:#f5f3ff;border-radius:10px;padding:12px 14px;font-size:13px;color:#7c3aed;border:1px solid #e9d5ff;"><strong>Assigned to:</strong> ${esc(p.assigned_to)}</div>` : ""}
+    </div>
+    <div style="text-align:right;margin-top:16px;font-size:11px;color:var(--muted);">Submitted ${formatDate(p.submitted_at)}</div>`;
+  document.getElementById("viewModal").classList.add("open");
+}
+
+function row(label, value){
+  return `<div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:3px;">${label}</div><div>${value}</div></div>`;
+}
+
+/* ── Proposal form ── */
+function openProposalModal(id = null){
+  document.getElementById("proposalModalTitle").textContent = id ? "Edit Proposal" : "New Event Proposal";
+  document.getElementById("proposalId").value = id || "";
+  document.getElementById("fImagePreview").innerHTML = "📸 Click to upload cover image";
+
+  if(id){
+    const p = allProposals.find(x => x.id === id);
+    if(!p) return;
+    document.getElementById("fEventName").value   = p.event_name      || "";
+    document.getElementById("fCategory").value    = p.category        || "";
+    document.getElementById("fCampus").value      = p.campus          || "";
+    document.getElementById("fDate").value        = p.proposed_date   || "";
+    document.getElementById("fTime").value        = p.proposed_time   || "";
+    document.getElementById("fVenue").value       = p.proposed_venue  || "";
+    document.getElementById("fAudience").value    = p.audience        || "";
+    document.getElementById("fAttendance").value  = p.expected_attendance || "";
+    document.getElementById("fDescription").value = p.description     || "";
+    document.getElementById("fImageUrl").value    = p.cover_image     || "";
+    if(p.cover_image) document.getElementById("fImagePreview").innerHTML = `<img src="${esc(p.cover_image)}" class="upload-preview" />`;
+  } else {
+    ["fEventName","fVenue","fAudience","fAttendance","fDescription","fImageUrl"].forEach(i => document.getElementById(i).value = "");
+    document.getElementById("fCategory").value = "";
+    document.getElementById("fCampus").value   = currentClub?.campus && currentClub.campus !== "All" ? currentClub.campus : "";
+    document.getElementById("fDate").value     = "";
+    document.getElementById("fTime").value     = "";
+  }
+  document.getElementById("proposalModal").classList.add("open");
+}
+
+function previewProposalImage(input){
+  if(!input.files[0]) return;
+  const url = URL.createObjectURL(input.files[0]);
+  document.getElementById("fImagePreview").innerHTML = `<img src="${url}" class="upload-preview" />`;
+}
+
+async function submitProposal(){
+  const id        = document.getElementById("proposalId").value;
+  const eventName = document.getElementById("fEventName").value.trim();
+  const category  = document.getElementById("fCategory").value;
+  const campus    = document.getElementById("fCampus").value;
+  const date      = document.getElementById("fDate").value;
+
+  if(!eventName){ showToast("Event name is required", "error"); return; }
+  if(!category)  { showToast("Please select a category", "error"); return; }
+  if(!campus)    { showToast("Please select a campus", "error"); return; }
+  if(!date)      { showToast("Proposed date is required", "error"); return; }
+
+  // Handle image upload
+  let imageUrl = document.getElementById("fImageUrl").value.trim();
+  const fileInput = document.getElementById("fImageFile");
+  if(fileInput.files[0]){
+    const file = fileInput.files[0];
+    const path = `${Date.now()}_${file.name.replace(/\s/g,"_")}`;
+    const { data: upData, error: upErr } = await sb.storage
+      .from("proposal-images").upload(path, file, { upsert: true });
+    if(upErr){ showToast("Image upload failed: " + upErr.message, "error"); return; }
+    const { data: urlData } = sb.storage.from("proposal-images").getPublicUrl(path);
+    imageUrl = urlData.publicUrl;
+  }
+
+  const payload = {
+    club_email:          currentClub.email,
+    club_name:           currentClub.club_name,
+    event_name:          eventName,
+    category,
+    campus,
+    proposed_date:       date || null,
+    proposed_time:       document.getElementById("fTime").value || null,
+    proposed_venue:      document.getElementById("fVenue").value.trim() || null,
+    audience:            document.getElementById("fAudience").value.trim() || null,
+    expected_attendance: parseInt(document.getElementById("fAttendance").value) || null,
+    description:         document.getElementById("fDescription").value.trim() || null,
+    cover_image:         imageUrl || null,
+    updated_at:          new Date().toISOString(),
+  };
+
+  let error;
+  if(id){
+    ({ error } = await sb.from("event_proposals").update(payload).eq("id", id));
+  } else {
+    payload.status = "submitted";
+    payload.submitted_at = new Date().toISOString();
+    ({ error } = await sb.from("event_proposals").insert(payload));
+  }
+
+  if(error){ showToast("Failed to submit: " + error.message, "error"); return; }
+
+  showToast(id ? "Proposal updated! ✨" : "Proposal submitted! 🎉 OSE team will review it soon.");
+  closeModal("proposalModal");
+  loadProposals();
+}
+
+/* ── Notifications ── */
+async function loadNotifications(){
+  const { data } = await sb.from("notifications")
+    .select("*")
+    .eq("recipient", currentClub.email)
+    .order("created_at", { ascending: false })
+    .limit(30);
+
+  const notifs  = data || [];
+  const unread  = notifs.filter(n => !n.is_read);
+  const badge   = document.getElementById("notifBadge");
+  badge.textContent = unread.length > 9 ? "9+" : unread.length;
+  unread.length > 0 ? badge.classList.add("visible") : badge.classList.remove("visible");
+
+  const list = document.getElementById("notifList");
+  if(!notifs.length){
+    list.innerHTML = `<div class="notif-empty">🔔 No notifications yet</div>`;
+    return;
+  }
+  list.innerHTML = notifs.map(n => `
+    <div class="notif-item ${n.is_read ? "" : "unread"}" onclick="markRead('${n.id}')">
+      <div class="notif-item-title">${esc(n.title)}</div>
+      <div class="notif-item-msg">${esc(n.message)}</div>
+      <div class="notif-item-time">${timeAgo(n.created_at)}</div>
+    </div>`).join("");
+}
+
+async function markRead(id){
+  await sb.from("notifications").update({ is_read: true }).eq("id", id);
+  loadNotifications();
+}
+
+async function markAllRead(){
+  await sb.from("notifications").update({ is_read: true }).eq("recipient", currentClub.email);
+  loadNotifications();
+}
+
+/* ── Notif panel toggle ── */
+document.getElementById("notifBtn").addEventListener("click", () => {
+  document.getElementById("notifPanel").classList.toggle("open");
+});
+document.addEventListener("click", e => {
+  const panel = document.getElementById("notifPanel");
+  const btn   = document.getElementById("notifBtn");
+  if(!panel.contains(e.target) && e.target !== btn) panel.classList.remove("open");
+});
+
+/* ── Init ── */
+async function init(){
+  const { data: { session } } = await sb.auth.getSession();
+  if(session){
+    const { data: clubRow } = await sb.from("club_accounts")
+      .select("*").eq("email", session.user.email).single();
+
+    if(clubRow){
+      currentSession = session;
+      currentClub    = clubRow;
+      showPortal();
+      return;
+    }
+
+    // Check if admin/event lead
+    const { data: adminRow } = await sb.from("admins")
+      .select("email, club_name").eq("email", session.user.email).single();
+    if(adminRow){
+      currentSession = session;
+      currentClub    = { email: session.user.email, club_name: adminRow.email, campus: "All" };
+      showPortal();
+    }
+  }
+}
+init();
+</script>
+</body>
+</html>
