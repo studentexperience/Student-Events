@@ -1384,6 +1384,7 @@ function openProposalModal(id = null){
   document.getElementById("proposalModalTitle").textContent = id ? "Edit Proposal" : "New Event Proposal";
   document.getElementById("proposalId").value = id || "";
   document.getElementById("fImagePreview").innerHTML = "📸 Click to upload cover image";
+  document.getElementById("fImageFile").value = "";
 
   if(id){
     const p = allProposals.find(x => x.id === id);
@@ -1402,10 +1403,35 @@ function openProposalModal(id = null){
   } else {
     ["fEventName","fVenue","fAudience","fAttendance","fDescription","fImageUrl"].forEach(i => document.getElementById(i).value = "");
     document.getElementById("fCategory").value = "";
-    document.getElementById("fCampus").value   = currentClub?.campus && currentClub.campus !== "All" ? currentClub.campus : "";
     document.getElementById("fDate").value     = "";
     document.getElementById("fTime").value     = "";
   }
+
+  // Lock campus to club's own campus
+  const campusSel = document.getElementById("fCampus");
+  const clubCampus = currentClub?.campus;
+  if(clubCampus && clubCampus !== "All"){
+    campusSel.innerHTML = `<option value="${esc(clubCampus)}">${esc(clubCampus)}</option>`;
+    campusSel.value    = clubCampus;
+    campusSel.disabled = true;
+    campusSel.style.background = "#f5f3ff";
+    campusSel.style.color      = "#7c3aed";
+    campusSel.style.fontWeight = "600";
+  } else {
+    // Multi-campus or All — let them choose
+    campusSel.innerHTML = `
+      <option value="">Select…</option>
+      <option>Karachi</option>
+      <option>Nairobi</option>
+      <option>Kampala</option>
+      <option>Dar es Salaam</option>`;
+    campusSel.disabled = false;
+    campusSel.style.background = "";
+    campusSel.style.color      = "";
+    campusSel.style.fontWeight = "";
+    if(id) campusSel.value = allProposals.find(x => x.id === id)?.campus || "";
+  }
+
   document.getElementById("proposalModal").classList.add("open");
 }
 
@@ -1416,16 +1442,21 @@ function previewProposalImage(input){
 }
 
 async function submitProposal(){
+  const submitBtn = document.querySelector("#proposalModal .btn-primary");
+  if(submitBtn.disabled) return; // prevent double click
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Submitting…";
+
   const id        = document.getElementById("proposalId").value;
   const eventName = document.getElementById("fEventName").value.trim();
   const category  = document.getElementById("fCategory").value;
   const campus    = document.getElementById("fCampus").value;
   const date      = document.getElementById("fDate").value;
 
-  if(!eventName){ showToast("Event name is required", "error"); return; }
-  if(!category)  { showToast("Please select a category", "error"); return; }
-  if(!campus)    { showToast("Please select a campus", "error"); return; }
-  if(!date)      { showToast("Proposed date is required", "error"); return; }
+  if(!eventName){ showToast("Event name is required", "error"); submitBtn.disabled = false; submitBtn.textContent = "Submit Proposal ✦"; return; }
+  if(!category)  { showToast("Please select a category", "error"); submitBtn.disabled = false; submitBtn.textContent = "Submit Proposal ✦"; return; }
+  if(!campus)    { showToast("Please select a campus", "error"); submitBtn.disabled = false; submitBtn.textContent = "Submit Proposal ✦"; return; }
+  if(!date)      { showToast("Proposed date is required", "error"); submitBtn.disabled = false; submitBtn.textContent = "Submit Proposal ✦"; return; }
 
   // Handle image upload
   let imageUrl = document.getElementById("fImageUrl").value.trim();
@@ -1465,9 +1496,11 @@ async function submitProposal(){
     ({ error } = await sb.from("event_proposals").insert(payload));
   }
 
-  if(error){ showToast("Failed to submit: " + error.message, "error"); return; }
+  if(error){ showToast("Failed to submit: " + error.message, "error"); submitBtn.disabled = false; submitBtn.textContent = "Submit Proposal ✦"; return; }
 
   showToast(id ? "Proposal updated! ✨" : "Proposal submitted! 🎉 OSE team will review it soon.");
+  submitBtn.disabled = false;
+  submitBtn.textContent = "Submit Proposal ✦";
   closeModal("proposalModal");
   loadProposals();
 }
