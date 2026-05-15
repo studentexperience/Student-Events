@@ -1590,6 +1590,22 @@
           <button class="btn btn-secondary" onclick="loadMyAssignedEvents()">↺ Refresh</button>
         </div>
 
+        <!-- Admin/Super Admin filter row — hidden for event leads -->
+        <div id="portalAdminFilterRow" style="display:none;margin-bottom:16px;padding:14px 16px;background:#f5f3ff;border-radius:12px;border:1px solid #e9d5ff;">
+          <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px;">🔍 Admin View — Filter by Campus</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <select id="portalCampusFilter" onchange="loadMyAssignedEvents()"
+              style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;background:white;">
+              <option value="">All Campuses</option>
+              <option>Karachi</option>
+              <option>Nairobi</option>
+              <option>Kampala</option>
+              <option>Dar es Salaam</option>
+            </select>
+            <div style="font-size:12px;color:var(--muted);">Showing all assigned events across all event leads</div>
+          </div>
+        </div>
+
         <!-- Toggle at the very top -->
         <div style="display:flex;gap:8px;margin-bottom:20px;">
           <button id="toggleMyEvents" onclick="switchPipelineTab('my')"
@@ -2685,11 +2701,10 @@ function showAdminPanel(){
     loadTeamOverview();
   }
 
-  // Event Lead portal nav
-  if(currentRole === "event_lead"){
-    document.getElementById("myEventsNavBtn").style.display = "";
-    loadMyAssignedEvents();
-  }
+  // Event Lead Portal — visible to all roles
+  // Event leads see their own events; admins/super admins see all leads' events
+  document.getElementById("myEventsNavBtn").style.display = "";
+  loadMyAssignedEvents();
 
   // Start notifications
   loadAdminNotifications();
@@ -4009,28 +4024,61 @@ function buildPipelineLanes(list, todayMs){
 }
 
 async function loadMyAssignedEvents(){
-  const myEmail  = currentUser.email;
-  const myName   = myEmail.split("@")[0].replace(/\./g," ").replace(/\b\w/g, l => l.toUpperCase());
-  const myCampus = Array.isArray(currentPermissions.campus)
+  const myEmail    = currentUser.email;
+  const myName     = myEmail.split("@")[0].replace(/\./g," ").replace(/\b\w/g, l => l.toUpperCase());
+  const isAdminView = currentRole === "admin" || currentRole === "super_admin";
+  const myCampus   = Array.isArray(currentPermissions.campus)
     ? currentPermissions.campus[0] : (currentPermissions.campus || "All");
 
-  const todayMs = new Date();
-  todayMs.setHours(0,0,0,0);
+  const todayMs = new Date(); todayMs.setHours(0,0,0,0);
 
-  // Fetch my events
-  const { data: myEvents, error: myErr } = await sb.from("event_proposals")
-    .select("*").eq("assigned_to", myEmail)
-    .order("proposed_date", { ascending: true });
-  if(myErr){ showToast("Error loading events: " + myErr.message, "error"); return; }
+  // Show/hide admin filter row
+  const filterRow = document.getElementById("portalAdminFilterRow");
+  if(filterRow) filterRow.style.display = isAdminView ? "block" : "none";
 
-  // Fetch campus events (other leads)
-  let cq = sb.from("event_proposals").select("*")
-    .eq("status","assigned").neq("assigned_to", myEmail);
-  if(myCampus !== "All") cq = cq.eq("campus", myCampus);
-  const { data: campusEvents } = await cq.order("proposed_date", { ascending: true });
+  // Also hide campus toggle for admin view (they see everything in one pipeline)
+  const toggleRow = document.querySelector("#section-my-events .view-switch-row");
 
-  const myList     = myEvents    || [];
-  const campusList = campusEvents || [];
+  let myList = [], campusList = [];
+
+  if(isAdminView){
+    // Admins see ALL assigned events, filterable by campus
+    const campusFilter = document.getElementById("portalCampusFilter")?.value || "";
+    const adminCampus  = Array.isArray(currentPermissions.campus)
+      ? currentPermissions.campus : [currentPermissions.campus || "All"];
+    const showAll      = currentRole === "super_admin" || adminCampus.includes("All");
+
+    let q = sb.from("event_proposals").select("*").not("assigned_to", "is", null);
+    if(campusFilter)    q = q.eq("campus", campusFilter);
+    else if(!showAll)   q = q.in("campus", adminCampus);
+    const { data: allAssigned } = await q.order("proposed_date", { ascending: true });
+    myList = allAssigned || [];
+  } else {
+    // Event Lead: own events + campus others
+    const { data: myEvents, error: myErr } = await sb.from("event_proposals")
+      .select("*").eq("assigned_to", myEmail)
+      .order("proposed_date", { ascending: true });
+    if(myErr){ showToast("Error: " + myErr.message, "error"); return; }
+
+    let cq = sb.from("event_proposals").select("*")
+      .eq("status","assigned").neq("assigned_to", myEmail);
+    if(myCampus !== "All") cq = cq.eq("campus", myCampus);
+    const { data: campusEvents } = await cq.order("proposed_date", { ascending: true });
+
+    myList     = myEvents    || [];
+    campusList = campusEvents|| [];
+  }
+
+  // Hide campus toggle for admin view (doesn't apply)
+  const pipelineToggle = document.getElementById("toggleMyEvents")?.parentElement;
+  if(pipelineToggle){
+    pipelineToggle.style.display = isAdminView ? "none" : "flex";
+    // Make sure My pipeline is visible for admin
+    if(isAdminView){
+      document.getElementById("myPipelineView").style.display     = "block";
+      document.getElementById("campusPipelineView").style.display = "none";
+    }
+  }
 
   // Nav badge
   const badge = document.getElementById("myEventsBadge");
@@ -4073,8 +4121,8 @@ async function loadMyAssignedEvents(){
   const briefEl = document.getElementById("todaysBrief");
   if(briefEl) briefEl.innerHTML = myList.length === 0 ? "" : `
     <div class="todays-brief">
-      <div class="brief-greeting">Good ${getTimeOfDay()}, ${myName}! 👋</div>
-      <div style="font-size:13px;opacity:.8;">${todayStr} · ${hasTodayEvent ? `<strong>${nudges.length}</strong> event${nudges.length!==1?"s":""} today` : "No events today"}</div>
+      <div class="brief-greeting">${isAdminView ? `📊 Event Overview, ${myName}! 👋` : `Good ${getTimeOfDay()}, ${myName}! 👋`}</div>
+      <div style="font-size:13px;opacity:.8;">${todayStr} · ${isAdminView ? `<strong>${myList.length}</strong> events assigned across all leads` : (hasTodayEvent ? `<strong>${nudges.length}</strong> event${nudges.length!==1?"s":""} today` : "No events today")}</div>
       <div class="brief-items">${nudges.map(n=>`<div class="brief-item ${n.cls}">${n.emoji} ${n.text}</div>`).join("")}</div>
     </div>`;
 
@@ -4099,9 +4147,9 @@ async function loadMyAssignedEvents(){
   // Render lanes
   const set = (id, html) => { const el = document.getElementById(id); if(el) el.innerHTML = html; };
 
-  set("laneUpcoming",        my.upcoming.length  ? my.upcoming.map(p  => pipelineCard(p, todayMs, true)).join("")  : emptyLane("No upcoming events."));
-  set("laneThisWeek",        my.thisWeek.length  ? my.thisWeek.map(p  => pipelineCard(p, todayMs, true)).join("")  : emptyLane("Nothing urgent this week! 🎉"));
-  set("laneCompleted",       my.completed.length ? my.completed.map(p => pipelineCard(p, todayMs, true)).join("")  : emptyLane("No completed events yet."));
+  set("laneUpcoming",        my.upcoming.length  ? my.upcoming.map(p  => pipelineCard(p, todayMs, !isAdminView)).join("")  : emptyLane("No upcoming events."));
+  set("laneThisWeek",        my.thisWeek.length  ? my.thisWeek.map(p  => pipelineCard(p, todayMs, !isAdminView)).join("")  : emptyLane("Nothing urgent this week! 🎉"));
+  set("laneCompleted",       my.completed.length ? my.completed.map(p => pipelineCard(p, todayMs, !isAdminView)).join("")  : emptyLane("No completed events yet."));
   set("campusLaneUpcoming",  campus.upcoming.length  ? campus.upcoming.map(p  => pipelineCard(p, todayMs, false)).join("") : emptyLane("No upcoming campus events."));
   set("campusLaneThisWeek",  campus.thisWeek.length  ? campus.thisWeek.map(p  => pipelineCard(p, todayMs, false)).join("") : emptyLane("Nothing this week."));
   set("campusLaneCompleted", campus.completed.length ? campus.completed.map(p => pipelineCard(p, todayMs, false)).join("") : emptyLane("No completed events."));
