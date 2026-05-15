@@ -3834,14 +3834,15 @@ async function loadMyAssignedEvents(){
       const execDone   = doneStatuses.includes(execStatus);
       if(execDone){
         completed.push(p);
-      } else if(p.proposed_date){
-        const d    = new Date(p.proposed_date); d.setHours(0,0,0,0);
-        const diff = Math.ceil((d - today) / 86400000);
-        if(diff <= 7) thisWeek.push(p);
-        else          upcoming.push(p);
-      } else {
-        upcoming.push(p);
+        return;
       }
+      if(!p.proposed_date){ upcoming.push(p); return; }
+      const d    = new Date(p.proposed_date); d.setHours(0,0,0,0);
+      const diff = Math.round((d - today) / 86400000);
+      // Past (overdue) or within 7 days → This Week
+      // More than 7 days in future → Upcoming
+      if(diff > 7) upcoming.push(p);
+      else         thisWeek.push(p); // includes today, tomorrow, this week, and overdue
     });
     return { upcoming, thisWeek, completed };
   }
@@ -3995,7 +3996,7 @@ function pipelineCard(p, today, isMine = true){
         <div class="pipeline-card-name">${esc(p.event_name)}</div>
         <div class="pipeline-card-club">by ${esc(p.club_name)}</div>
         <div class="pipeline-card-meta">
-          <span>📅 ${dateStr}${daysLeft !== null && daysLeft >= 0 ? ` <strong style="color:${daysLeft<=1?"#ef4444":daysLeft<=3?"#f59e0b":"#6b7280"};">(${daysLeft === 0 ? "TODAY" : daysLeft === 1 ? "Tomorrow" : daysLeft + " days"})</strong>` : ""}</span>
+          <span>📅 ${dateStr}${daysLeft !== null ? ` <strong style="color:${daysLeft<0?"#ef4444":daysLeft<=1?"#ef4444":daysLeft<=3?"#f59e0b":"#9ca3af"};">(${daysLeft<0?"OVERDUE":daysLeft===0?"TODAY":daysLeft===1?"Tomorrow":daysLeft+" days"})</strong>` : ""}</span>
           ${p.proposed_venue ? `<span>📍 ${esc(p.proposed_venue)}</span>` : ""}
           ${p.proposed_time  ? `<span>⏰ ${esc(p.proposed_time)}</span>` : ""}
         </div>
