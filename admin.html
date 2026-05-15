@@ -814,6 +814,108 @@
       outline: none;
     }
 
+    /* ── EVENT LEAD PIPELINE ── */
+    .pipeline-card {
+      background: white;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+      transition: all .2s ease;
+    }
+    .pipeline-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,.1);
+    }
+    .pipeline-card-cover {
+      width: 100%;
+      height: 100px;
+      object-fit: cover;
+    }
+    .pipeline-card-cover-placeholder {
+      width: 100%;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+    .pipeline-card-body { padding: 12px 14px; }
+    .pipeline-card-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 3px;
+      line-height: 1.3;
+    }
+    .pipeline-card-club {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .pipeline-card-meta {
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-bottom: 10px;
+    }
+    .pipeline-card-exec-btns {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .pipeline-exec-btn {
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: white;
+      font-family: 'Poppins', sans-serif;
+      transition: all .12s;
+    }
+    .pipeline-exec-btn:hover { opacity: .8; }
+    .pipeline-exec-btn.active { border-color: transparent; }
+
+    /* Today's Brief */
+    .todays-brief {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
+      border-radius: 18px;
+      padding: 22px 26px;
+      color: white;
+      box-shadow: 0 8px 32px rgba(49,46,129,.35);
+    }
+    .brief-greeting {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+    .brief-items {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 12px;
+    }
+    .brief-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: rgba(255,255,255,.1);
+    }
+    .brief-item.urgent { background: rgba(239,68,68,.25); }
+    .brief-item.warning { background: rgba(245,158,11,.2); }
+    .brief-item.good { background: rgba(16,185,129,.2); }
+
+    @media (max-width: 768px) {
+      #pipelineGrid { grid-template-columns: 1fr !important; }
+    }
+
     /* ── PAGES EDITOR ── */
     .pages-grid {
       display: grid;
@@ -1343,24 +1445,63 @@
         </div>
       </div>
 
-      <!-- ── MY ASSIGNED EVENTS (Event Lead) ── -->
+      <!-- ── MY EVENTS (Event Lead Pipeline) ── -->
       <div class="section" id="section-my-events">
         <div class="section-header">
           <div>
             <div class="section-title">My Events</div>
-            <div class="section-subtitle">Events assigned to you and your campus team</div>
+            <div class="section-subtitle">Your event pipeline and campus team activity</div>
           </div>
           <button class="btn btn-secondary" onclick="loadMyAssignedEvents()">↺ Refresh</button>
         </div>
 
+        <!-- Today's Brief -->
+        <div id="todaysBrief" style="margin-bottom:24px;"></div>
+
         <!-- Mini Dashboard -->
-        <div id="leadDashboard" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:28px;"></div>
+        <div id="leadDashboard" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:28px;"></div>
 
-        <!-- My Events -->
-        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px;">📌 Assigned to Me</div>
-        <div id="myAssignedEventsList" style="display:grid;gap:16px;margin-bottom:32px;"></div>
+        <!-- Pipeline label -->
+        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px;">📌 My Event Pipeline</div>
 
-        <!-- Campus Events (other leads) -->
+        <!-- 3-Lane Pipeline -->
+        <div id="pipelineGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px;align-items:start;">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#eff6ff;margin-bottom:10px;">
+              <span style="font-size:16px;">🔜</span>
+              <div>
+                <div style="font-size:12px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;">Upcoming</div>
+                <div style="font-size:10px;color:#93c5fd;">More than 7 days away</div>
+              </div>
+              <span id="upcomingCount" style="margin-left:auto;background:#2563eb;color:white;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span>
+            </div>
+            <div id="laneUpcoming" style="display:grid;gap:10px;"></div>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#fef9c3;margin-bottom:10px;">
+              <span style="font-size:16px;">⚡</span>
+              <div>
+                <div style="font-size:12px;font-weight:800;color:#b45309;text-transform:uppercase;letter-spacing:.5px;">This Week</div>
+                <div style="font-size:10px;color:#fcd34d;">Within 7 days</div>
+              </div>
+              <span id="thisWeekCount" style="margin-left:auto;background:#b45309;color:white;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span>
+            </div>
+            <div id="laneThisWeek" style="display:grid;gap:10px;"></div>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#f0fdf4;margin-bottom:10px;">
+              <span style="font-size:16px;">✅</span>
+              <div>
+                <div style="font-size:12px;font-weight:800;color:#15803d;text-transform:uppercase;letter-spacing:.5px;">Completed</div>
+                <div style="font-size:10px;color:#86efac;">Past or wrapped up</div>
+              </div>
+              <span id="completedCount" style="margin-left:auto;background:#15803d;color:white;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span>
+            </div>
+            <div id="laneCompleted" style="display:grid;gap:10px;"></div>
+          </div>
+        </div>
+
+        <!-- Campus Events -->
         <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px;">👥 Other Events on My Campus</div>
         <div id="campusAssignedEventsList" style="display:grid;gap:12px;"></div>
       </div>
@@ -3616,16 +3757,198 @@ function insertLink(){
   }
 }
 
-/* ══ MY ASSIGNED EVENTS (Event Lead view) ══ */
+/* ══ MY ASSIGNED EVENTS — Pipeline View ══ */
 
 const EXECUTION_STATUS = {
-  pending:          { label:"Pending",          emoji:"⏳", bg:"#f3f4f6", color:"#374151" },
-  in_progress:      { label:"In Progress",      emoji:"▶️", bg:"#eff6ff", color:"#2563eb" },
-  completed:        { label:"Completed",         emoji:"✅", bg:"#f0fdf4", color:"#15803d" },
-  report_submitted: { label:"Report Submitted",  emoji:"📝", bg:"#f5f3ff", color:"#7c3aed" },
-  postponed:        { label:"Postponed",         emoji:"⏸️", bg:"#fff7ed", color:"#c2410c" },
-  cancelled:        { label:"Cancelled",         emoji:"🚫", bg:"#fef2f2", color:"#b91c1c" },
+  pending:          { label:"Pending",         emoji:"⏳", bg:"#f3f4f6", color:"#374151" },
+  in_progress:      { label:"In Progress",     emoji:"▶️", bg:"#eff6ff", color:"#2563eb" },
+  completed:        { label:"Completed",        emoji:"✅", bg:"#f0fdf4", color:"#15803d" },
+  report_submitted: { label:"Report Submitted", emoji:"📝", bg:"#f5f3ff", color:"#7c3aed" },
+  postponed:        { label:"Postponed",        emoji:"⏸️", bg:"#fff7ed", color:"#c2410c" },
+  cancelled:        { label:"Cancelled",        emoji:"🚫", bg:"#fef2f2", color:"#b91c1c" },
 };
+
+async function loadMyAssignedEvents(){
+  const myEmail  = currentUser.email;
+  const myName   = myEmail.split("@")[0].replace(/\./g," ").replace(/\b\w/g, l => l.toUpperCase());
+  const myCampus = Array.isArray(currentPermissions.campus)
+    ? currentPermissions.campus[0] : (currentPermissions.campus || "All");
+  const today    = new Date(); today.setHours(0,0,0,0);
+  const week     = new Date(today); week.setDate(week.getDate() + 7);
+
+  // Fetch my events
+  const { data: myEvents } = await sb.from("event_proposals")
+    .select("*").eq("assigned_to", myEmail)
+    .order("proposed_date", { ascending: true });
+
+  // Fetch campus events (other leads)
+  let cq = sb.from("event_proposals").select("*")
+    .eq("status","assigned").neq("assigned_to", myEmail);
+  if(myCampus !== "All") cq = cq.eq("campus", myCampus);
+  const { data: campusEvents } = await cq.order("proposed_date", { ascending: true });
+
+  const myList     = myEvents    || [];
+  const campusList = campusEvents|| [];
+
+  // Update nav badge
+  const badge = document.getElementById("myEventsBadge");
+  badge.textContent   = myList.length;
+  badge.style.display = myList.length > 0 ? "inline-block" : "none";
+
+  // ── Categorise into lanes ──
+  const doneStatuses = ["completed","report_submitted","cancelled","postponed"];
+  const upcoming = [], thisWeek = [], completed = [];
+  myList.forEach(p => {
+    const execDone = doneStatuses.includes(p.execution_status || "pending");
+    if(execDone){
+      completed.push(p);
+    } else if(p.proposed_date){
+      const d = new Date(p.proposed_date); d.setHours(0,0,0,0);
+      if(d <= week) thisWeek.push(p);
+      else          upcoming.push(p);
+    } else {
+      upcoming.push(p);
+    }
+  });
+
+  // Update lane counts
+  document.getElementById("upcomingCount").textContent  = upcoming.length;
+  document.getElementById("thisWeekCount").textContent  = thisWeek.length;
+  document.getElementById("completedCount").textContent = completed.length;
+
+  // ── Today's Brief ──
+  const briefEl = document.getElementById("todaysBrief");
+  const todayStr = today.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
+  const nudges   = [];
+
+  // Event happening today or tomorrow
+  const imminentEvents = myList.filter(p => {
+    if(!p.proposed_date) return false;
+    const d = new Date(p.proposed_date); d.setHours(0,0,0,0);
+    const diff = Math.ceil((d - today) / 86400000);
+    return diff >= 0 && diff <= 1;
+  });
+  imminentEvents.forEach(p => {
+    const d    = new Date(p.proposed_date); d.setHours(0,0,0,0);
+    const diff = Math.ceil((d - today) / 86400000);
+    nudges.push({ cls:"urgent", emoji:"🚨", text:`"${p.event_name}" is ${diff === 0 ? "TODAY" : "TOMORROW"} — make sure everything is ready!` });
+  });
+
+  // Events this week with no progress
+  thisWeek.filter(p => (p.execution_status || "pending") === "pending").forEach(p => {
+    nudges.push({ cls:"warning", emoji:"⚡", text:`"${p.event_name}" is this week and still marked as Pending — update the status.` });
+  });
+
+  // Overdue report
+  myList.filter(p => {
+    if(!p.proposed_date) return false;
+    const d = new Date(p.proposed_date); d.setHours(0,0,0,0);
+    return d < today && p.execution_status === "completed";
+  }).forEach(p => {
+    nudges.push({ cls:"warning", emoji:"📝", text:`Report for "${p.event_name}" is completed but not submitted yet.` });
+  });
+
+  // All good message
+  if(!nudges.length && myList.length > 0){
+    nudges.push({ cls:"good", emoji:"✨", text:`All your events are on track. Great work!` });
+  }
+
+  const briefHTML = myList.length === 0 ? "" : `
+    <div class="todays-brief">
+      <div class="brief-greeting">Good ${getTimeOfDay()}, ${myName}! 👋</div>
+      <div style="font-size:13px;opacity:.8;">${todayStr} · You have <strong>${myList.length}</strong> event${myList.length !== 1 ? "s" : ""} assigned${thisWeek.length > 0 ? ` · <strong>${thisWeek.length}</strong> this week` : ""}</div>
+      ${nudges.length > 0 ? `
+      <div class="brief-items">
+        ${nudges.map(n => `<div class="brief-item ${n.cls}">${n.emoji} ${n.text}</div>`).join("")}
+      </div>` : ""}
+    </div>`;
+  briefEl.innerHTML = briefHTML;
+
+  // ── Mini Dashboard ──
+  const active    = myList.filter(p => ["pending","in_progress"].includes(p.execution_status||"pending")).length;
+  const doneCount = myList.filter(p => ["completed","report_submitted"].includes(p.execution_status||"pending")).length;
+  const closed    = myList.filter(p => ["cancelled","postponed"].includes(p.execution_status||"pending")).length;
+
+  document.getElementById("leadDashboard").innerHTML = [
+    { num:myList.length,     label:"Total Assigned",   color:"#7c3aed", icon:"📌" },
+    { num:thisWeek.length,   label:"This Week",         color:"#b45309", icon:"⚡" },
+    { num:active,            label:"Active",            color:"#2563eb", icon:"▶️" },
+    { num:doneCount,         label:"Completed",         color:"#15803d", icon:"✅" },
+    { num:closed,            label:"Closed",            color:"#dc2626", icon:"🚫" },
+    { num:campusList.length, label:"Campus Events",     color:"#d97706", icon:"👥" },
+  ].map(s => `
+    <div style="background:white;border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);border-top:3px solid ${s.color};">
+      <div style="font-size:22px;font-weight:800;color:${s.color};">${s.num}</div>
+      <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:2px;">${s.icon} ${s.label}</div>
+    </div>`).join("");
+
+  // ── Render Lanes ──
+  document.getElementById("laneUpcoming").innerHTML  = upcoming.length  ? upcoming.map(p  => pipelineCard(p, today)).join("") : emptyLane("No upcoming events.");
+  document.getElementById("laneThisWeek").innerHTML  = thisWeek.length  ? thisWeek.map(p  => pipelineCard(p, today)).join("") : emptyLane("Nothing urgent this week! 🎉");
+  document.getElementById("laneCompleted").innerHTML = completed.length ? completed.map(p => pipelineCard(p, today)).join("") : emptyLane("No completed events yet.");
+
+  // ── Campus Events ──
+  const campusContainer = document.getElementById("campusAssignedEventsList");
+  if(!campusList.length){
+    campusContainer.innerHTML = `<div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-text">No other events assigned on your campus.</div></div>`;
+  } else {
+    campusContainer.innerHTML = campusList.map(p => renderAssignedCard(p, false)).join("");
+  }
+}
+
+function getTimeOfDay(){
+  const h = new Date().getHours();
+  if(h < 12) return "morning";
+  if(h < 17) return "afternoon";
+  return "evening";
+}
+
+function emptyLane(msg){
+  return `<div style="text-align:center;padding:24px 12px;border:2px dashed var(--border);border-radius:12px;font-size:12px;color:var(--muted);">${msg}</div>`;
+}
+
+function pipelineCard(p, today){
+  const execSC  = EXECUTION_STATUS[p.execution_status || "pending"];
+  const dateStr = p.proposed_date ? new Date(p.proposed_date).toLocaleDateString("en-GB",{day:"numeric",month:"short"}) : "—";
+  const daysLeft = p.proposed_date ? Math.ceil((new Date(p.proposed_date) - today) / 86400000) : null;
+  const urgency  = daysLeft !== null && daysLeft <= 1 ? "border-left:3px solid #ef4444;" :
+                   daysLeft !== null && daysLeft <= 3 ? "border-left:3px solid #f59e0b;" : "";
+  const coverImg = p.cover_image
+    ? `<img class="pipeline-card-cover" src="${esc(p.cover_image)}" />`
+    : `<div class="pipeline-card-cover-placeholder" style="background:linear-gradient(135deg,#667eea,#764ba2);">🎭</div>`;
+
+  const execBtns = [
+    { s:"in_progress",     l:"▶️ In Progress" },
+    { s:"completed",       l:"✅ Completed" },
+    { s:"report_submitted",l:"📝 Report" },
+    { s:"postponed",       l:"⏸️ Postponed" },
+    { s:"cancelled",       l:"🚫 Cancelled" },
+  ].map(b => {
+    const isCurr = (p.execution_status || "pending") === b.s;
+    const sc     = EXECUTION_STATUS[b.s];
+    return `<button class="pipeline-exec-btn ${isCurr ? "active" : ""}"
+      style="${isCurr ? `background:${sc.bg};color:${sc.color};border-color:${sc.color};` : ""}"
+      onclick="updateExecutionStatus('${p.id}','${b.s}')">${b.l}</button>`;
+  }).join("");
+
+  return `
+    <div class="pipeline-card" style="${urgency}">
+      ${coverImg}
+      <div class="pipeline-card-body">
+        <div class="pipeline-card-name">${esc(p.event_name)}</div>
+        <div class="pipeline-card-club">by ${esc(p.club_name)}</div>
+        <div class="pipeline-card-meta">
+          <span>📅 ${dateStr}${daysLeft !== null && daysLeft >= 0 ? ` <strong style="color:${daysLeft<=1?"#ef4444":daysLeft<=3?"#f59e0b":"#6b7280"};">(${daysLeft === 0 ? "TODAY" : daysLeft === 1 ? "Tomorrow" : daysLeft + " days"})</strong>` : ""}</span>
+          ${p.proposed_venue ? `<span>📍 ${esc(p.proposed_venue)}</span>` : ""}
+          ${p.proposed_time  ? `<span>⏰ ${esc(p.proposed_time)}</span>` : ""}
+        </div>
+        <div style="margin-bottom:8px;">
+          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:${execSC.bg};color:${execSC.color};">${execSC.emoji} ${execSC.label}</span>
+        </div>
+        <div class="pipeline-card-exec-btns">${execBtns}</div>
+      </div>
+    </div>`;
+}
 
 async function loadMyAssignedEvents(){
   const myEmail  = currentUser.email;
