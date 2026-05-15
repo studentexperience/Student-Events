@@ -97,8 +97,8 @@
     /* ===== Two-column content: filters + cards ===== */
     .page-grid{
       display:grid;
-      grid-template-columns: 280px 1fr;
-      gap:18px;
+      grid-template-columns: 200px 1fr;
+      gap:16px;
       align-items:start;
     }
 
@@ -453,33 +453,32 @@
 
     /* =============================================
        RESPONSIVE BREAKPOINTS
-       1400px+ : 4 cards  (large desktop)
-       1280px  : 3 cards  (laptop)
-       1024px  : 2 cards  (small laptop) — filter shrinks
-        860px  : filter collapses
-        540px  : 1 card   (phone)
     ============================================= */
 
-    /* Large desktop — 4 cards */
+    /* Large desktop — 4 cards, 200px filter */
     @media (min-width: 1400px){
+      .page-grid{ grid-template-columns: 220px 1fr; }
       .cards{ grid-template-columns: repeat(4, 1fr); }
     }
 
-    /* Laptop — shrink filter to give cards more room */
+    /* Laptop 1280px — 3 cards, 180px filter */
     @media (max-width: 1280px){
-      .page-grid{ grid-template-columns: 220px 1fr; }
+      .page-grid{ grid-template-columns: 180px 1fr; gap:14px; }
       .cards{ grid-template-columns: repeat(3, 1fr); }
-      .field input, .field select{ font-size:12px; padding:7px 9px; }
+      .field input, .field select{ font-size:12px; padding:6px 8px; }
+      .filter-title{ font-size:12px; }
     }
 
-    /* Small laptop — shrink filter further */
+    /* Small laptop 1100px — 2 cards, 160px filter */
     @media (max-width: 1100px){
-      .page-grid{ grid-template-columns: 190px 1fr; gap:14px; }
+      .page-grid{ grid-template-columns: 160px 1fr; gap:12px; }
       .cards{ grid-template-columns: repeat(2, 1fr); }
-      .filters{ padding:12px; }
+      .filters{ padding:10px; }
+      .field label{ font-size:11px; }
+      .field input, .field select{ font-size:11px; padding:6px 7px; }
     }
 
-    /* Tablet landscape — side nav collapses into topbar */
+    /* Tablet landscape — side nav collapses */
     @media (max-width: 1024px){
       .shell{ grid-template-columns: 1fr; }
       .nav{
@@ -494,12 +493,12 @@
       }
       .nav.open{ display:block; }
       .nav-toggle{ display:block; }
-      .content{ padding:18px; }
-      .page-grid{ grid-template-columns: 180px 1fr; gap:12px; }
+      .content{ padding:14px; }
+      .page-grid{ grid-template-columns: 150px 1fr; gap:10px; }
       .cards{ grid-template-columns: repeat(2, 1fr); }
     }
 
-    /* Tablet portrait — filter collapses to top bar */
+    /* Tablet portrait — filter collapses to toggle */
     @media (max-width: 860px){
       .page-grid{ grid-template-columns: 1fr; }
       .filters{ position:relative; top:auto; }
