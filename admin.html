@@ -1459,51 +1459,80 @@
         <div id="todaysBrief" style="margin-bottom:24px;"></div>
 
         <!-- Mini Dashboard -->
-        <div id="leadDashboard" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:28px;"></div>
+        <div id="leadDashboard" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:24px;"></div>
 
-        <!-- Pipeline label -->
-        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px;">📌 My Event Pipeline</div>
+        <!-- Toggle -->
+        <div style="display:flex;gap:8px;margin-bottom:20px;">
+          <button id="toggleMyEvents" onclick="switchPipelineTab('my')"
+            style="padding:9px 20px;border-radius:10px;font-family:'Poppins',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:2px solid #7c3aed;background:#7c3aed;color:white;transition:all .15s;">
+            📌 My Events
+          </button>
+          <button id="toggleCampusEvents" onclick="switchPipelineTab('campus')"
+            style="padding:9px 20px;border-radius:10px;font-family:'Poppins',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:2px solid var(--border);background:white;color:var(--muted);transition:all .15s;">
+            👥 Campus Events
+          </button>
+        </div>
 
-        <!-- 3-Lane Pipeline -->
-        <div id="pipelineGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px;align-items:start;">
-          <div>
-            <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#eff6ff;margin-bottom:10px;">
-              <span style="font-size:16px;">🔜</span>
-              <div>
-                <div style="font-size:12px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;">Upcoming</div>
-                <div style="font-size:10px;color:#93c5fd;">More than 7 days away</div>
+        <!-- MY Pipeline -->
+        <div id="myPipelineView">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start;" id="pipelineGrid">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#eff6ff;margin-bottom:10px;">
+                <span>🔜</span>
+                <div><div style="font-size:12px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;">Upcoming</div><div style="font-size:10px;color:#93c5fd;">More than 7 days away</div></div>
+                <span id="upcomingCount" style="margin-left:auto;background:#2563eb;color:white;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span>
               </div>
-              <span id="upcomingCount" style="margin-left:auto;background:#2563eb;color:white;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span>
+              <div id="laneUpcoming" style="display:grid;gap:10px;"></div>
             </div>
-            <div id="laneUpcoming" style="display:grid;gap:10px;"></div>
-          </div>
-          <div>
-            <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#fef9c3;margin-bottom:10px;">
-              <span style="font-size:16px;">⚡</span>
-              <div>
-                <div style="font-size:12px;font-weight:800;color:#b45309;text-transform:uppercase;letter-spacing:.5px;">This Week</div>
-                <div style="font-size:10px;color:#fcd34d;">Within 7 days</div>
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#fef9c3;margin-bottom:10px;">
+                <span>⚡</span>
+                <div><div style="font-size:12px;font-weight:800;color:#b45309;text-transform:uppercase;letter-spacing:.5px;">This Week</div><div style="font-size:10px;color:#fcd34d;">Within 7 days</div></div>
+                <span id="thisWeekCount" style="margin-left:auto;background:#b45309;color:white;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span>
               </div>
-              <span id="thisWeekCount" style="margin-left:auto;background:#b45309;color:white;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span>
+              <div id="laneThisWeek" style="display:grid;gap:10px;"></div>
             </div>
-            <div id="laneThisWeek" style="display:grid;gap:10px;"></div>
-          </div>
-          <div>
-            <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#f0fdf4;margin-bottom:10px;">
-              <span style="font-size:16px;">✅</span>
-              <div>
-                <div style="font-size:12px;font-weight:800;color:#15803d;text-transform:uppercase;letter-spacing:.5px;">Completed</div>
-                <div style="font-size:10px;color:#86efac;">Past or wrapped up</div>
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#f0fdf4;margin-bottom:10px;">
+                <span>✅</span>
+                <div><div style="font-size:12px;font-weight:800;color:#15803d;text-transform:uppercase;letter-spacing:.5px;">Completed</div><div style="font-size:10px;color:#86efac;">Past or wrapped up</div></div>
+                <span id="completedCount" style="margin-left:auto;background:#15803d;color:white;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span>
               </div>
-              <span id="completedCount" style="margin-left:auto;background:#15803d;color:white;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span>
+              <div id="laneCompleted" style="display:grid;gap:10px;"></div>
             </div>
-            <div id="laneCompleted" style="display:grid;gap:10px;"></div>
           </div>
         </div>
 
-        <!-- Campus Events -->
-        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px;">👥 Other Events on My Campus</div>
-        <div id="campusAssignedEventsList" style="display:grid;gap:12px;"></div>
+        <!-- CAMPUS Pipeline -->
+        <div id="campusPipelineView" style="display:none;">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start;">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#eff6ff;margin-bottom:10px;">
+                <span>🔜</span>
+                <div><div style="font-size:12px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;">Upcoming</div><div style="font-size:10px;color:#93c5fd;">More than 7 days away</div></div>
+                <span id="campusUpcomingCount" style="margin-left:auto;background:#2563eb;color:white;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span>
+              </div>
+              <div id="campusLaneUpcoming" style="display:grid;gap:10px;"></div>
+            </div>
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#fef9c3;margin-bottom:10px;">
+                <span>⚡</span>
+                <div><div style="font-size:12px;font-weight:800;color:#b45309;text-transform:uppercase;letter-spacing:.5px;">This Week</div><div style="font-size:10px;color:#fcd34d;">Within 7 days</div></div>
+                <span id="campusThisWeekCount" style="margin-left:auto;background:#b45309;color:white;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span>
+              </div>
+              <div id="campusLaneThisWeek" style="display:grid;gap:10px;"></div>
+            </div>
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#f0fdf4;margin-bottom:10px;">
+                <span>✅</span>
+                <div><div style="font-size:12px;font-weight:800;color:#15803d;text-transform:uppercase;letter-spacing:.5px;">Completed</div><div style="font-size:10px;color:#86efac;">Past or wrapped up</div></div>
+                <span id="campusCompletedCount" style="margin-left:auto;background:#15803d;color:white;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span>
+              </div>
+              <div id="campusLaneCompleted" style="display:grid;gap:10px;"></div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <!-- ── EVENT PROPOSALS ── -->
@@ -3795,26 +3824,40 @@ async function loadMyAssignedEvents(){
   badge.textContent   = myList.length;
   badge.style.display = myList.length > 0 ? "inline-block" : "none";
 
-  // ── Categorise into lanes ──
+  // ── Categorise into lanes — fix date comparison ──
   const doneStatuses = ["completed","report_submitted","cancelled","postponed"];
-  const upcoming = [], thisWeek = [], completed = [];
-  myList.forEach(p => {
-    const execDone = doneStatuses.includes(p.execution_status || "pending");
-    if(execDone){
-      completed.push(p);
-    } else if(p.proposed_date){
-      const d = new Date(p.proposed_date); d.setHours(0,0,0,0);
-      if(d <= week) thisWeek.push(p);
-      else          upcoming.push(p);
-    } else {
-      upcoming.push(p);
-    }
-  });
 
-  // Update lane counts
+  function categorizePipeline(list){
+    const upcoming = [], thisWeek = [], completed = [];
+    list.forEach(p => {
+      const execStatus = p.execution_status || "pending";
+      const execDone   = doneStatuses.includes(execStatus);
+      if(execDone){
+        completed.push(p);
+      } else if(p.proposed_date){
+        const d    = new Date(p.proposed_date); d.setHours(0,0,0,0);
+        const diff = Math.ceil((d - today) / 86400000);
+        if(diff <= 7) thisWeek.push(p);
+        else          upcoming.push(p);
+      } else {
+        upcoming.push(p);
+      }
+    });
+    return { upcoming, thisWeek, completed };
+  }
+
+  const { upcoming, thisWeek, completed } = categorizePipeline(myList);
+  const campusCat = categorizePipeline(campusList);
+
+  // Update MY lane counts
   document.getElementById("upcomingCount").textContent  = upcoming.length;
   document.getElementById("thisWeekCount").textContent  = thisWeek.length;
   document.getElementById("completedCount").textContent = completed.length;
+
+  // Update CAMPUS lane counts
+  document.getElementById("campusUpcomingCount").textContent  = campusCat.upcoming.length;
+  document.getElementById("campusThisWeekCount").textContent  = campusCat.thisWeek.length;
+  document.getElementById("campusCompletedCount").textContent = campusCat.completed.length;
 
   // ── Today's Brief ──
   const briefEl = document.getElementById("todaysBrief");
@@ -3882,18 +3925,15 @@ async function loadMyAssignedEvents(){
       <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:2px;">${s.icon} ${s.label}</div>
     </div>`).join("");
 
-  // ── Render Lanes ──
-  document.getElementById("laneUpcoming").innerHTML  = upcoming.length  ? upcoming.map(p  => pipelineCard(p, today)).join("") : emptyLane("No upcoming events.");
-  document.getElementById("laneThisWeek").innerHTML  = thisWeek.length  ? thisWeek.map(p  => pipelineCard(p, today)).join("") : emptyLane("Nothing urgent this week! 🎉");
-  document.getElementById("laneCompleted").innerHTML = completed.length ? completed.map(p => pipelineCard(p, today)).join("") : emptyLane("No completed events yet.");
+  // ── Render MY Lanes ──
+  document.getElementById("laneUpcoming").innerHTML  = upcoming.length  ? upcoming.map(p  => pipelineCard(p, today, true)).join("")  : emptyLane("No upcoming events.");
+  document.getElementById("laneThisWeek").innerHTML  = thisWeek.length  ? thisWeek.map(p  => pipelineCard(p, today, true)).join("")  : emptyLane("Nothing urgent this week! 🎉");
+  document.getElementById("laneCompleted").innerHTML = completed.length ? completed.map(p => pipelineCard(p, today, true)).join("")  : emptyLane("No completed events yet.");
 
-  // ── Campus Events ──
-  const campusContainer = document.getElementById("campusAssignedEventsList");
-  if(!campusList.length){
-    campusContainer.innerHTML = `<div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-text">No other events assigned on your campus.</div></div>`;
-  } else {
-    campusContainer.innerHTML = campusList.map(p => renderAssignedCard(p, false)).join("");
-  }
+  // ── Render CAMPUS Lanes (read-only — no exec buttons) ──
+  document.getElementById("campusLaneUpcoming").innerHTML  = campusCat.upcoming.length  ? campusCat.upcoming.map(p  => pipelineCard(p, today, false)).join("") : emptyLane("No upcoming campus events.");
+  document.getElementById("campusLaneThisWeek").innerHTML  = campusCat.thisWeek.length  ? campusCat.thisWeek.map(p  => pipelineCard(p, today, false)).join("") : emptyLane("Nothing this week.");
+  document.getElementById("campusLaneCompleted").innerHTML = campusCat.completed.length ? campusCat.completed.map(p => pipelineCard(p, today, false)).join("") : emptyLane("No completed events.");
 }
 
 function getTimeOfDay(){
@@ -3907,7 +3947,22 @@ function emptyLane(msg){
   return `<div style="text-align:center;padding:24px 12px;border:2px dashed var(--border);border-radius:12px;font-size:12px;color:var(--muted);">${msg}</div>`;
 }
 
-function pipelineCard(p, today){
+function switchPipelineTab(tab){
+  const isMyTab = tab === "my";
+  document.getElementById("myPipelineView").style.display     = isMyTab ? "block" : "none";
+  document.getElementById("campusPipelineView").style.display = isMyTab ? "none"  : "block";
+
+  const myBtn     = document.getElementById("toggleMyEvents");
+  const campusBtn = document.getElementById("toggleCampusEvents");
+  myBtn.style.background     = isMyTab ? "#7c3aed" : "white";
+  myBtn.style.color          = isMyTab ? "white"   : "var(--muted)";
+  myBtn.style.borderColor    = isMyTab ? "#7c3aed" : "var(--border)";
+  campusBtn.style.background = isMyTab ? "white"   : "#d97706";
+  campusBtn.style.color      = isMyTab ? "var(--muted)" : "white";
+  campusBtn.style.borderColor= isMyTab ? "var(--border)" : "#d97706";
+}
+
+function pipelineCard(p, today, isMine = true){
   const execSC  = EXECUTION_STATUS[p.execution_status || "pending"];
   const dateStr = p.proposed_date ? new Date(p.proposed_date).toLocaleDateString("en-GB",{day:"numeric",month:"short"}) : "—";
   const daysLeft = p.proposed_date ? Math.ceil((new Date(p.proposed_date) - today) / 86400000) : null;
@@ -3917,19 +3972,21 @@ function pipelineCard(p, today){
     ? `<img class="pipeline-card-cover" src="${esc(p.cover_image)}" />`
     : `<div class="pipeline-card-cover-placeholder" style="background:linear-gradient(135deg,#667eea,#764ba2);">🎭</div>`;
 
-  const execBtns = [
-    { s:"in_progress",     l:"▶️ In Progress" },
-    { s:"completed",       l:"✅ Completed" },
-    { s:"report_submitted",l:"📝 Report" },
-    { s:"postponed",       l:"⏸️ Postponed" },
-    { s:"cancelled",       l:"🚫 Cancelled" },
-  ].map(b => {
-    const isCurr = (p.execution_status || "pending") === b.s;
-    const sc     = EXECUTION_STATUS[b.s];
-    return `<button class="pipeline-exec-btn ${isCurr ? "active" : ""}"
-      style="${isCurr ? `background:${sc.bg};color:${sc.color};border-color:${sc.color};` : ""}"
-      onclick="updateExecutionStatus('${p.id}','${b.s}')">${b.l}</button>`;
-  }).join("");
+  const execBtnsHtml = isMine ? `<div class="pipeline-card-exec-btns">${
+    [
+      { s:"in_progress",     l:"▶️ In Progress" },
+      { s:"completed",       l:"✅ Completed" },
+      { s:"report_submitted",l:"📝 Report" },
+      { s:"postponed",       l:"⏸️ Postponed" },
+      { s:"cancelled",       l:"🚫 Cancelled" },
+    ].map(b => {
+      const isCurr = (p.execution_status || "pending") === b.s;
+      const sc     = EXECUTION_STATUS[b.s];
+      return `<button class="pipeline-exec-btn ${isCurr ? "active" : ""}"
+        style="${isCurr ? `background:${sc.bg};color:${sc.color};border-color:${sc.color};` : ""}"
+        onclick="updateExecutionStatus('${p.id}','${b.s}')">${b.l}</button>`;
+    }).join("")
+  }</div>` : `<div style="font-size:11px;color:var(--muted);margin-top:6px;">👤 ${esc(p.assigned_to || "—")}</div>`;
 
   return `
     <div class="pipeline-card" style="${urgency}">
@@ -3945,7 +4002,7 @@ function pipelineCard(p, today){
         <div style="margin-bottom:8px;">
           <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:${execSC.bg};color:${execSC.color};">${execSC.emoji} ${execSC.label}</span>
         </div>
-        <div class="pipeline-card-exec-btns">${execBtns}</div>
+        ${execBtnsHtml}
       </div>
     </div>`;
 }
