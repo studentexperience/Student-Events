@@ -1778,6 +1778,7 @@
         <label>Role</label>
         <select id="permRole" onchange="handlePermRoleChange(this)"
           style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;width:100%;background:white;outline:none;">
+          <option value="event_lead">Event Lead</option>
           <option value="admin">Admin</option>
           <option value="super_admin">Super Admin</option>
         </select>
@@ -3078,10 +3079,38 @@ function renderAdmins(list){
 }
 
 function handlePermRoleChange(sel){
-  const isSuperAdmin = sel.value === "super_admin";
-  document.getElementById("superAdminNote").style.display     = isSuperAdmin ? "block" : "none";
-  document.getElementById("permRestrictedSection").style.opacity  = isSuperAdmin ? "0.4"  : "1";
+  const role        = sel.value;
+  const isSuperAdmin = role === "super_admin";
+  const isEventLead  = role === "event_lead";
+
+  // Show note for Super Admin
+  document.getElementById("superAdminNote").style.display = isSuperAdmin ? "block" : "none";
+
+  // Show event lead note
+  let leadNote = document.getElementById("eventLeadNote");
+  if(!leadNote){
+    leadNote = document.createElement("div");
+    leadNote.id = "eventLeadNote";
+    leadNote.style.cssText = "font-size:11px;color:var(--muted);margin-top:6px;padding:8px 12px;background:#f0fdf4;border-radius:8px;";
+    leadNote.textContent = "ℹ️ Event Leads can do everything Admins can, except assign events to other leads and manage admins.";
+    document.getElementById("superAdminNote").after(leadNote);
+  }
+  leadNote.style.display = isEventLead ? "block" : "none";
+
+  // Grey out permissions section for super admin
+  document.getElementById("permRestrictedSection").style.opacity      = isSuperAdmin ? "0.4" : "1";
   document.getElementById("permRestrictedSection").style.pointerEvents = isSuperAdmin ? "none" : "";
+
+  // If switching to event_lead, auto-set assign_events to false
+  if(isEventLead){
+    const assignEl = document.getElementById("permAssign");
+    if(assignEl) assignEl.checked = false;
+  }
+  // If switching to admin, auto-set assign_events to true
+  if(role === "admin"){
+    const assignEl = document.getElementById("permAssign");
+    if(assignEl) assignEl.checked = true;
+  }
 }
 
 /* ══ PERMISSIONS MODAL ══ */
@@ -3172,18 +3201,18 @@ async function savePermissions(){
   }
 
   const perms = role === "super_admin"
-    ? { ...DEFAULT_PERMS, campus: ["All"] }
+    ? { ...ROLE_DEFAULTS.super_admin, campus: ["All"] }
     : {
-        campus:          campuses,
-        manage_events:   document.getElementById("permEvents").checked,
-        manage_clubs:    document.getElementById("permClubs").checked,
-        manage_news:     document.getElementById("permNews").checked,
-        manage_forms:    document.getElementById("permForms").checked,
-        edit_home:       document.getElementById("permHome").checked,
-        view_dashboard:  document.getElementById("permDashboard").checked,
-        download_charts: document.getElementById("permDownload").checked,
-        assign_events:   document.getElementById("permAssign").checked,
-        import_csv:      document.getElementById("permImport").checked,
+        campus:           campuses,
+        manage_events:    document.getElementById("permEvents").checked,
+        manage_clubs:     document.getElementById("permClubs").checked,
+        manage_news:      document.getElementById("permNews").checked,
+        manage_forms:     document.getElementById("permForms").checked,
+        edit_home:        document.getElementById("permHome").checked,
+        view_dashboard:   document.getElementById("permDashboard").checked,
+        download_charts:  document.getElementById("permDownload").checked,
+        assign_events:    role === "event_lead" ? false : document.getElementById("permAssign").checked,
+        import_csv:       document.getElementById("permImport").checked,
         manage_proposals: true,
       };
 
