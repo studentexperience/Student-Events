@@ -97,7 +97,7 @@
     /* ===== Two-column content: filters + cards ===== */
     .page-grid{
       display:grid;
-      grid-template-columns: 320px 1fr;
+      grid-template-columns: 280px 1fr;
       gap:18px;
       align-items:start;
     }
@@ -111,33 +111,34 @@
       padding:16px;
       position:sticky;
       top:16px;
+      min-width:0;
     }
 
     .filter-title{
-      font-size:14px;
+      font-size:13px;
       font-weight:600;
-      margin:2px 0 14px;
+      margin:2px 0 12px;
       color:#111;
     }
 
     .field{
-      margin:0 0 14px;
+      margin:0 0 12px;
     }
     .field label{
       display:block;
-      font-size:13px;
+      font-size:12px;
       color:#111;
       font-weight:600;
-      margin-bottom:6px;
+      margin-bottom:5px;
     }
     .field input,
     .field select{
       width:100%;
-      padding:10px 12px;
-      border-radius:10px;
+      padding:8px 10px;
+      border-radius:9px;
       border:1px solid #d1d5db;
       font-family:'Poppins',sans-serif;
-      font-size:14px;
+      font-size:13px;
       background:#fff;
     }
 
@@ -148,15 +149,15 @@
     }
     .btn{
       width:100%;
-      padding:10px 12px;
-      border-radius:10px;
+      padding:9px 10px;
+      border-radius:9px;
       border:1px solid var(--ink);
       background:var(--ink);
       color:#fff;
       font-weight:600;
       cursor:pointer;
       font-family:'Poppins',sans-serif;
-      font-size:14px;
+      font-size:13px;
     }
     .btn.secondary{
       background:#fff;
@@ -353,11 +354,12 @@
     .interested-row {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-top: 12px;
+      gap: 6px;
+      margin-top: 10px;
       padding-top: 10px;
       border-top: 1px dashed rgba(0,0,0,.1);
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
+      min-width: 0;
     }
     .interested-btn {
       flex: 1;
@@ -365,20 +367,25 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
-      padding: 7px 10px;
+      gap: 4px;
+      padding: 6px 6px;
       border: 1.5px solid rgba(0,0,0,.12);
       background: white;
       border-radius: 999px;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       color: var(--ink);
       cursor: pointer;
       font-family: 'Poppins', sans-serif;
       transition: all .18s ease;
+      overflow: hidden;
       white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .interested-btn span:last-child {
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .interested-btn:hover {
       border-color: #ef4444;
@@ -446,15 +453,30 @@
 
     /* =============================================
        RESPONSIVE BREAKPOINTS
-       1280px+ : 4 cards  (large desktop)
-       1024px  : 3 cards  (laptop / small desktop)
-        768px  : 2 cards  (tablet landscape + portrait)
-        480px  : 1 card   (phone)
+       1400px+ : 4 cards  (large desktop)
+       1280px  : 3 cards  (laptop)
+       1024px  : 2 cards  (small laptop) — filter shrinks
+        860px  : filter collapses
+        540px  : 1 card   (phone)
     ============================================= */
 
-    /* Laptop / small desktop */
+    /* Large desktop — 4 cards */
+    @media (min-width: 1400px){
+      .cards{ grid-template-columns: repeat(4, 1fr); }
+    }
+
+    /* Laptop — shrink filter to give cards more room */
     @media (max-width: 1280px){
+      .page-grid{ grid-template-columns: 220px 1fr; }
       .cards{ grid-template-columns: repeat(3, 1fr); }
+      .field input, .field select{ font-size:12px; padding:7px 9px; }
+    }
+
+    /* Small laptop — shrink filter further */
+    @media (max-width: 1100px){
+      .page-grid{ grid-template-columns: 190px 1fr; gap:14px; }
+      .cards{ grid-template-columns: repeat(2, 1fr); }
+      .filters{ padding:12px; }
     }
 
     /* Tablet landscape — side nav collapses into topbar */
@@ -473,18 +495,14 @@
       .nav.open{ display:block; }
       .nav-toggle{ display:block; }
       .content{ padding:18px; }
-      .page-grid{ grid-template-columns: 260px 1fr; }
+      .page-grid{ grid-template-columns: 180px 1fr; gap:12px; }
       .cards{ grid-template-columns: repeat(2, 1fr); }
     }
 
-    /* Tablet portrait */
+    /* Tablet portrait — filter collapses to top bar */
     @media (max-width: 860px){
       .page-grid{ grid-template-columns: 1fr; }
-      .filters{
-        position:relative;
-        top:auto;
-      }
-      /* Filter panel collapsible on tablet/mobile */
+      .filters{ position:relative; top:auto; }
       .filter-toggle{ display:block; }
       .filters-inner{ display:none; }
       .filters-inner.open{ display:block; }
@@ -495,10 +513,7 @@
     @media (max-width: 540px){
       .content{ padding:12px; }
       .page-title{ font-size:22px; margin-bottom:12px; }
-      .cards{
-        grid-template-columns: 1fr;
-        gap:14px;
-      }
+      .cards{ grid-template-columns: 1fr; gap:14px; }
       .cover-img,
       .cover-placeholder{ height:160px; }
       .organizer-banner{ font-size:11.5px; padding:8px 14px; }
@@ -508,8 +523,8 @@
     .add-to-cal-btn {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      padding: 6px 10px;
+      gap: 3px;
+      padding: 6px 8px;
       background: #f0fdf4;
       color: #16a34a;
       border: 1.5px solid #bbf7d0;
