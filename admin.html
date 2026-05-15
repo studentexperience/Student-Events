@@ -2581,6 +2581,9 @@ async function checkSession(){
   }
 }
 
+// safeStr: escapes single quotes for use inside onclick='...' attributes
+function safeStr(s){ return String(s||"").replace(/\\/g,"\\\\").replace(/'/g,"\\'"); }
+
 /* ── Permission helpers ── */
 const DEFAULT_PERMS = {
   campus: ["All"],
@@ -3266,7 +3269,7 @@ function renderClubs(list){
       <td>${esc(c.convenor || "—")}</td>
       <td><div class="td-actions">
         ${canEdit ? `<button class="btn btn-secondary btn-sm" onclick="openClubModal('${c.id}')">✏️ Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="confirmDelete('club','${c.id}','${esc(c.name)}')">🗑️ Delete</button>`
+        <button class="btn btn-danger btn-sm" onclick="confirmDelete('club','${c.id}','${safeStr(c.name)}')">🗑️ Delete</button>`
         : `<span style="font-size:11px;color:var(--muted);">No access</span>`}
       </div></td>
     </tr>`;
@@ -3371,7 +3374,7 @@ function renderEvents(list){
       <td title="${esc(e.venue||'')}">${esc(e.venue || "—")}</td>
       <td><div class="td-actions">
         ${canEdit ? `<button class="btn btn-secondary btn-sm" onclick="openEventModal('${e.id}')">✏️ Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="confirmDelete('event','${e.id}','${esc(e.name)}')">🗑️ Delete</button>`
+        <button class="btn btn-danger btn-sm" onclick="confirmDelete('event','${e.id}','${safeStr(e.name)}')">🗑️ Delete</button>`
         : `<span style="font-size:11px;color:var(--muted);">No access</span>`}
       </div></td>
     </tr>`;
@@ -3769,7 +3772,7 @@ function renderNews(list){
       <td><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:${n.published ? "#f0fdf4" : "#fef2f2"};color:${n.published ? "#16a34a" : "#dc2626"};">${n.published ? "Published" : "Draft"}</span></td>
       <td><div class="td-actions">
         ${canEdit ? `<button class="btn btn-secondary btn-sm" onclick="openNewsModal('${n.id}')">✏️ Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="confirmDelete('news','${n.id}','${esc(n.title)}')">🗑️</button>`
+        <button class="btn btn-danger btn-sm" onclick="confirmDelete('news','${n.id}','${safeStr(n.title)}')">🗑️</button>`
         : `<span style="font-size:11px;color:var(--muted);">No access</span>`}
       </div></td>
     </tr>`;
@@ -3889,7 +3892,7 @@ function renderForms(list){
       <td><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:${f.active ? "#f0fdf4" : "#fef2f2"};color:${f.active ? "#16a34a" : "#dc2626"};">${f.active ? "Active" : "Inactive"}</span></td>
       <td><div class="td-actions">
         ${canEdit ? `<button class="btn btn-secondary btn-sm" onclick="openFormModal('${f.id}')">✏️ Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="confirmDelete('form','${f.id}','${esc(f.title)}')">🗑️</button>`
+        <button class="btn btn-danger btn-sm" onclick="confirmDelete('form','${f.id}','${safeStr(f.title)}')">🗑️</button>`
         : `<span style="font-size:11px;color:var(--muted);">No access</span>`}
       </div></td>
     </tr>`;
