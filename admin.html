@@ -4048,7 +4048,8 @@ async function loadMyAssignedEvents(){
       ? currentPermissions.campus : [currentPermissions.campus || "All"];
     const showAll      = currentRole === "super_admin" || adminCampus.includes("All");
 
-    let q = sb.from("event_proposals").select("*").not("assigned_to", "is", null);
+    let q = sb.from("event_proposals").select("*").not("assigned_to", "is", null)
+      .not("status", "in", '("cancelled","declined")');
     if(campusFilter)    q = q.eq("campus", campusFilter);
     else if(!showAll)   q = q.in("campus", adminCampus);
     const { data: allAssigned } = await q.order("proposed_date", { ascending: true });
@@ -4057,11 +4058,13 @@ async function loadMyAssignedEvents(){
     // Event Lead: own events + campus others
     const { data: myEvents, error: myErr } = await sb.from("event_proposals")
       .select("*").eq("assigned_to", myEmail)
+      .not("status", "in", '("cancelled","declined")')
       .order("proposed_date", { ascending: true });
     if(myErr){ showToast("Error: " + myErr.message, "error"); return; }
 
     let cq = sb.from("event_proposals").select("*")
-      .eq("status","assigned").neq("assigned_to", myEmail);
+      .eq("status","assigned").neq("assigned_to", myEmail)
+      .not("execution_status", "eq", "cancelled");
     if(myCampus !== "All") cq = cq.eq("campus", myCampus);
     const { data: campusEvents } = await cq.order("proposed_date", { ascending: true });
 
