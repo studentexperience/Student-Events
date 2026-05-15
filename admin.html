@@ -2674,11 +2674,10 @@ function showAdminPanel(){
   if(hasPermission("edit_home"))       loadPages();
   if(hasPermission("manage_proposals")){ loadClubApprovals(); loadProposals(); }
 
-  // Team Overview — show for admins and super admins
+  // Team Overview — show for admins and super admins ONLY (not event leads)
   if(currentRole === "admin" || currentRole === "super_admin"){
     const navBtn = document.getElementById("teamOverviewNavBtn");
     if(navBtn) navBtn.style.display = "";
-    // Show campus filter for super admins only
     if(currentRole === "super_admin"){
       const filterRow = document.getElementById("teamCampusFilterRow");
       if(filterRow) filterRow.style.display = "block";
@@ -4161,6 +4160,36 @@ function pipelineCard(p, today, isMine = true){
     }).join("")
   }</div>` : `<div style="font-size:11px;color:var(--muted);margin-top:6px;">👤 ${esc(p.assigned_to || "—")}</div>`;
 
+  // Notes section — visible on both my cards and campus cards
+  const notesHtml = `
+    <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e5e7eb;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:5px;">
+        📝 Lead Notes ${!isMine ? `<span style="font-weight:400;font-style:italic;">(by ${esc(p.assigned_to||"")})</span>` : ""}
+      </div>
+      ${isMine ? `
+        <textarea id="note-${p.id}"
+          style="width:100%;padding:7px 10px;border:1.5px solid #e5e7eb;border-radius:8px;
+          font-family:'Poppins',sans-serif;font-size:12px;resize:vertical;min-height:68px;outline:none;
+          transition:border .15s;line-height:1.5;"
+          onfocus="this.style.borderColor='var(--accent)'"
+          onblur="this.style.borderColor='#e5e7eb'"
+          placeholder="Add notes about progress, contacts, requirements or anything that helps a colleague take over…"
+        >${esc(p.lead_notes || "")}</textarea>
+        <button onclick="saveLeadNote('${p.id}')"
+          style="margin-top:5px;padding:5px 12px;background:var(--accent);color:white;border:none;
+          border-radius:7px;font-family:'Poppins',sans-serif;font-size:11px;font-weight:700;
+          cursor:pointer;transition:opacity .15s;"
+          onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+          💾 Save Note
+        </button>
+      ` : `
+        <div style="font-size:12px;color:${p.lead_notes ? "var(--ink)" : "var(--muted)"};
+          background:#f9fafb;border-radius:8px;padding:8px 10px;line-height:1.6;min-height:40px;">
+          ${p.lead_notes ? esc(p.lead_notes) : "No notes added yet."}
+        </div>
+      `}
+    </div>`;
+
   return `
     <div class="pipeline-card" style="${urgency}">
       ${coverImg}
@@ -4176,8 +4205,26 @@ function pipelineCard(p, today, isMine = true){
           <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:${execSC.bg};color:${execSC.color};">${execSC.emoji} ${execSC.label}</span>
         </div>
         ${execBtnsHtml}
+        ${notesHtml}
       </div>
     </div>`;
+}
+
+async function saveLeadNote(proposalId){
+  const textarea = document.getElementById(`note-${proposalId}`);
+  if(!textarea) return;
+  const note = textarea.value.trim();
+
+  const { error } = await sb.from("event_proposals")
+    .update({ lead_notes: note || null, updated_at: new Date().toISOString() })
+    .eq("id", proposalId);
+
+  if(error){ showToast("Failed to save note: " + error.message, "error"); return; }
+  showToast("📝 Note saved!");
+
+  // Update local cache so it shows without a full reload
+  const proposal = (await sb.from("event_proposals").select("lead_notes").eq("id", proposalId).single()).data;
+  if(proposal) textarea.value = proposal.lead_notes || "";
 }
 
 async function updateExecutionStatus(proposalId, status){
@@ -5005,6 +5052,7 @@ async function loadTeamOverview(){
         <div style="flex:1;min-width:0;">
           <div style="font-weight:600;font-size:13px;">${esc(p.event_name)}</div>
           <div style="font-size:11px;color:var(--muted);">${esc(p.club_name)} · ${dt}${isOverdue ? ' <span style="color:#dc2626;font-weight:700;">· OVERDUE</span>' : ''}</div>
+          ${p.lead_notes ? `<div style="font-size:11px;margin-top:3px;padding:4px 8px;background:#fef9c3;border-radius:6px;color:#78350f;">📝 ${esc(p.lead_notes)}</div>` : ""}
         </div>
         <span style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:999px;background:${ex.bg};color:${ex.color};white-space:nowrap;">${ex.label}</span>
       </div>`;
