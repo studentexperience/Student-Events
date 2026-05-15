@@ -3802,13 +3802,14 @@ async function loadMyAssignedEvents(){
   const myName   = myEmail.split("@")[0].replace(/\./g," ").replace(/\b\w/g, l => l.toUpperCase());
   const myCampus = Array.isArray(currentPermissions.campus)
     ? currentPermissions.campus[0] : (currentPermissions.campus || "All");
-  const today    = new Date(); today.setHours(0,0,0,0);
-  const week     = new Date(today); week.setDate(week.getDate() + 7);
+
+  const todayMs  = new Date(); todayMs.setHours(0,0,0,0);
 
   // Fetch my events
-  const { data: myEvents } = await sb.from("event_proposals")
+  const { data: myEvents, error: myErr } = await sb.from("event_proposals")
     .select("*").eq("assigned_to", myEmail)
     .order("proposed_date", { ascending: true });
+  if(myErr){ showToast("Error: " + myErr.message, "error"); return; }
 
   // Fetch campus events (other leads)
   let cq = sb.from("event_proposals").select("*")
@@ -3824,118 +3825,89 @@ async function loadMyAssignedEvents(){
   badge.textContent   = myList.length;
   badge.style.display = myList.length > 0 ? "inline-block" : "none";
 
-  // ── Categorise into lanes — fix date comparison ──
-  const doneStatuses = ["completed","report_submitted","cancelled","postponed"];
+  // ── Categorise ──
+  const DONE = ["completed","report_submitted","cancelled","postponed"];
 
-  function categorizePipeline(list){
-    const upcoming = [], thisWeek = [], completed = [];
-    list.forEach(p => {
-      const execStatus = p.execution_status || "pending";
-      const execDone   = doneStatuses.includes(execStatus);
-      if(execDone){
-        completed.push(p);
-        return;
-      }
-      if(!p.proposed_date){ upcoming.push(p); return; }
-      const d    = new Date(p.proposed_date); d.setHours(0,0,0,0);
-      const diff = Math.round((d - today) / 86400000);
-      // Past (overdue) or within 7 days → This Week
-      // More than 7 days in future → Upcoming
-      if(diff > 7) upcoming.push(p);
-      else         thisWeek.push(p); // includes today, tomorrow, this week, and overdue
-    });
-    return { upcoming, thisWeek, completed };
+  function getLane(p){
+    const exec = p.execution_status || "pending";
+    if(DONE.includes(exec)) return "completed";
+    if(!p.proposed_date)    return "upcoming";
+    const d    = new Date(p.proposed_date); d.setHours(0,0,0,0);
+    const diff = Math.round((d.getTime() - todayMs.getTime()) / 86400000);
+    return diff > 7 ? "upcoming" : "thisWeek";
   }
 
-  const { upcoming, thisWeek, completed } = categorizePipeline(myList);
-  const campusCat = categorizePipeline(campusList);
+  function splitLanes(list){
+    const lanes = { upcoming:[], thisWeek:[], completed:[] };
+    list.forEach(p => lanes[getLane(p)].push(p));
+    return lanes;
+  }
 
-  // Update MY lane counts
-  document.getElementById("upcomingCount").textContent  = upcoming.length;
-  document.getElementById("thisWeekCount").textContent  = thisWeek.length;
-  document.getElementById("completedCount").textContent = completed.length;
+  const my     = splitLanes(myList);
+  const campus = splitLanes(campusList);
 
-  // Update CAMPUS lane counts
-  document.getElementById("campusUpcomingCount").textContent  = campusCat.upcoming.length;
-  document.getElementById("campusThisWeekCount").textContent  = campusCat.thisWeek.length;
-  document.getElementById("campusCompletedCount").textContent = campusCat.completed.length;
+  // ── Update lane badge counts ──
+  document.getElementById("upcomingCount").textContent        = my.upcoming.length;
+  document.getElementById("thisWeekCount").textContent        = my.thisWeek.length;
+  document.getElementById("completedCount").textContent       = my.completed.length;
+  document.getElementById("campusUpcomingCount").textContent  = campus.upcoming.length;
+  document.getElementById("campusThisWeekCount").textContent  = campus.thisWeek.length;
+  document.getElementById("campusCompletedCount").textContent = campus.completed.length;
 
   // ── Today's Brief ──
-  const briefEl = document.getElementById("todaysBrief");
-  const todayStr = today.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
+  const todayStr = todayMs.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
   const nudges   = [];
-
-  // Event happening today or tomorrow
-  const imminentEvents = myList.filter(p => {
-    if(!p.proposed_date) return false;
-    const d = new Date(p.proposed_date); d.setHours(0,0,0,0);
-    const diff = Math.ceil((d - today) / 86400000);
-    return diff >= 0 && diff <= 1;
-  });
-  imminentEvents.forEach(p => {
+  myList.forEach(p => {
+    if(!p.proposed_date) return;
     const d    = new Date(p.proposed_date); d.setHours(0,0,0,0);
-    const diff = Math.ceil((d - today) / 86400000);
-    nudges.push({ cls:"urgent", emoji:"🚨", text:`"${p.event_name}" is ${diff === 0 ? "TODAY" : "TOMORROW"} — make sure everything is ready!` });
+    const diff = Math.round((d.getTime() - todayMs.getTime()) / 86400000);
+    const exec = p.execution_status || "pending";
+    if(diff === 0 && !DONE.includes(exec))
+      nudges.push({ cls:"urgent",  emoji:"🚨", text:`"${p.event_name}" is TODAY — is everything ready?` });
+    else if(diff === 1 && !DONE.includes(exec))
+      nudges.push({ cls:"urgent",  emoji:"⚡", text:`"${p.event_name}" is TOMORROW.` });
+    else if(diff < 0 && !DONE.includes(exec))
+      nudges.push({ cls:"warning", emoji:"⏰", text:`"${p.event_name}" was on ${new Date(p.proposed_date).toLocaleDateString("en-GB",{day:"numeric",month:"short"})} — please update its status.` });
+    else if(diff <= 7 && exec === "pending")
+      nudges.push({ cls:"warning", emoji:"📋", text:`"${p.event_name}" is this week and still Pending — update the status.` });
   });
+  if(!nudges.length && myList.length > 0)
+    nudges.push({ cls:"good", emoji:"✨", text:"All your events are on track. Great work!" });
 
-  // Events this week with no progress
-  thisWeek.filter(p => (p.execution_status || "pending") === "pending").forEach(p => {
-    nudges.push({ cls:"warning", emoji:"⚡", text:`"${p.event_name}" is this week and still marked as Pending — update the status.` });
-  });
-
-  // Overdue report
-  myList.filter(p => {
-    if(!p.proposed_date) return false;
-    const d = new Date(p.proposed_date); d.setHours(0,0,0,0);
-    return d < today && p.execution_status === "completed";
-  }).forEach(p => {
-    nudges.push({ cls:"warning", emoji:"📝", text:`Report for "${p.event_name}" is completed but not submitted yet.` });
-  });
-
-  // All good message
-  if(!nudges.length && myList.length > 0){
-    nudges.push({ cls:"good", emoji:"✨", text:`All your events are on track. Great work!` });
-  }
-
-  const briefHTML = myList.length === 0 ? "" : `
+  document.getElementById("todaysBrief").innerHTML = myList.length === 0 ? "" : `
     <div class="todays-brief">
       <div class="brief-greeting">Good ${getTimeOfDay()}, ${myName}! 👋</div>
-      <div style="font-size:13px;opacity:.8;">${todayStr} · You have <strong>${myList.length}</strong> event${myList.length !== 1 ? "s" : ""} assigned${thisWeek.length > 0 ? ` · <strong>${thisWeek.length}</strong> this week` : ""}</div>
-      ${nudges.length > 0 ? `
-      <div class="brief-items">
-        ${nudges.map(n => `<div class="brief-item ${n.cls}">${n.emoji} ${n.text}</div>`).join("")}
-      </div>` : ""}
+      <div style="font-size:13px;opacity:.8;">${todayStr} · <strong>${myList.length}</strong> event${myList.length!==1?"s":""} assigned${my.thisWeek.length>0?` · <strong>${my.thisWeek.length}</strong> need attention`:""}
+      </div>
+      <div class="brief-items">${nudges.map(n=>`<div class="brief-item ${n.cls}">${n.emoji} ${n.text}</div>`).join("")}</div>
     </div>`;
-  briefEl.innerHTML = briefHTML;
 
   // ── Mini Dashboard ──
   const active    = myList.filter(p => ["pending","in_progress"].includes(p.execution_status||"pending")).length;
   const doneCount = myList.filter(p => ["completed","report_submitted"].includes(p.execution_status||"pending")).length;
   const closed    = myList.filter(p => ["cancelled","postponed"].includes(p.execution_status||"pending")).length;
-
   document.getElementById("leadDashboard").innerHTML = [
-    { num:myList.length,     label:"Total Assigned",   color:"#7c3aed", icon:"📌" },
-    { num:thisWeek.length,   label:"This Week",         color:"#b45309", icon:"⚡" },
-    { num:active,            label:"Active",            color:"#2563eb", icon:"▶️" },
-    { num:doneCount,         label:"Completed",         color:"#15803d", icon:"✅" },
-    { num:closed,            label:"Closed",            color:"#dc2626", icon:"🚫" },
-    { num:campusList.length, label:"Campus Events",     color:"#d97706", icon:"👥" },
-  ].map(s => `
+    { num:myList.length,     label:"Total Assigned", color:"#7c3aed", icon:"📌" },
+    { num:my.thisWeek.length,label:"This Week",       color:"#b45309", icon:"⚡" },
+    { num:active,            label:"Active",          color:"#2563eb", icon:"▶️" },
+    { num:doneCount,         label:"Completed",       color:"#15803d", icon:"✅" },
+    { num:closed,            label:"Closed",          color:"#dc2626", icon:"🚫" },
+    { num:campusList.length, label:"Campus Events",   color:"#d97706", icon:"👥" },
+  ].map(s=>`
     <div style="background:white;border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);border-top:3px solid ${s.color};">
       <div style="font-size:22px;font-weight:800;color:${s.color};">${s.num}</div>
       <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:2px;">${s.icon} ${s.label}</div>
     </div>`).join("");
 
-  // ── Render MY Lanes ──
-  document.getElementById("laneUpcoming").innerHTML  = upcoming.length  ? upcoming.map(p  => pipelineCard(p, today, true)).join("")  : emptyLane("No upcoming events.");
-  document.getElementById("laneThisWeek").innerHTML  = thisWeek.length  ? thisWeek.map(p  => pipelineCard(p, today, true)).join("")  : emptyLane("Nothing urgent this week! 🎉");
-  document.getElementById("laneCompleted").innerHTML = completed.length ? completed.map(p => pipelineCard(p, today, true)).join("")  : emptyLane("No completed events yet.");
-
-  // ── Render CAMPUS Lanes (read-only — no exec buttons) ──
-  document.getElementById("campusLaneUpcoming").innerHTML  = campusCat.upcoming.length  ? campusCat.upcoming.map(p  => pipelineCard(p, today, false)).join("") : emptyLane("No upcoming campus events.");
-  document.getElementById("campusLaneThisWeek").innerHTML  = campusCat.thisWeek.length  ? campusCat.thisWeek.map(p  => pipelineCard(p, today, false)).join("") : emptyLane("Nothing this week.");
-  document.getElementById("campusLaneCompleted").innerHTML = campusCat.completed.length ? campusCat.completed.map(p => pipelineCard(p, today, false)).join("") : emptyLane("No completed events.");
+  // ── Render Lanes ──
+  document.getElementById("laneUpcoming").innerHTML        = my.upcoming.length  ? my.upcoming.map(p  => pipelineCard(p, todayMs, true)).join("")  : emptyLane("No upcoming events.");
+  document.getElementById("laneThisWeek").innerHTML        = my.thisWeek.length  ? my.thisWeek.map(p  => pipelineCard(p, todayMs, true)).join("")  : emptyLane("Nothing urgent this week! 🎉");
+  document.getElementById("laneCompleted").innerHTML       = my.completed.length ? my.completed.map(p => pipelineCard(p, todayMs, true)).join("")  : emptyLane("No completed events yet.");
+  document.getElementById("campusLaneUpcoming").innerHTML  = campus.upcoming.length  ? campus.upcoming.map(p  => pipelineCard(p, todayMs, false)).join("") : emptyLane("No upcoming campus events.");
+  document.getElementById("campusLaneThisWeek").innerHTML  = campus.thisWeek.length  ? campus.thisWeek.map(p  => pipelineCard(p, todayMs, false)).join("") : emptyLane("Nothing this week.");
+  document.getElementById("campusLaneCompleted").innerHTML = campus.completed.length ? campus.completed.map(p => pipelineCard(p, todayMs, false)).join("") : emptyLane("No completed events.");
 }
+
 
 function getTimeOfDay(){
   const h = new Date().getHours();
