@@ -559,6 +559,11 @@
       color: var(--accent);
       border: 1px solid #bfdbfe;
     }
+    .role-badge.event_lead {
+      background: #f0fdf4;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
 
     /* ── CHARTS ── */
     .charts-section-title {
@@ -1969,15 +1974,22 @@
       <!-- Proposal details -->
       <div id="reviewProposalDetails" style="margin-bottom:20px;"></div>
 
-      <!-- Status action -->
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px;">Update Status</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
-        <button class="btn" style="background:#f0fdf4;color:#15803d;border:1.5px solid #bbf7d0;" onclick="updateProposalStatus('approved')">✅ Approve</button>
-        <button class="btn" style="background:#fef9c3;color:#854d0e;border:1.5px solid #fde68a;" onclick="updateProposalStatus('under_review')">🔍 Mark Under Review</button>
-        <button class="btn" style="background:#fff7ed;color:#c2410c;border:1.5px solid #fed7aa;" onclick="updateProposalStatus('needs_info')">💬 Request More Info</button>
-        <button class="btn" style="background:#fef2f2;color:#b91c1c;border:1.5px solid #fecaca;" onclick="updateProposalStatus('declined')">❌ Decline</button>
-        <button class="btn" style="background:#f3f4f6;color:#374151;border:1.5px solid #d1d5db;" onclick="updateProposalStatus('postponed')">⏸️ Postpone</button>
-        <button class="btn" style="background:#fef2f2;color:#9f1239;border:1.5px solid #fecaca;" onclick="updateProposalStatus('cancelled')">🚫 Cancel</button>
+      <!-- Status action — only admins and super admins can change status -->
+      <div id="statusActionSection">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px;">Update Status</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+          <button class="btn" style="background:#f0fdf4;color:#15803d;border:1.5px solid #bbf7d0;" onclick="updateProposalStatus('approved')">✅ Approve</button>
+          <button class="btn" style="background:#fef9c3;color:#854d0e;border:1.5px solid #fde68a;" onclick="updateProposalStatus('under_review')">🔍 Mark Under Review</button>
+          <button class="btn" style="background:#fff7ed;color:#c2410c;border:1.5px solid #fed7aa;" onclick="updateProposalStatus('needs_info')">💬 Request More Info</button>
+          <button class="btn" style="background:#fef2f2;color:#b91c1c;border:1.5px solid #fecaca;" onclick="updateProposalStatus('declined')">❌ Decline</button>
+          <button class="btn" style="background:#f3f4f6;color:#374151;border:1.5px solid #d1d5db;" onclick="updateProposalStatus('postponed')">⏸️ Postpone</button>
+          <button class="btn" style="background:#fef2f2;color:#9f1239;border:1.5px solid #fecaca;" onclick="updateProposalStatus('cancelled')">🚫 Cancel</button>
+        </div>
+      </div>
+
+      <!-- Event Lead view-only notice -->
+      <div id="eventLeadViewNote" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 16px;font-size:13px;color:#15803d;margin-bottom:16px;">
+        👁️ You can view this proposal. Only Admins and Super Admins can change its status or assign it.
       </div>
 
       <!-- Assign to Event Lead -->
@@ -3048,16 +3060,20 @@ function renderAdmins(list){
     const campuses  = Array.isArray(rawCampus) ? rawCampus : [rawCampus];
     const campusLabel = campuses.includes("All") ? "All Campuses" : campuses.join(", ");
     const isSuperAdmin = a.role === "super_admin";
+    const isEventLead  = a.role === "event_lead";
     const isMe         = a.email === currentUser.email;
+    const roleLabel    = isSuperAdmin ? "Super Admin" : isEventLead ? "Event Lead" : "Admin";
+    const avatarBg     = isSuperAdmin ? "#fef3c7" : isEventLead ? "#f0fdf4" : "var(--accent-light)";
+    const avatarColor  = isSuperAdmin ? "#92400e" : isEventLead ? "#15803d" : "var(--accent)";
     return `
       <div class="admin-item">
-        <div class="admin-avatar" style="background:${isSuperAdmin ? '#fef3c7' : 'var(--accent-light)'};color:${isSuperAdmin ? '#92400e' : 'var(--accent)'}">
+        <div class="admin-avatar" style="background:${avatarBg};color:${avatarColor}">
           ${a.email[0].toUpperCase()}
         </div>
         <div style="flex:1;min-width:0;">
           <div class="admin-email">${esc(a.email)}</div>
           <div style="display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;">
-            <span class="role-badge ${a.role || 'admin'}">${isSuperAdmin ? 'Super Admin' : 'Admin'}</span>
+            <span class="role-badge ${a.role || 'admin'}">${roleLabel}</span>
             <span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:999px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;">📍 ${esc(campusLabel)}</span>
             ${!isSuperAdmin ? `
               <span style="font-size:10px;color:var(--muted);">
@@ -3640,9 +3656,14 @@ function renderProposalsTable(list){
 function openReviewModal(id){
   const p = allAdminProposals.find(x => x.id === id);
   if(!p) return;
-  document.getElementById("reviewProposalId").value = id;
-  document.getElementById("reviewProposalTitle").textContent = p.event_name;
-  document.getElementById("reviewNoteField").style.display  = "none";
+  document.getElementById("reviewProposalId").value          = id;
+  document.getElementById("reviewProposalTitle").textContent  = p.event_name;
+
+  // Status actions — only admin and super admin can change status
+  const canChangeStatus = currentRole === "super_admin" || currentRole === "admin";
+  document.getElementById("statusActionSection").style.display = canChangeStatus ? "block" : "none";
+  document.getElementById("eventLeadViewNote").style.display   = canChangeStatus ? "none"  : "block";
+  document.getElementById("reviewNoteField").style.display     = "none";
   document.getElementById("reviewNote").value = "";
 
   // Assign section — only admins and super admins can assign
