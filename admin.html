@@ -1090,7 +1090,7 @@
         <span id="pendingProposalsBadge" style="display:none;margin-left:auto;background:#ef4444;color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;"></span>
       </button>
       <button class="nav-item" data-section="section-my-events" onclick="showSection('my-events', this)" id="myEventsNavBtn" style="display:none;">
-        <span class="nav-icon">📌</span> My Assigned Events
+        <span class="nav-icon">🎯</span> Event Lead Portal
         <span id="myEventsBadge" style="display:none;margin-left:auto;background:#7c3aed;color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;"></span>
       </button>
 
@@ -1449,19 +1449,13 @@
       <div class="section" id="section-my-events">
         <div class="section-header">
           <div>
-            <div class="section-title">My Events</div>
+            <div class="section-title">Event Lead Portal</div>
             <div class="section-subtitle">Your event pipeline and campus team activity</div>
           </div>
           <button class="btn btn-secondary" onclick="loadMyAssignedEvents()">↺ Refresh</button>
         </div>
 
-        <!-- Today's Brief -->
-        <div id="todaysBrief" style="margin-bottom:24px;"></div>
-
-        <!-- Mini Dashboard -->
-        <div id="leadDashboard" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:24px;"></div>
-
-        <!-- Toggle -->
+        <!-- Toggle at the very top -->
         <div style="display:flex;gap:8px;margin-bottom:20px;">
           <button id="toggleMyEvents" onclick="switchPipelineTab('my')"
             style="padding:9px 20px;border-radius:10px;font-family:'Poppins',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:2px solid #7c3aed;background:#7c3aed;color:white;transition:all .15s;">
@@ -1472,6 +1466,12 @@
             👥 Campus Events
           </button>
         </div>
+
+        <!-- Today's Brief -->
+        <div id="todaysBrief" style="margin-bottom:24px;"></div>
+
+        <!-- Mini Dashboard -->
+        <div id="leadDashboard" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:24px;"></div>
 
         <!-- MY Pipeline -->
         <div id="myPipelineView">
