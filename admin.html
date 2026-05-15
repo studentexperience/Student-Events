@@ -987,6 +987,10 @@
         <span class="nav-icon">📨</span> Event Proposals
         <span id="pendingProposalsBadge" style="display:none;margin-left:auto;background:#ef4444;color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;"></span>
       </button>
+      <button class="nav-item" data-section="section-my-events" onclick="showSection('my-events', this)" id="myEventsNavBtn" style="display:none;">
+        <span class="nav-icon">📌</span> My Assigned Events
+        <span id="myEventsBadge" style="display:none;margin-left:auto;background:#7c3aed;color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;"></span>
+      </button>
 
       <div class="sidebar-label" id="settingsNavLabel">Settings</div>
       <button class="nav-item" id="adminsNavBtn" onclick="showSection('admins', this)">
@@ -1337,6 +1341,28 @@
             <button class="btn btn-primary" onclick="savePage()">Save Home Page</button>
           </div>
         </div>
+      </div>
+
+      <!-- ── MY ASSIGNED EVENTS (Event Lead) ── -->
+      <div class="section" id="section-my-events">
+        <div class="section-header">
+          <div>
+            <div class="section-title">My Events</div>
+            <div class="section-subtitle">Events assigned to you and your campus team</div>
+          </div>
+          <button class="btn btn-secondary" onclick="loadMyAssignedEvents()">↺ Refresh</button>
+        </div>
+
+        <!-- Mini Dashboard -->
+        <div id="leadDashboard" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:28px;"></div>
+
+        <!-- My Events -->
+        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px;">📌 Assigned to Me</div>
+        <div id="myAssignedEventsList" style="display:grid;gap:16px;margin-bottom:32px;"></div>
+
+        <!-- Campus Events (other leads) -->
+        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px;">👥 Other Events on My Campus</div>
+        <div id="campusAssignedEventsList" style="display:grid;gap:12px;"></div>
       </div>
 
       <!-- ── EVENT PROPOSALS ── -->
@@ -2306,6 +2332,11 @@ function showAdminPanel(){
   if(hasPermission("manage_forms"))    loadForms();
   if(hasPermission("edit_home"))       loadPages();
   if(hasPermission("manage_proposals")){ loadClubApprovals(); loadProposals(); }
+  // Show My Assigned Events for event leads
+  if(currentRole === "event_lead"){
+    document.getElementById("myEventsNavBtn").style.display = "";
+    loadMyAssignedEvents();
+  }
   if(isSuper) loadAdmins();
 }
 
@@ -3585,6 +3616,203 @@ function insertLink(){
   }
 }
 
+/* ══ MY ASSIGNED EVENTS (Event Lead view) ══ */
+
+const EXECUTION_STATUS = {
+  pending:          { label:"Pending",          emoji:"⏳", bg:"#f3f4f6", color:"#374151" },
+  in_progress:      { label:"In Progress",      emoji:"▶️", bg:"#eff6ff", color:"#2563eb" },
+  completed:        { label:"Completed",         emoji:"✅", bg:"#f0fdf4", color:"#15803d" },
+  report_submitted: { label:"Report Submitted",  emoji:"📝", bg:"#f5f3ff", color:"#7c3aed" },
+  postponed:        { label:"Postponed",         emoji:"⏸️", bg:"#fff7ed", color:"#c2410c" },
+  cancelled:        { label:"Cancelled",         emoji:"🚫", bg:"#fef2f2", color:"#b91c1c" },
+};
+
+async function loadMyAssignedEvents(){
+  const myEmail  = currentUser.email;
+  const myCampus = (currentPermissions.campus || ["All"])[0];
+
+  // Fetch my events
+  const { data: myEvents } = await sb.from("event_proposals")
+    .select("*")
+    .eq("assigned_to", myEmail)
+    .order("assigned_at", { ascending: false });
+
+  // Fetch campus events assigned to others (not me)
+  let campusQuery = sb.from("event_proposals")
+    .select("*")
+    .eq("status", "assigned")
+    .neq("assigned_to", myEmail);
+
+  if(myCampus !== "All"){
+    campusQuery = campusQuery.eq("campus", myCampus);
+  }
+  const { data: campusEvents } = await campusQuery.order("assigned_at", { ascending: false });
+
+  const myList     = myEvents     || [];
+  const campusList = campusEvents || [];
+
+  // Update nav badge
+  const badge = document.getElementById("myEventsBadge");
+  badge.textContent   = myList.length;
+  badge.style.display = myList.length > 0 ? "inline-block" : "none";
+
+  // ── Mini Dashboard ──
+  const active    = myList.filter(p => ["pending","in_progress"].includes(p.execution_status || "pending")).length;
+  const completed = myList.filter(p => ["completed","report_submitted"].includes(p.execution_status || "pending")).length;
+  const closed    = myList.filter(p => ["cancelled","postponed"].includes(p.execution_status || "pending")).length;
+
+  document.getElementById("leadDashboard").innerHTML = [
+    { num: myList.length, label:"Total Assigned",  color:"#7c3aed", icon:"📌" },
+    { num: active,        label:"Active",           color:"#2563eb", icon:"▶️" },
+    { num: completed,     label:"Completed",        color:"#15803d", icon:"✅" },
+    { num: closed,        label:"Closed/Cancelled", color:"#dc2626", icon:"🚫" },
+    { num: campusList.length, label:"Campus Events",color:"#d97706", icon:"👥" },
+  ].map(s => `
+    <div style="background:white;border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);border-top:4px solid ${s.color};">
+      <div style="font-size:24px;font-weight:800;color:${s.color};">${s.num}</div>
+      <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:2px;">${s.icon} ${s.label}</div>
+    </div>`
+  ).join("");
+
+  // ── My Events ──
+  const myContainer = document.getElementById("myAssignedEventsList");
+  if(!myList.length){
+    myContainer.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📌</div><div class="empty-state-text">No events assigned to you yet.</div></div>`;
+  } else {
+    myContainer.innerHTML = myList.map(p => renderAssignedCard(p, true)).join("");
+  }
+
+  // ── Campus Events ──
+  const campusContainer = document.getElementById("campusAssignedEventsList");
+  if(!campusList.length){
+    campusContainer.innerHTML = `<div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-text">No other events assigned on your campus.</div></div>`;
+  } else {
+    campusContainer.innerHTML = campusList.map(p => renderAssignedCard(p, false)).join("");
+  }
+}
+
+function renderAssignedCard(p, isMine){
+  const adminSC  = PROPOSAL_STATUS_CONFIG[p.status] || { label:p.status, color:"#555", bg:"#f3f4f6" };
+  const execSC   = EXECUTION_STATUS[p.execution_status || "pending"];
+  const eventDate = p.proposed_date ? new Date(p.proposed_date).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"}) : "—";
+  const assignedDate = p.assigned_at ? new Date(p.assigned_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "—";
+
+  const execButtons = isMine ? `
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid #f3f4f6;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:8px;">Update Execution Status</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${execStatusBtn(p.id, "in_progress",      "▶️ In Progress",       p.execution_status)}
+        ${execStatusBtn(p.id, "completed",         "✅ Completed",         p.execution_status)}
+        ${execStatusBtn(p.id, "report_submitted",  "📝 Report Submitted",  p.execution_status)}
+        ${execStatusBtn(p.id, "postponed",         "⏸️ Postponed",         p.execution_status)}
+        ${execStatusBtn(p.id, "cancelled",         "🚫 Cancelled",         p.execution_status)}
+      </div>
+      ${p.execution_note ? `<div style="margin-top:8px;font-size:12px;color:var(--muted);font-style:italic;">Note: ${esc(p.execution_note)}</div>` : ""}
+    </div>` : `
+    <div style="margin-top:10px;font-size:12px;color:var(--muted);">
+      Assigned to: <strong>${esc(p.assigned_to || "—")}</strong>
+    </div>`;
+
+  return `
+    <div style="background:white;border-radius:18px;overflow:hidden;box-shadow:var(--shadow);border:1px solid ${isMine ? "#e9d5ff" : "var(--border)"};">
+      ${p.cover_image
+        ? `<img src="${esc(p.cover_image)}" style="width:100%;height:${isMine?"200px":"140px"};object-fit:cover;" />`
+        : `<div style="width:100%;height:${isMine?"140px":"100px"};background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;font-size:${isMine?"48px":"36px"};">🎭</div>`}
+      <div style="padding:${isMine?"20px 22px":"16px 18px"};">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+          <div>
+            <div style="font-size:${isMine?"17px":"15px"};font-weight:800;color:var(--ink);margin-bottom:2px;">${esc(p.event_name)}</div>
+            <div style="font-size:12px;color:var(--muted);">by ${esc(p.club_name)} · ${esc(p.campus || "")}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-direction:column;align-items:flex-end;">
+            <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;background:${execSC.bg};color:${execSC.color};">${execSC.emoji} ${execSC.label}</span>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:${isMine?"14px":"8px"};">
+          ${assignedDetailCard("📅 Date", eventDate)}
+          ${assignedDetailCard("⏰ Time", esc(p.proposed_time || "—"))}
+          ${assignedDetailCard("📍 Venue", esc(p.proposed_venue || "—"))}
+          ${isMine ? assignedDetailCard("🎟️ Expected", esc(p.expected_attendance || "—")) : ""}
+          ${isMine ? assignedDetailCard("📧 Club", esc(p.club_email || "—")) : ""}
+          ${assignedDetailCard("🏷️ Category", esc(p.category || "—"))}
+        </div>
+
+        ${isMine && p.description ? `
+        <div style="background:#f9fafb;border-radius:10px;padding:10px 12px;margin-bottom:12px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:4px;">Description</div>
+          <div style="font-size:13px;line-height:1.6;">${esc(p.description)}</div>
+        </div>` : ""}
+
+        ${isMine && p.admin_note ? `
+        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#92400e;">
+          <strong>Admin Note:</strong> ${esc(p.admin_note)}
+        </div>` : ""}
+
+        ${execButtons}
+
+        <div style="font-size:11px;color:#c4b5d4;margin-top:10px;">Assigned ${assignedDate}</div>
+      </div>
+    </div>`;
+}
+
+function execStatusBtn(proposalId, status, label, currentStatus){
+  const sc      = EXECUTION_STATUS[status];
+  const isActive = currentStatus === status;
+  return `<button onclick="updateExecutionStatus('${proposalId}','${status}')"
+    style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;
+    cursor:pointer;font-family:'Poppins',sans-serif;border:1.5px solid ${isActive ? sc.color : "var(--border)"};
+    background:${isActive ? sc.bg : "white"};color:${isActive ? sc.color : "var(--muted)"};
+    transition:all .15s;">${label}</button>`;
+}
+
+async function updateExecutionStatus(proposalId, status){
+  const note = ["postponed","cancelled"].includes(status)
+    ? prompt(`Add a note for "${EXECUTION_STATUS[status].label}" (optional):`)
+    : null;
+
+  const { error } = await sb.from("event_proposals").update({
+    execution_status:     status,
+    execution_note:       note || null,
+    execution_updated_at: new Date().toISOString(),
+    updated_at:           new Date().toISOString(),
+  }).eq("id", proposalId);
+
+  if(error){ showToast("Failed to update: " + error.message, "error"); return; }
+
+  // Notify admins of status change
+  const p = (await sb.from("event_proposals").select("event_name,club_email,campus").eq("id",proposalId).single()).data;
+  if(p){
+    const { data: adminsToNotify } = await sb.from("admins")
+      .select("email")
+      .in("role", ["admin","super_admin"]);
+    if(adminsToNotify?.length){
+      const ec = EXECUTION_STATUS[status];
+      await sb.from("notifications").insert(
+        adminsToNotify.map(a => ({
+          recipient:   a.email,
+          type:        "execution_status_update",
+          title:       `${ec.emoji} Event Status Update`,
+          message:     `"${p.event_name}" has been marked as "${ec.label}" by ${currentUser.email}.${note ? " Note: " + note : ""}`,
+          proposal_id: proposalId,
+          is_read:     false,
+        }))
+      );
+    }
+  }
+
+  showToast(`✅ Status updated to "${EXECUTION_STATUS[status].label}"`);
+  loadMyAssignedEvents();
+}
+
+function assignedDetailCard(label, value){
+  return `
+    <div style="background:#f9fafb;border-radius:10px;padding:10px 12px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:3px;">${label}</div>
+      <div style="font-size:13px;font-weight:600;color:var(--ink);">${value}</div>
+    </div>`;
+}
+
 /* ══ EVENT PROPOSALS ══ */
 let allAdminProposals = [];
 
@@ -3666,7 +3894,7 @@ function openReviewModal(id){
   document.getElementById("reviewNoteField").style.display     = "none";
   document.getElementById("reviewNote").value = "";
 
-  // Assign section — only admins and super admins can assign
+  // Assign section — only admins and super admins can assign, only when approved
   const canAssign = hasPermission("assign_events");
   document.getElementById("assignSection").style.display =
     (canAssign && p.status === "approved") ? "block" : "none";
@@ -3831,6 +4059,7 @@ async function assignProposal(){
   showToast("📌 Event assigned successfully!");
   closeModal("reviewProposalModal");
   loadProposals();
+  if(currentRole === "event_lead") loadMyAssignedEvents();
 }
 let allClubAccounts = [];
 
