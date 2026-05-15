@@ -1475,45 +1475,42 @@
 
         <!-- MY Pipeline -->
         <div id="myPipelineView">
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start;" id="pipelineGrid">
-            <div>
-              <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#eff6ff;margin-bottom:10px;">
-                <span>🔜</span>
-                <div><div style="font-size:12px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;">Upcoming</div><div style="font-size:10px;color:#93c5fd;">More than 7 days away</div></div>
-                <span id="upcomingCount" style="margin-left:auto;background:#2563eb;color:white;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span>
-              </div>
-              <div id="laneUpcoming" style="display:grid;gap:10px;"></div>
+          <!-- 3-Lane Pipeline — This Week first, then Upcoming, then Completed -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start;" id="pipelineGrid">
+          <!-- THIS WEEK first -->
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#fef9c3;margin-bottom:10px;">
+              <span>⚡</span>
+              <div><div style="font-size:12px;font-weight:800;color:#b45309;text-transform:uppercase;letter-spacing:.5px;">This Week</div><div style="font-size:10px;color:#fcd34d;">Within 7 days</div></div>
+              <span id="thisWeekCount" style="margin-left:auto;background:#b45309;color:white;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span>
             </div>
-            <div>
-              <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#fef9c3;margin-bottom:10px;">
-                <span>⚡</span>
-                <div><div style="font-size:12px;font-weight:800;color:#b45309;text-transform:uppercase;letter-spacing:.5px;">This Week</div><div style="font-size:10px;color:#fcd34d;">Within 7 days</div></div>
-                <span id="thisWeekCount" style="margin-left:auto;background:#b45309;color:white;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span>
-              </div>
-              <div id="laneThisWeek" style="display:grid;gap:10px;"></div>
-            </div>
-            <div>
-              <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#f0fdf4;margin-bottom:10px;">
-                <span>✅</span>
-                <div><div style="font-size:12px;font-weight:800;color:#15803d;text-transform:uppercase;letter-spacing:.5px;">Completed</div><div style="font-size:10px;color:#86efac;">Past or wrapped up</div></div>
-                <span id="completedCount" style="margin-left:auto;background:#15803d;color:white;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span>
-              </div>
-              <div id="laneCompleted" style="display:grid;gap:10px;"></div>
-            </div>
+            <div id="laneThisWeek" style="display:grid;gap:10px;"></div>
           </div>
+          <!-- UPCOMING second -->
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#eff6ff;margin-bottom:10px;">
+              <span>🔜</span>
+              <div><div style="font-size:12px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;">Upcoming</div><div style="font-size:10px;color:#93c5fd;">More than 7 days away</div></div>
+              <span id="upcomingCount" style="margin-left:auto;background:#2563eb;color:white;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span>
+            </div>
+            <div id="laneUpcoming" style="display:grid;gap:10px;"></div>
+          </div>
+          <!-- COMPLETED third -->
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#f0fdf4;margin-bottom:10px;">
+              <span>✅</span>
+              <div><div style="font-size:12px;font-weight:800;color:#15803d;text-transform:uppercase;letter-spacing:.5px;">Completed</div><div style="font-size:10px;color:#86efac;">Past or wrapped up</div></div>
+              <span id="completedCount" style="margin-left:auto;background:#15803d;color:white;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span>
+            </div>
+            <div id="laneCompleted" style="display:grid;gap:10px;"></div>
+          </div>
+        </div>
         </div>
 
         <!-- CAMPUS Pipeline -->
         <div id="campusPipelineView" style="display:none;">
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start;">
-            <div>
-              <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#eff6ff;margin-bottom:10px;">
-                <span>🔜</span>
-                <div><div style="font-size:12px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;">Upcoming</div><div style="font-size:10px;color:#93c5fd;">More than 7 days away</div></div>
-                <span id="campusUpcomingCount" style="margin-left:auto;background:#2563eb;color:white;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span>
-              </div>
-              <div id="campusLaneUpcoming" style="display:grid;gap:10px;"></div>
-            </div>
+            <!-- THIS WEEK first -->
             <div>
               <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#fef9c3;margin-bottom:10px;">
                 <span>⚡</span>
@@ -1522,6 +1519,16 @@
               </div>
               <div id="campusLaneThisWeek" style="display:grid;gap:10px;"></div>
             </div>
+            <!-- UPCOMING second -->
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#eff6ff;margin-bottom:10px;">
+                <span>🔜</span>
+                <div><div style="font-size:12px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;">Upcoming</div><div style="font-size:10px;color:#93c5fd;">More than 7 days away</div></div>
+                <span id="campusUpcomingCount" style="margin-left:auto;background:#2563eb;color:white;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span>
+              </div>
+              <div id="campusLaneUpcoming" style="display:grid;gap:10px;"></div>
+            </div>
+            <!-- COMPLETED third -->
             <div>
               <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:#f0fdf4;margin-bottom:10px;">
                 <span>✅</span>
@@ -3858,7 +3865,7 @@ async function loadMyAssignedEvents(){
   document.getElementById("campusThisWeekCount").textContent  = campus.thisWeek.length;
   document.getElementById("campusCompletedCount").textContent = campus.completed.length;
 
-  // Today's Brief
+  // Today's Brief — only TODAY's events
   const todayStr = todayMs.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
   const nudges = [];
   myList.forEach(p => {
@@ -3866,20 +3873,25 @@ async function loadMyAssignedEvents(){
     const d    = new Date(p.proposed_date + "T00:00:00");
     const diff = Math.round((d.getTime() - todayMs.getTime()) / 86400000);
     const exec = p.execution_status || "pending";
-    if(!EXEC_DONE.includes(exec)){
-      if(diff === 0)      nudges.push({ cls:"urgent",  emoji:"🚨", text:`"${p.event_name}" is TODAY — is everything ready?` });
-      else if(diff === 1) nudges.push({ cls:"urgent",  emoji:"⚡", text:`"${p.event_name}" is TOMORROW.` });
-      else if(diff < 0)   nudges.push({ cls:"warning", emoji:"⏰", text:`"${p.event_name}" (${new Date(p.proposed_date).toLocaleDateString("en-GB",{day:"numeric",month:"short"})}) — please update its status.` });
-      else if(diff <= 7 && exec === "pending") nudges.push({ cls:"warning", emoji:"📋", text:`"${p.event_name}" is this week and still Pending.` });
+    if(EXEC_DONE.includes(exec)) return; // skip done events
+
+    // Only show nudges for TODAY
+    if(diff === 0){
+      nudges.push({ cls:"urgent", emoji:"🚨", text:`"${p.event_name}" is TODAY at ${p.proposed_time || "—"} · ${p.proposed_venue || "venue TBC"}` });
     }
   });
-  if(!nudges.length && myList.length > 0) nudges.push({ cls:"good", emoji:"✨", text:"All your events are on track. Great work!" });
+
+  // If nothing today, show a calm message
+  const hasTodayEvent = nudges.length > 0;
+  if(!hasTodayEvent && myList.length > 0){
+    nudges.push({ cls:"good", emoji:"✅", text:`No events scheduled for today. Next up: ${my.thisWeek.length > 0 ? `"${my.thisWeek[0].event_name}" on ${new Date(my.thisWeek[0].proposed_date).toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"short"})}` : "nothing this week."}` });
+  }
 
   const briefEl = document.getElementById("todaysBrief");
   if(briefEl) briefEl.innerHTML = myList.length === 0 ? "" : `
     <div class="todays-brief">
       <div class="brief-greeting">Good ${getTimeOfDay()}, ${myName}! 👋</div>
-      <div style="font-size:13px;opacity:.8;">${todayStr} · <strong>${myList.length}</strong> event${myList.length!==1?"s":""} assigned${my.thisWeek.length>0?` · <strong>${my.thisWeek.length}</strong> need attention`:""}</div>
+      <div style="font-size:13px;opacity:.8;">${todayStr} · ${hasTodayEvent ? `<strong>${nudges.length}</strong> event${nudges.length!==1?"s":""} today` : "No events today"}</div>
       <div class="brief-items">${nudges.map(n=>`<div class="brief-item ${n.cls}">${n.emoji} ${n.text}</div>`).join("")}</div>
     </div>`;
 
