@@ -1220,6 +1220,7 @@
           <div class="field" style="min-width:160px;">
             <label>Role</label>
             <select id="newAdminRole">
+              <option value="event_lead">Event Lead</option>
               <option value="admin">Admin</option>
               <option value="super_admin">Super Admin</option>
             </select>
@@ -3236,11 +3237,17 @@ async function addAdmin(){
   const role   = document.getElementById("newAdminRole").value;
   const campus = document.getElementById("newAdminCampus").value;
   if(!email){ showToast("Enter an email address", "error"); return; }
-  const { error } = await sb.from("admins").insert({ email, role, campus });
+
+  // Set default permissions based on role
+  const defaultPerms = { ...ROLE_DEFAULTS[role] || ROLE_DEFAULTS.admin, campus: [campus] };
+
+  const { error } = await sb.from("admins").insert({ email, role, campus, permissions: defaultPerms });
   if(error){ showToast("Failed: " + error.message, "error"); return; }
-  showToast(`${role === "super_admin" ? "Super Admin" : "Admin"} added! They must sign up to set their password.`);
+
+  const roleLabel = role === "super_admin" ? "Super Admin" : role === "event_lead" ? "Event Lead" : "Admin";
+  showToast(`${roleLabel} added! They must sign up to set their password.`);
   document.getElementById("newAdminEmail").value  = "";
-  document.getElementById("newAdminRole").value   = "admin";
+  document.getElementById("newAdminRole").value   = "event_lead";
   document.getElementById("newAdminCampus").value = "All";
   loadAdmins();
   loadDashboard();
