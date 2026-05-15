@@ -47,25 +47,66 @@
       display:flex;
       align-items:center;
       padding:0 18px;
-      gap:12px;
+      gap:6px;
+      position:sticky;
+      top:0;
+      z-index:100;
     }
     .brand{
-      font-weight:600;
+      font-weight:700;
+      font-size:16px;
       letter-spacing:.2px;
+      margin-right:8px;
+      white-space:nowrap;
     }
 
-    /* ===== Main layout: left nav + content ===== */
+    /* Topbar nav links */
+    .topbar-nav {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex: 1;
+    }
+    .topbar-nav a {
+      padding: 7px 12px;
+      border-radius: 8px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: all .15s;
+    }
+    .topbar-nav a:hover { background: #f3f4f6; color: var(--ink); }
+    .topbar-nav a.active { background: #eef2ff; color: #1f2a64; }
+    .topbar-nav a.eventhub {
+      color: #7c3aed;
+      background: #f5f3ff;
+    }
+    .topbar-nav a.eventhub:hover { background: #ede9fe; }
+
+    /* ===== Main layout — no side nav on desktop ===== */
     .shell{
-      display:grid;
-      grid-template-columns: 180px 1fr;
+      display:block;
       min-height: calc(100vh - 56px);
     }
 
-    /* Left navigation */
+    /* Side nav — hidden on desktop, shows on mobile as drawer */
     .nav{
+      display: none;
+    }
+    .nav.open{
+      display:block;
+      position:fixed;
+      top:56px; left:0;
+      width:220px;
+      height:calc(100vh - 56px);
       background:var(--panel);
       border-right:1px solid var(--border);
       padding:14px 10px;
+      z-index:200;
+      box-shadow:4px 0 16px rgba(0,0,0,.12);
+      overflow-y:auto;
     }
     .nav a{
       display:block;
@@ -77,10 +118,14 @@
       font-size:14px;
     }
     .nav a:hover{ background:#f3f4f6; }
-    .nav a.active{
-      background:#eef2ff;
-      color:#1f2a64;
-      font-weight:600;
+    .nav a.active{ background:#eef2ff; color:#1f2a64; font-weight:600; }
+
+    /* ===== Two-column content: filters + cards ===== */
+    .page-grid{
+      display:grid;
+      grid-template-columns: 200px 1fr;
+      gap:16px;
+      align-items:start;
     }
 
     /* Content area */
@@ -93,6 +138,18 @@
       font-weight:700;
       margin:6px 0 18px;
     }
+
+    /* Hamburger — hidden on desktop */
+    .nav-toggle{
+      display:none;
+      background:none;
+      border:none;
+      font-size:22px;
+      cursor:pointer;
+      padding:4px 8px;
+      border-radius:8px;
+    }
+    .nav-toggle:hover{ background:#f3f4f6; }
 
     /* ===== Two-column content: filters + cards ===== */
     .page-grid{
@@ -455,51 +512,31 @@
        RESPONSIVE BREAKPOINTS
     ============================================= */
 
-    /* Large desktop — 4 cards, 200px filter */
+    /* Large desktop — 4 cards */
     @media (min-width: 1400px){
       .page-grid{ grid-template-columns: 220px 1fr; }
       .cards{ grid-template-columns: repeat(4, 1fr); }
     }
 
-    /* Laptop 1280px — 3 cards, 180px filter */
+    /* Laptop 1280px — 3 cards */
     @media (max-width: 1280px){
       .page-grid{ grid-template-columns: 180px 1fr; gap:14px; }
       .cards{ grid-template-columns: repeat(3, 1fr); }
-      .field input, .field select{ font-size:12px; padding:6px 8px; }
-      .filter-title{ font-size:12px; }
+      .topbar-nav a{ font-size:12px; padding:6px 10px; }
     }
 
-    /* Small laptop 1100px — 2 cards, 160px filter */
+    /* Small laptop 1100px — 2 cards */
     @media (max-width: 1100px){
       .page-grid{ grid-template-columns: 160px 1fr; gap:12px; }
       .cards{ grid-template-columns: repeat(2, 1fr); }
       .filters{ padding:10px; }
-      .field label{ font-size:11px; }
-      .field input, .field select{ font-size:11px; padding:6px 7px; }
+      .topbar-nav a{ font-size:11px; padding:5px 8px; }
     }
 
-    /* Tablet landscape — side nav collapses */
-    @media (max-width: 1024px){
-      .shell{ grid-template-columns: 1fr; }
-      .nav{
-        display:none;
-        position:fixed;
-        top:56px; left:0;
-        width:200px;
-        height:calc(100vh - 56px);
-        z-index:200;
-        box-shadow:4px 0 16px rgba(0,0,0,.12);
-        overflow-y:auto;
-      }
-      .nav.open{ display:block; }
-      .nav-toggle{ display:block; }
-      .content{ padding:14px; }
-      .page-grid{ grid-template-columns: 150px 1fr; gap:10px; }
-      .cards{ grid-template-columns: repeat(2, 1fr); }
-    }
-
-    /* Tablet portrait — filter collapses to toggle */
+    /* Tablet — hide topbar nav, show hamburger */
     @media (max-width: 860px){
+      .topbar-nav{ display:none; }
+      .nav-toggle{ display:block; }
       .page-grid{ grid-template-columns: 1fr; }
       .filters{ position:relative; top:auto; }
       .filter-toggle{ display:block; }
@@ -1163,13 +1200,21 @@
   <header class="topbar">
     <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">&#9776;</button>
     <div class="brand">Campus Life</div>
+    <nav class="topbar-nav" id="topbarNav">
+      <a href="index.html">Home</a>
+      <a href="index.html" class="active">Events</a>
+      <a href="clubs.html">Clubs</a>
+      <a href="news.html">News</a>
+      <a href="forms.html">Forms</a>
+      <a href="event-hub.html" class="eventhub">✦ Event Hub</a>
+    </nav>
   </header>
 
   <div class="shell">
-    <!-- Left navigation -->
-    <nav class="nav">
-      <a href="#">Home</a>
-      <a href="#" class="active">Events</a>
+    <!-- Side nav — mobile drawer only -->
+    <nav class="nav" id="sideNav">
+      <a href="index.html">Home</a>
+      <a href="index.html" class="active">Events</a>
       <a href="clubs.html">Clubs</a>
       <a href="news.html">News</a>
       <a href="forms.html">Forms</a>
@@ -1286,19 +1331,17 @@
 document.addEventListener("DOMContentLoaded", () => {
 
   /* ---- Nav & filter toggles ---- */
-  const navToggle    = document.getElementById("navToggle");
-  const nav          = document.querySelector(".nav");
-  const filterToggle = document.getElementById("filterToggle");
+  const navToggle = document.getElementById("navToggle");
+  const sideNav   = document.getElementById("sideNav");
+  if(navToggle && sideNav){
+    navToggle.addEventListener("click", () => sideNav.classList.toggle("open"));
+    document.addEventListener("click", e => {
+      if(!sideNav.contains(e.target) && !navToggle.contains(e.target)){
+        sideNav.classList.remove("open");
+      }
+    });
+  }
   const filtersInner = document.getElementById("filtersInner");
-
-  navToggle.addEventListener("click", () => nav.classList.toggle("open"));
-
-  document.addEventListener("click", (e) => {
-    if(nav.classList.contains("open") &&
-       !nav.contains(e.target) && e.target !== navToggle){
-      nav.classList.remove("open");
-    }
-  });
 
   filterToggle.addEventListener("click", () => {
     const isOpen = filtersInner.classList.toggle("open");
