@@ -353,27 +353,32 @@
     .interested-row {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       margin-top: 12px;
       padding-top: 10px;
       border-top: 1px dashed rgba(0,0,0,.1);
+      flex-wrap: wrap;
     }
     .interested-btn {
       flex: 1;
+      min-width: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      padding: 8px 14px;
+      gap: 5px;
+      padding: 7px 10px;
       border: 1.5px solid rgba(0,0,0,.12);
       background: white;
       border-radius: 999px;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       color: var(--ink);
       cursor: pointer;
       font-family: 'Poppins', sans-serif;
       transition: all .18s ease;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .interested-btn:hover {
       border-color: #ef4444;
@@ -503,19 +508,19 @@
     .add-to-cal-btn {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      padding: 6px 12px;
+      gap: 4px;
+      padding: 6px 10px;
       background: #f0fdf4;
       color: #16a34a;
       border: 1.5px solid #bbf7d0;
       border-radius: 8px;
-      font-size: 11.5px;
+      font-size: 11px;
       font-weight: 600;
       cursor: pointer;
       font-family: 'Poppins', sans-serif;
       transition: all .15s;
       white-space: nowrap;
-      text-decoration: none;
+      flex-shrink: 0;
     }
     .add-to-cal-btn:hover {
       background: #16a34a;
