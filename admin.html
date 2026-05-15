@@ -723,7 +723,123 @@
     .toggle-switch input:checked + .toggle-slider { background: var(--accent); }
     .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
 
-    /* ── AI REPORT GENERATOR ── */
+    /* ── NOTIFICATION BELL ── */
+    .notif-bell-btn {
+      position: relative;
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      transition: all .2s;
+      margin-right: 4px;
+    }
+    .notif-bell-btn:hover { border-color: var(--accent); background: var(--accent-light); }
+    .notif-bell-badge {
+      position: absolute;
+      top: -3px; right: -3px;
+      width: 17px; height: 17px;
+      background: var(--danger);
+      color: white;
+      font-size: 9px;
+      font-weight: 700;
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid white;
+    }
+    .notif-bell-badge.visible { display: flex; }
+    .notif-panel {
+      display: none;
+      position: fixed;
+      top: 66px; right: 16px;
+      width: 360px;
+      max-height: 500px;
+      background: white;
+      border-radius: 18px;
+      box-shadow: 0 16px 48px rgba(0,0,0,.18);
+      z-index: 400;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .notif-panel.open { display: block; }
+    .notif-panel-header {
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: var(--accent-light);
+    }
+    .notif-panel-title { font-size:14px; font-weight:800; color:var(--accent); }
+    .notif-mark-all {
+      font-size: 11px; font-weight: 600; color: var(--accent);
+      border: none; background: none; cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+    }
+    .notif-list { overflow-y: auto; max-height: 420px; }
+    .notif-item {
+      padding: 12px 18px;
+      border-bottom: 1px solid #f3f4f6;
+      cursor: pointer;
+      transition: background .12s;
+    }
+    .notif-item:hover { background: #f9fafb; }
+    .notif-item.unread { background: #eff6ff; border-left: 3px solid var(--accent); }
+    .notif-item-title { font-size:13px; font-weight:700; color:var(--ink); margin-bottom:2px; }
+    .notif-item-msg   { font-size:12px; color:var(--muted); line-height:1.4; }
+    .notif-item-time  { font-size:10px; color:#c4b5d4; margin-top:3px; }
+    .notif-empty { text-align:center; padding:32px 20px; color:var(--muted); font-size:13px; }
+
+    /* ── TEAM OVERVIEW ── */
+    .lead-card {
+      background: white;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+    .lead-card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 18px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .lead-card-header:hover { background: #f9fafb; }
+    .lead-avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--grad, linear-gradient(135deg,#667eea,#764ba2));
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .lead-card-events {
+      display: none;
+      border-top: 1px solid var(--border);
+    }
+    .lead-card-events.open { display: block; }
+    .lead-event-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 18px;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 13px;
+    }
+    .lead-event-row:last-child { border-bottom: none; }
     .report-modal .modal { max-width: 760px; }
     .report-config {
       display: grid;
@@ -1052,8 +1168,24 @@
     <div class="topbar-badge" id="topbarBadge">ADMIN</div>
     <div class="topbar-user">
       <span id="userEmail"></span>
+      <!-- Notification Bell -->
+      <button class="notif-bell-btn" id="adminNotifBtn" title="Notifications" onclick="toggleNotifPanel()">
+        🔔
+        <span class="notif-bell-badge" id="adminNotifBadge"></span>
+      </button>
       <button class="logout-btn" style="color:var(--ink);border-color:var(--border);" onclick="openChangePassword(false)">🔑 Change Password</button>
       <button class="logout-btn" onclick="handleLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- Notification Panel -->
+  <div class="notif-panel" id="adminNotifPanel">
+    <div class="notif-panel-header">
+      <div class="notif-panel-title">🔔 Notifications</div>
+      <button class="notif-mark-all" onclick="markAllAdminNotifsRead()">Mark all as read</button>
+    </div>
+    <div class="notif-list" id="adminNotifList">
+      <div class="notif-empty">No notifications yet</div>
     </div>
   </div>
 
@@ -1088,6 +1220,9 @@
       <button class="nav-item" data-section="section-proposals" onclick="showSection('proposals', this)" id="proposalsNavBtn">
         <span class="nav-icon">📨</span> Event Proposals
         <span id="pendingProposalsBadge" style="display:none;margin-left:auto;background:#ef4444;color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;"></span>
+      </button>
+      <button class="nav-item" data-section="section-team-overview" onclick="showSection('team-overview', this)" id="teamOverviewNavBtn" style="display:none;">
+        <span class="nav-icon">📊</span> Team Overview
       </button>
       <button class="nav-item" data-section="section-my-events" onclick="showSection('my-events', this)" id="myEventsNavBtn" style="display:none;">
         <span class="nav-icon">🎯</span> Event Lead Portal
@@ -1596,6 +1731,35 @@
             </table>
           </div>
         </div>
+      </div>
+
+      <!-- ── TEAM OVERVIEW ── -->
+      <div class="section" id="section-team-overview">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Team Overview</div>
+            <div class="section-subtitle">Event Lead performance and assignments by campus</div>
+          </div>
+          <button class="btn btn-secondary" onclick="loadTeamOverview()">↺ Refresh</button>
+        </div>
+
+        <!-- Campus filter (super admin only) -->
+        <div id="teamCampusFilterRow" style="display:none;margin-bottom:18px;">
+          <select id="teamCampusFilter" onchange="loadTeamOverview()"
+            style="padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;background:white;">
+            <option value="">All Campuses</option>
+            <option>Karachi</option>
+            <option>Nairobi</option>
+            <option>Kampala</option>
+            <option>Dar es Salaam</option>
+          </select>
+        </div>
+
+        <!-- Summary stat cards -->
+        <div id="teamStatCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:24px;"></div>
+
+        <!-- Lead cards -->
+        <div id="teamLeadCards"></div>
       </div>
 
       <!-- ── CLUB APPROVALS ── -->
@@ -2509,11 +2673,31 @@ function showAdminPanel(){
   if(hasPermission("manage_forms"))    loadForms();
   if(hasPermission("edit_home"))       loadPages();
   if(hasPermission("manage_proposals")){ loadClubApprovals(); loadProposals(); }
-  // Show My Assigned Events for event leads
+
+  // Team Overview — show for admins and super admins
+  if(currentRole === "admin" || currentRole === "super_admin"){
+    const navBtn = document.getElementById("teamOverviewNavBtn");
+    if(navBtn) navBtn.style.display = "";
+    // Show campus filter for super admins only
+    if(currentRole === "super_admin"){
+      const filterRow = document.getElementById("teamCampusFilterRow");
+      if(filterRow) filterRow.style.display = "block";
+    }
+    loadTeamOverview();
+  }
+
+  // Event Lead portal nav
   if(currentRole === "event_lead"){
     document.getElementById("myEventsNavBtn").style.display = "";
     loadMyAssignedEvents();
   }
+
+  // Start notifications
+  loadAdminNotifications();
+  requestPushPermission();
+  if(adminNotifInterval) clearInterval(adminNotifInterval);
+  adminNotifInterval = setInterval(pollNotifications, 30000);
+
   if(isSuper) loadAdmins();
 }
 
@@ -4289,6 +4473,7 @@ async function assignProposal(){
   showToast("📌 Event assigned successfully!");
   closeModal("reviewProposalModal");
   loadProposals();
+  loadAdminNotifications();
   if(currentRole === "event_lead") loadMyAssignedEvents();
 }
 let allClubAccounts = [];
@@ -4630,7 +4815,229 @@ function esc(str){
     .replaceAll(">","&gt;").replaceAll('"',"&quot;");
 }
 
-/* ══ AI REPORT GENERATOR ══ */
+/* ══ ADMIN NOTIFICATION BELL ══ */
+let adminNotifInterval = null;
+
+async function loadAdminNotifications(){
+  const { data } = await sb.from("notifications")
+    .select("*")
+    .eq("recipient", currentUser.email)
+    .order("created_at", { ascending: false })
+    .limit(40);
+
+  const notifs  = data || [];
+  const unread  = notifs.filter(n => !n.is_read);
+  const badge   = document.getElementById("adminNotifBadge");
+  const list    = document.getElementById("adminNotifList");
+
+  badge.textContent = unread.length > 9 ? "9+" : unread.length;
+  unread.length > 0 ? badge.classList.add("visible") : badge.classList.remove("visible");
+
+  if(!notifs.length){
+    list.innerHTML = `<div class="notif-empty">🔔 No notifications yet</div>`;
+    return;
+  }
+
+  list.innerHTML = notifs.map(n => `
+    <div class="notif-item ${n.is_read ? "" : "unread"}" onclick="markAdminNotifRead('${n.id}')">
+      <div class="notif-item-title">${esc(n.title)}</div>
+      <div class="notif-item-msg">${esc(n.message)}</div>
+      <div class="notif-item-time">${timeAgoAdmin(n.created_at)}</div>
+    </div>`).join("");
+}
+
+function timeAgoAdmin(str){
+  const diff = Date.now() - new Date(str).getTime();
+  const m = Math.floor(diff/60000), h = Math.floor(m/60), d = Math.floor(h/24);
+  if(d > 0) return `${d}d ago`;
+  if(h > 0) return `${h}h ago`;
+  if(m > 0) return `${m}m ago`;
+  return "just now";
+}
+
+async function markAdminNotifRead(id){
+  await sb.from("notifications").update({ is_read:true }).eq("id", id);
+  loadAdminNotifications();
+}
+
+async function markAllAdminNotifsRead(){
+  await sb.from("notifications").update({ is_read:true }).eq("recipient", currentUser.email);
+  loadAdminNotifications();
+}
+
+function toggleNotifPanel(){
+  document.getElementById("adminNotifPanel").classList.toggle("open");
+}
+
+// Close panel when clicking outside
+document.addEventListener("click", e => {
+  const panel = document.getElementById("adminNotifPanel");
+  const btn   = document.getElementById("adminNotifBtn");
+  if(panel && btn && !panel.contains(e.target) && !btn.contains(e.target)){
+    panel.classList.remove("open");
+  }
+});
+
+/* ── Browser Push Notifications ── */
+async function requestPushPermission(){
+  if(!("Notification" in window)) return;
+  if(Notification.permission === "default"){
+    await Notification.requestPermission();
+  }
+}
+
+function sendBrowserPush(title, body){
+  if(Notification.permission === "granted"){
+    new Notification(title, {
+      body,
+      icon: "https://studentexperience.github.io/Student-Events/favicon.ico",
+      badge: "https://studentexperience.github.io/Student-Events/favicon.ico",
+      tag: "aku-campus-life",
+    });
+  }
+}
+
+// Poll for new notifications every 30 seconds and push browser notification
+let lastNotifCheck = new Date().toISOString();
+async function pollNotifications(){
+  const { data } = await sb.from("notifications")
+    .select("*")
+    .eq("recipient", currentUser.email)
+    .eq("is_read", false)
+    .gt("created_at", lastNotifCheck)
+    .order("created_at", { ascending: false });
+
+  if(data && data.length > 0){
+    data.forEach(n => sendBrowserPush(n.title, n.message));
+    loadAdminNotifications();
+  }
+  lastNotifCheck = new Date().toISOString();
+}
+
+/* ══ TEAM OVERVIEW ══ */
+async function loadTeamOverview(){
+  const campusFilter = document.getElementById("teamCampusFilter")?.value || "";
+  const adminCampus  = currentPermissions.campus || ["All"];
+  const isAll        = currentRole === "super_admin" || adminCampus.includes("All");
+
+  // Determine which campuses to show
+  const campusesToShow = campusFilter
+    ? [campusFilter]
+    : isAll
+      ? ["Karachi","Nairobi","Kampala","Dar es Salaam"]
+      : (Array.isArray(adminCampus) ? adminCampus : [adminCampus]);
+
+  // Fetch all event leads matching campus
+  let leadsQuery = sb.from("admins").select("*").eq("role","event_lead");
+  const { data: leads } = await leadsQuery;
+  const filteredLeads = (leads || []).filter(l => {
+    const lc = l.permissions?.campus || ["All"];
+    if(isAll && !campusFilter) return true;
+    if(campusFilter) return lc.includes("All") || lc.includes(campusFilter);
+    return campusesToShow.some(c => lc.includes("All") || lc.includes(c));
+  });
+
+  // Fetch all assigned proposals for these leads
+  const leadEmails = filteredLeads.map(l => l.email);
+  if(!leadEmails.length){
+    document.getElementById("teamLeadCards").innerHTML = `<div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-text">No event leads found for this campus.</div></div>`;
+    document.getElementById("teamStatCards").innerHTML = "";
+    return;
+  }
+
+  const { data: proposals } = await sb.from("event_proposals")
+    .select("*")
+    .in("assigned_to", leadEmails)
+    .order("proposed_date", { ascending: true });
+
+  const allProposals = proposals || [];
+  const today = new Date(); today.setHours(0,0,0,0);
+  const DONE  = ["completed","report_submitted","cancelled","postponed"];
+
+  // ── Summary stat cards ──
+  const totalAssigned = allProposals.length;
+  const totalActive   = allProposals.filter(p => !DONE.includes(p.execution_status||"pending")).length;
+  const totalDone     = allProposals.filter(p => ["completed","report_submitted"].includes(p.execution_status||"pending")).length;
+  const totalOverdue  = allProposals.filter(p => {
+    if(!p.proposed_date || DONE.includes(p.execution_status||"pending")) return false;
+    return new Date(p.proposed_date) < today;
+  }).length;
+
+  document.getElementById("teamStatCards").innerHTML = [
+    { num:filteredLeads.length, label:"Event Leads",      color:"#7c3aed", icon:"👥" },
+    { num:totalAssigned,        label:"Total Assigned",   color:"#2563eb", icon:"📌" },
+    { num:totalActive,          label:"Active",           color:"#d97706", icon:"▶️" },
+    { num:totalDone,            label:"Completed",        color:"#15803d", icon:"✅" },
+    { num:totalOverdue,         label:"Overdue",          color:"#dc2626", icon:"⚠️" },
+  ].map(s=>`
+    <div style="background:white;border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);border-top:4px solid ${s.color};">
+      <div style="font-size:26px;font-weight:800;color:${s.color};">${s.num}</div>
+      <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:2px;">${s.icon} ${s.label}</div>
+    </div>`).join("");
+
+  // ── Lead cards ──
+  const EXEC = {
+    pending:          { label:"Pending",         color:"#374151", bg:"#f3f4f6" },
+    in_progress:      { label:"In Progress",     color:"#2563eb", bg:"#eff6ff" },
+    completed:        { label:"Completed",        color:"#15803d", bg:"#f0fdf4" },
+    report_submitted: { label:"Report Submitted", color:"#7c3aed", bg:"#f5f3ff" },
+    postponed:        { label:"Postponed",        color:"#c2410c", bg:"#fff7ed" },
+    cancelled:        { label:"Cancelled",        color:"#b91c1c", bg:"#fef2f2" },
+  };
+
+  document.getElementById("teamLeadCards").innerHTML = filteredLeads.map(lead => {
+    const myEvents  = allProposals.filter(p => p.assigned_to === lead.email);
+    const active    = myEvents.filter(p => !DONE.includes(p.execution_status||"pending")).length;
+    const done      = myEvents.filter(p => ["completed","report_submitted"].includes(p.execution_status||"pending")).length;
+    const overdue   = myEvents.filter(p => {
+      if(!p.proposed_date || DONE.includes(p.execution_status||"pending")) return false;
+      return new Date(p.proposed_date) < today;
+    }).length;
+    const campus    = (lead.permissions?.campus || ["All"]).join(", ");
+    const initials  = lead.email[0].toUpperCase();
+    const cardId    = `lead-events-${lead.id}`;
+
+    const eventsHtml = myEvents.length ? myEvents.map(p => {
+      const ex  = EXEC[p.execution_status || "pending"];
+      const dt  = p.proposed_date ? new Date(p.proposed_date).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "—";
+      const isOverdue = !DONE.includes(p.execution_status||"pending") && p.proposed_date && new Date(p.proposed_date) < today;
+      return `<div class="lead-event-row">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:13px;">${esc(p.event_name)}</div>
+          <div style="font-size:11px;color:var(--muted);">${esc(p.club_name)} · ${dt}${isOverdue ? ' <span style="color:#dc2626;font-weight:700;">· OVERDUE</span>' : ''}</div>
+        </div>
+        <span style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:999px;background:${ex.bg};color:${ex.color};white-space:nowrap;">${ex.label}</span>
+      </div>`;
+    }).join("") : `<div style="padding:16px 18px;font-size:13px;color:var(--muted);">No events assigned yet.</div>`;
+
+    return `
+      <div class="lead-card">
+        <div class="lead-card-header" onclick="toggleLeadCard('${cardId}')">
+          <div class="lead-avatar">${initials}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:14px;font-weight:700;color:var(--ink);">${esc(lead.email)}</div>
+            <div style="font-size:12px;color:var(--muted);">📍 ${campus}</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <span style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:999px;background:#f5f3ff;color:#7c3aed;">${myEvents.length} events</span>
+            <span style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:999px;background:#eff6ff;color:#2563eb;">${active} active</span>
+            <span style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:999px;background:#f0fdf4;color:#15803d;">${done} done</span>
+            ${overdue > 0 ? `<span style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:999px;background:#fef2f2;color:#dc2626;">⚠️ ${overdue} overdue</span>` : ""}
+            <span style="color:var(--muted);font-size:14px;" id="${cardId}-arrow">▸</span>
+          </div>
+        </div>
+        <div class="lead-card-events" id="${cardId}">${eventsHtml}</div>
+      </div>`;
+  }).join("");
+}
+
+function toggleLeadCard(id){
+  const el    = document.getElementById(id);
+  const arrow = document.getElementById(id + "-arrow");
+  if(!el) return;
+  el.classList.toggle("open");
+  if(arrow) arrow.textContent = el.classList.contains("open") ? "▾" : "▸";
+}
 
 function openReportModal(){
   // Populate year dropdown
