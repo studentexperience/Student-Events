@@ -1849,6 +1849,10 @@
           <label class="toggle-switch"><input type="checkbox" id="permDownload" /><span class="toggle-slider"></span></label>
         </div>
         <div class="perm-row">
+          <div><div class="perm-label">Assign Events</div><div class="perm-sub">Assign proposals to Event Leads</div></div>
+          <label class="toggle-switch"><input type="checkbox" id="permAssign" /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="perm-row">
           <div><div class="perm-label">Import CSV</div><div class="perm-sub">Bulk import events & clubs</div></div>
           <label class="toggle-switch"><input type="checkbox" id="permImport" /><span class="toggle-slider"></span></label>
         </div>
@@ -2182,15 +2186,40 @@ async function checkSession(){
 
 /* ── Permission helpers ── */
 const DEFAULT_PERMS = {
-  campus:"All", manage_events:true, manage_clubs:true,
-  manage_news:true, manage_forms:true, edit_home:true,
-  view_dashboard:true, download_charts:true, import_csv:true
+  campus: ["All"],
+  manage_events: true, manage_clubs: true,
+  manage_news: true,   manage_forms: true,
+  edit_home: true,     view_dashboard: true,
+  download_charts: true, import_csv: true,
+  manage_proposals: true, assign_events: true
+};
+
+// Role-based permission defaults
+const ROLE_DEFAULTS = {
+  super_admin: { ...DEFAULT_PERMS, assign_events: true },
+  admin: {
+    campus: ["All"],
+    manage_events: true, manage_clubs: true,
+    manage_news: true,   manage_forms: true,
+    edit_home: true,     view_dashboard: true,
+    download_charts: true, import_csv: true,
+    manage_proposals: true, assign_events: true
+  },
+  event_lead: {
+    campus: ["All"],
+    manage_events: true, manage_clubs: true,
+    manage_news: true,   manage_forms: true,
+    edit_home: true,     view_dashboard: true,
+    download_charts: true, import_csv: true,
+    manage_proposals: true, assign_events: false
+  }
 };
 
 function buildPermissions(role, permsJson){
-  if(role === "super_admin") return { ...DEFAULT_PERMS, campus: ["All"] };
-  const merged = { ...DEFAULT_PERMS, ...(permsJson || {}) };
-  // Normalise campus to always be an array
+  if(role === "super_admin") return { ...ROLE_DEFAULTS.super_admin };
+  // Start from role defaults, then overlay stored permissions
+  const base   = ROLE_DEFAULTS[role] || ROLE_DEFAULTS.admin;
+  const merged = { ...base, ...(permsJson || {}) };
   if(!Array.isArray(merged.campus)){
     merged.campus = merged.campus ? [merged.campus] : ["All"];
   }
@@ -2213,61 +2242,57 @@ function showAdminPanel(){
   document.getElementById("adminShell").classList.add("visible");
   document.getElementById("userEmail").textContent = currentUser.email;
 
-  // Topbar badge
+  // Topbar badge — show correct role label
   const badge = document.getElementById("topbarBadge");
-  if(currentRole === "super_admin"){
-    badge.textContent = "SUPER ADMIN";
-    badge.style.background = "#fef3c7";
-    badge.style.color = "#92400e";
-  } else {
-    badge.textContent = "ADMIN";
-  }
+  const badgeLabels = { super_admin:"SUPER ADMIN", admin:"ADMIN", event_lead:"EVENT LEAD" };
+  const badgeColors = {
+    super_admin: { bg:"#fef3c7", color:"#92400e" },
+    admin:       { bg:"#eff6ff", color:"#1d4ed8" },
+    event_lead:  { bg:"#f0fdf4", color:"#15803d" },
+  };
+  badge.textContent       = badgeLabels[currentRole] || "ADMIN";
+  badge.style.background  = (badgeColors[currentRole] || badgeColors.admin).bg;
+  badge.style.color       = (badgeColors[currentRole] || badgeColors.admin).color;
 
-  // ── Apply permissions to sidebar nav ──
+  // ── Sidebar nav visibility ──
   const navMap = {
-    "section-dashboard": "view_dashboard",
-    "section-clubs":     "manage_clubs",
-    "section-events":    "manage_events",
-    "section-news":      "manage_news",
-    "section-forms":     "manage_forms",
-    "section-home":      "edit_home",
+    "section-dashboard":      "view_dashboard",
+    "section-clubs":          "manage_clubs",
+    "section-events":         "manage_events",
+    "section-news":           "manage_news",
+    "section-forms":          "manage_forms",
+    "section-home":           "edit_home",
+    "section-proposals":      "manage_proposals",
+    "section-clubs-approval": "manage_proposals",
   };
 
-  // Hide nav items the admin doesn't have access to
   document.querySelectorAll(".nav-item[data-section]").forEach(btn => {
     const section = btn.dataset.section;
     const perm    = navMap[section];
     btn.style.display = (!perm || hasPermission(perm)) ? "" : "none";
   });
 
-  // Show/hide Admins nav based on role
-  if(currentRole === "super_admin"){
-    document.getElementById("adminsNavBtn").style.display     = "";
-    document.getElementById("settingsNavLabel").style.display = "";
-  } else {
-    document.getElementById("adminsNavBtn").style.display     = "none";
-    document.getElementById("settingsNavLabel").style.display = "none";
-  }
+  // Admins section — Super Admin only
+  const isSuper = currentRole === "super_admin";
+  document.getElementById("adminsNavBtn").style.display     = isSuper ? "" : "none";
+  document.getElementById("settingsNavLabel").style.display = isSuper ? "" : "none";
 
-  // ── Apply permissions to action buttons ──
-  // Clubs: hide Add/Edit/Delete/Import if no manage_clubs
-  applyActionPermission("manage_clubs",  ["#btn-add-club","#btn-import-clubs"]);
-  applyActionPermission("manage_events", ["#btn-add-event","#btn-import-events"]);
-  applyActionPermission("manage_news",   ["#btn-add-news"]);
-  applyActionPermission("manage_forms",  ["#btn-add-form"]);
-  applyActionPermission("download_charts",
-    document.querySelectorAll(".chart-download-btn")
-  );
+  // ── Action buttons ──
+  applyActionPermission("manage_clubs",    ["#btn-add-club","#btn-import-clubs"]);
+  applyActionPermission("manage_events",   ["#btn-add-event","#btn-import-events"]);
+  applyActionPermission("manage_news",     ["#btn-add-news"]);
+  applyActionPermission("manage_forms",    ["#btn-add-form"]);
+  applyActionPermission("download_charts", document.querySelectorAll(".chart-download-btn"));
 
-  loadDashboard();
-  if(hasPermission("manage_clubs"))  loadClubs();
-  if(hasPermission("manage_events")) loadEvents();
-  if(hasPermission("manage_news"))   loadNews();
-  if(hasPermission("manage_forms"))  loadForms();
-  if(hasPermission("edit_home"))     loadPages();
-  loadClubApprovals();
-  loadProposals();
-  if(currentRole === "super_admin")  loadAdmins();
+  // ── Load data based on permissions ──
+  if(hasPermission("view_dashboard"))  loadDashboard();
+  if(hasPermission("manage_clubs"))    loadClubs();
+  if(hasPermission("manage_events"))   loadEvents();
+  if(hasPermission("manage_news"))     loadNews();
+  if(hasPermission("manage_forms"))    loadForms();
+  if(hasPermission("edit_home"))       loadPages();
+  if(hasPermission("manage_proposals")){ loadClubApprovals(); loadProposals(); }
+  if(isSuper) loadAdmins();
 }
 
 function applyActionPermission(permKey, selectors){
@@ -3097,6 +3122,7 @@ function openPermissionsModal(id, email, permsRaw){
   document.getElementById("permHome").checked      = p.edit_home       !== false;
   document.getElementById("permDashboard").checked = p.view_dashboard  !== false;
   document.getElementById("permDownload").checked  = p.download_charts !== false;
+  document.getElementById("permAssign").checked    = p.assign_events   !== false;
   document.getElementById("permImport").checked    = p.import_csv      !== false;
   document.getElementById("campusCheckError").style.display = "none";
 
@@ -3156,7 +3182,9 @@ async function savePermissions(){
         edit_home:       document.getElementById("permHome").checked,
         view_dashboard:  document.getElementById("permDashboard").checked,
         download_charts: document.getElementById("permDownload").checked,
+        assign_events:   document.getElementById("permAssign").checked,
         import_csv:      document.getElementById("permImport").checked,
+        manage_proposals: true,
       };
 
   const { error } = await sb.from("admins")
@@ -3579,15 +3607,22 @@ function openReviewModal(id){
   document.getElementById("reviewProposalId").value = id;
   document.getElementById("reviewProposalTitle").textContent = p.event_name;
   document.getElementById("reviewNoteField").style.display  = "none";
-  document.getElementById("assignSection").style.display    = p.status === "approved" ? "block" : "none";
+  document.getElementById("reviewNote").value = "";
+
+  // Assign section — only admins and super admins can assign
+  const canAssign = hasPermission("assign_events");
+  document.getElementById("assignSection").style.display =
+    (canAssign && p.status === "approved") ? "block" : "none";
 
   // Populate event leads dropdown
-  const leads = (allAdmins || []).filter(a => ["admin","super_admin","event_lead"].includes(a.role));
-  document.getElementById("assignLeadSelect").innerHTML =
-    `<option value="">Select event lead…</option>` +
-    leads.map(l => `<option value="${esc(l.email)}" ${p.assigned_to === l.email ? "selected":""}>
-      ${esc(l.email)} (${l.role === "event_lead" ? "Event Lead" : l.role === "super_admin" ? "Super Admin" : "Admin"})
-    </option>`).join("");
+  if(canAssign){
+    const leads = (allAdmins || []).filter(a => ["admin","super_admin","event_lead"].includes(a.role));
+    document.getElementById("assignLeadSelect").innerHTML =
+      `<option value="">Select event lead…</option>` +
+      leads.map(l => `<option value="${esc(l.email)}" ${p.assigned_to === l.email ? "selected":""}>
+        ${esc(l.email)} (${l.role === "event_lead" ? "Event Lead" : l.role === "super_admin" ? "Super Admin" : "Admin"})
+      </option>`).join("");
+  }
 
   // Build details HTML
   const sc = PROPOSAL_STATUS_CONFIG[p.status] || { label:p.status, color:"#555", bg:"#f3f4f6" };
