@@ -1403,6 +1403,7 @@
                 <th>Name</th>
                 <th>Email</th>
                 <th>Campus</th>
+                <th>Category</th>
                 <th>Convenor</th>
                 <th>Actions</th>
               </tr>
@@ -3297,7 +3298,7 @@ async function loadClubs(){
 function renderClubs(list){
   const tbody = document.getElementById("clubs-tbody");
   if(!list.length){
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">🎭</div><div class="empty-state-text">No clubs yet. Add one above.</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">🎭</div><div class="empty-state-text">No clubs yet. Add one above.</div></div></td></tr>`;
     return;
   }
   tbody.innerHTML = list.map(c => {
@@ -3308,6 +3309,7 @@ function renderClubs(list){
       <td title="${esc(c.name)}">${esc(c.name)}</td>
       <td title="${esc(c.email||'')}">${esc(c.email || "—")}</td>
       <td>${c.campus ? `<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#eff6ff;color:#2563eb;">${esc(c.campus)}</span>` : "—"}</td>
+      <td>${c.category ? `<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#fef9c3;color:#854d0e;">${esc(c.category)}</span>` : "—"}</td>
       <td>${esc(c.convenor || "—")}</td>
       <td><div class="td-actions">
         ${canEdit ? `<button class="btn btn-secondary btn-sm" onclick="openClubModal('${c.id}')">✏️ Edit</button>
@@ -4808,7 +4810,7 @@ async function revokeClub(id, name){
 function importClubsCSV(){
   csvImportTarget = "clubs";
   document.getElementById("csvModalTitle").textContent = "Import Clubs CSV";
-  document.getElementById("csvModalDesc").textContent  = "Upload your clubs-data.csv. Columns: Society Name, Email, Description, Signature Events, Convenor, Co-Convenor, General Secretary, Treasurer, Logo";
+  document.getElementById("csvModalDesc").textContent  = "Upload your clubs-data.csv. Columns: Society Name, Email, Description, Signature Events, Convenor, Co-Convenor, General Secretary, Treasurer, Logo, Campus, Category";
   document.getElementById("csvStatus").innerHTML = "";
   document.getElementById("csvFile").value = "";
   document.getElementById("csvModal").classList.add("open");
@@ -4848,6 +4850,8 @@ function handleCSVUpload(input){
           secretary:   (r["General Secretary"]  || "").trim(),
           treasurer:   (r["Treasurer"]          || "").trim(),
           logo_url:    (r["Logo"]               || "").trim(),
+          campus:      (r["Campus"]             || "").trim() || null,
+          category:    (r["Category"]           || r["Club Category"] || r["Type"] || "").trim() || null,
         })).filter(r => r.name);
       } else {
         rows = res.data.map(r => ({
