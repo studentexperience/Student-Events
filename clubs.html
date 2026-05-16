@@ -784,7 +784,7 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ── Supabase init ── */
   const SUPABASE_URL = "https://dgzuqvffnbfybngoadse.supabase.co";
   const SUPABASE_KEY = "sb_publishable_77t5gCD7M620CzcMwESN-A_oAuqz6B8";
-  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { storageKey: "aku-public-session", persistSession: false } });
 
   /* ── Load clubs from Supabase ── */
   async function loadClubs(){
