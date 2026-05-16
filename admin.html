@@ -3480,40 +3480,41 @@ async function saveEvent(){
     updated_at:  new Date().toISOString(),
   };
 
-  let error, newEventData;
+  let error, insertedId;
   if(id){
     ({ error } = await sb.from("events").update(payload).eq("id", id));
   } else {
-    const { data, error: insertErr } = await sb.from("events").insert(payload).select().single();
-    error        = insertErr;
-    newEventData = data;
+    const { data, error: insertErr } = await sb.from("events").insert(payload).select("id").single();
+    error      = insertErr;
+    insertedId = data?.id;
   }
 
   if(error){ showToast("Save failed: " + error.message, "error"); return; }
   showToast(id ? "Event updated!" : "Event added!");
 
   // 🔔 Notify all push subscribers about new event
-  if(!id && newEventData){
+  if(!id){
     try {
-      await fetch("https://dgzuqvffnbfybngoadse.supabase.co/functions/v1/bright-processor", {
+      const pushPayload = {
+        type: "new_event",
+        event: {
+          id:         insertedId || "new",
+          name:       payload.name,
+          organiser:  payload.organiser,
+          venue:      payload.venue,
+          start_time: payload.start_time,
+          event_date: payload.event_date,
+        }
+      };
+      console.log("[Push] Sending new event notification:", pushPayload);
+      const res = await fetch("https://dgzuqvffnbfybngoadse.supabase.co/functions/v1/bright-processor", {
         method: "POST",
-        headers: {
-          "Content-Type":  "application/json",
-          "Authorization": `Bearer ${SUPABASE_KEY}`,
-        },
-        body: JSON.stringify({
-          type: "new_event",
-          event: {
-            id:         newEventData.id,
-            name:       newEventData.name,
-            organiser:  newEventData.organiser,
-            venue:      newEventData.venue,
-            start_time: newEventData.start_time,
-            event_date: newEventData.event_date,
-          }
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pushPayload)
       });
-    } catch(e){ console.warn("Push notification failed:", e); }
+      const result = await res.json();
+      console.log("[Push] Response:", result);
+    } catch(e){ console.warn("[Push] Failed:", e); }
   }
   closeModal("eventModal");
   loadEvents();
