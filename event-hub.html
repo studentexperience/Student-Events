@@ -1365,6 +1365,59 @@ function proposalCardHTML(p){
 }
 
 /* ── View proposal detail ── */
+/* ── Message Thread (Club side) ── */
+async function loadHubMessages(proposalId){
+  const list = document.getElementById("hubMessageList");
+  if(!list) return;
+  const { data } = await sb.from("proposal_messages")
+    .select("*").eq("proposal_id", proposalId)
+    .order("created_at", { ascending: true });
+  const msgs = data || [];
+  if(!msgs.length){
+    list.innerHTML = `<div style="text-align:center;font-size:12px;color:#9ca3af;padding:8px;">No messages yet.</div>`;
+    return;
+  }
+  list.innerHTML = msgs.map(m => {
+    const isAdmin = m.sender_type === "admin";
+    const time    = new Date(m.created_at).toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+    const bg      = isAdmin ? "#eff6ff" : "#f0fdf4";
+    const color   = isAdmin ? "#1e40af" : "#15803d";
+    const align   = isAdmin ? "flex-start" : "flex-end";
+    const radius  = isAdmin ? "4px 12px 12px 12px" : "12px 4px 12px 12px";
+    const label   = isAdmin ? "🏫 Admin" : "🏷️ You";
+    return `<div style="display:flex;flex-direction:column;align-items:${align};gap:2px;">
+      <div style="background:${bg};color:${color};padding:9px 13px;border-radius:${radius};font-size:13px;line-height:1.5;max-width:85%;">${esc(m.message)}</div>
+      <div style="font-size:10px;color:#9ca3af;">${label} · ${time}</div>
+    </div>`;
+  }).join("");
+  list.scrollTop = list.scrollHeight;
+}
+
+async function sendHubReply(proposalId){
+  const text = document.getElementById("hubReplyText").value.trim();
+  if(!text){ showToast("Type a message first", "error"); return; }
+  const { error } = await sb.from("proposal_messages").insert({
+    proposal_id:  proposalId,
+    sender_email: currentClub.email,
+    sender_type:  "club",
+    message:      text,
+  });
+  if(error){ showToast("Failed: " + error.message, "error"); return; }
+  const { data: admins } = await sb.from("admins").select("email").in("role",["admin","super_admin"]);
+  const p = allProposals.find(x => x.id === proposalId);
+  if(admins?.length && p){
+    await sb.from("notifications").insert(admins.map(a => ({
+      recipient: a.email, type: "proposal_message",
+      title: "💬 Club Replied on Proposal",
+      message: `Re: "${p.event_name}" from ${currentClub.name} — ${text.substring(0,100)}${text.length>100?"…":""}`,
+      proposal_id: proposalId, is_read: false,
+    })));
+  }
+  document.getElementById("hubReplyText").value = "";
+  showToast("✅ Message sent!");
+  loadHubMessages(proposalId);
+}
+
 function viewProposal(id){
   const p = allProposals.find(x => x.id === id);
   if(!p) return;
@@ -1385,9 +1438,24 @@ function viewProposal(id){
       ${p.admin_note  ? `<div style="grid-column:1/-1;background:#fff7ed;border-radius:10px;padding:12px 14px;font-size:13px;color:#92400e;border:1px solid #fed7aa;"><strong>Admin Note:</strong> ${esc(p.admin_note)}</div>` : ""}
       ${p.assigned_to ? `<div style="grid-column:1/-1;background:#f5f3ff;border-radius:10px;padding:12px 14px;font-size:13px;color:#7c3aed;border:1px solid #e9d5ff;"><strong>Assigned to:</strong> ${esc(p.assigned_to)}</div>` : ""}
     </div>
-    <div style="text-align:right;margin-top:16px;font-size:11px;color:var(--muted);">Submitted ${formatDate(p.submitted_at)}</div>`;
+    <div style="text-align:right;margin-top:16px;font-size:11px;color:var(--muted);">Submitted ${formatDate(p.submitted_at)}</div>
+
+    <!-- Message Thread -->
+    <div style="margin-top:20px;border-top:1px solid #f3f4f6;padding-top:16px;">
+      <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px;">💬 Messages</div>
+      <div id="hubMessageList" style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;margin-bottom:12px;padding-right:4px;"></div>
+      <div style="display:flex;gap:8px;">
+        <textarea id="hubReplyText" rows="2" placeholder="Reply to admin…"
+          style="flex:1;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:'Poppins',sans-serif;font-size:13px;resize:none;outline:none;"
+          onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
+        <button onclick="sendHubReply('${p.id}')"
+          style="padding:9px 16px;background:#7c3aed;color:white;border:none;border-radius:10px;font-family:'Poppins',sans-serif;font-size:13px;font-weight:700;cursor:pointer;align-self:flex-end;">
+          Send
+        </button>
+      </div>
+    </div>`;
   document.getElementById("viewModal").classList.add("open");
-}
+  loadHubMessages(id);
 
 function row(label, value){
   return `<div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:3px;">${label}</div><div>${value}</div></div>`;
