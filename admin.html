@@ -499,11 +499,13 @@
       border: 1px solid var(--border);
       padding: 20px;
       box-shadow: var(--shadow);
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 12px;
-      align-items: flex-end;
+      align-items: end;
     }
-    .add-admin-form .field { flex: 1; }
+    .add-admin-form .field { min-width: 0; }
+    .add-admin-form button { grid-column: 3; }
 
     /* ── EMPTY STATE ── */
     .empty-state {
@@ -1481,10 +1483,19 @@
               <option>Dar es Salaam</option>
             </select>
           </div>
-          <button class="btn btn-primary" onclick="addAdmin()">Add Admin</button>
+          <div class="field" style="min-width:180px;">
+            <label>Temporary Password</label>
+            <div style="position:relative;">
+              <input type="password" id="newAdminPassword" placeholder="Min. 8 characters"
+                style="padding-right:40px;" />
+              <button type="button" onclick="togglePwdVisibility('newAdminPassword', this)"
+                style="position:absolute;right:10px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:14px;color:var(--muted);">👁️</button>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="addAdmin()" style="grid-column:span 1;align-self:flex-end;height:38px;">Add Admin</button>
         </div>
         <p style="font-size:12px;color:var(--muted);margin-top:10px;" id="addAdminNote">
-          ℹ️ After adding, share this page URL with the new admin. They can click <strong>"Create Account"</strong> on the login screen to set their password.
+          ℹ️ Set a temporary password and share it with the new member. They will be prompted to change it on first login.
         </p>
       </div>
 
@@ -2543,7 +2554,9 @@ async function handleLogin(){
     return;
   }
 
-  const { data: adminRow } = await sb.from("admins").select("email, role, permissions").eq("email", email).single();
+  const { data: adminRow } = await sb.from("admins")
+    .select("email, role, permissions, must_change_password")
+    .eq("email", email).single();
   if(!adminRow){
     await sb.auth.signOut();
     msg.textContent = "Access denied. Your email is not an authorised admin.";
@@ -2557,7 +2570,9 @@ async function handleLogin(){
   currentRole        = adminRow.role || "admin";
   currentPermissions = buildPermissions(adminRow.role, adminRow.permissions);
   showAdminPanel();
-  checkFirstLogin(data.session);
+  if(adminRow.must_change_password){
+    setTimeout(() => showForceChangePassword(), 600);
+  }
 }
 
 async function handleLogout(){
@@ -2571,12 +2586,18 @@ async function handleLogout(){
 async function checkSession(){
   const { data: { session } } = await sb.auth.getSession();
   if(session){
-    const { data: adminRow } = await sb.from("admins").select("email, role, permissions").eq("email", session.user.email).single();
+    const { data: adminRow } = await sb.from("admins")
+      .select("email, role, permissions, must_change_password")
+      .eq("email", session.user.email).single();
     if(adminRow){
       currentUser        = session.user;
       currentRole        = adminRow.role || "admin";
       currentPermissions = buildPermissions(adminRow.role, adminRow.permissions);
       showAdminPanel();
+      // Force password change if using temporary password
+      if(adminRow.must_change_password){
+        setTimeout(() => showForceChangePassword(), 600);
+      }
     }
   }
 }
@@ -3658,22 +3679,52 @@ async function savePermissions(){
 
 async function addAdmin(){
   if(currentRole !== "super_admin"){ showToast("Only Super Admins can add new admins.", "error"); return; }
-  const email  = document.getElementById("newAdminEmail").value.trim();
-  const role   = document.getElementById("newAdminRole").value;
-  const campus = document.getElementById("newAdminCampus").value;
-  if(!email){ showToast("Enter an email address", "error"); return; }
+  const email    = document.getElementById("newAdminEmail").value.trim();
+  const role     = document.getElementById("newAdminRole").value;
+  const campus   = document.getElementById("newAdminCampus").value;
+  const password = document.getElementById("newAdminPassword").value;
 
-  // Set default permissions based on role
+  if(!email)   { showToast("Enter an email address", "error"); return; }
+  if(!password){ showToast("Set a temporary password", "error"); return; }
+  if(password.length < 8){ showToast("Password must be at least 8 characters", "error"); return; }
+
+  // Step 1 — Insert into admins table first (needed for signup trigger)
   const defaultPerms = { ...ROLE_DEFAULTS[role] || ROLE_DEFAULTS.admin, campus: [campus] };
+  const { error: insertErr } = await sb.from("admins").insert({
+    email, role, campus,
+    permissions: defaultPerms,
+    must_change_password: true,
+  });
+  if(insertErr){ showToast("Failed: " + insertErr.message, "error"); return; }
 
-  const { error } = await sb.from("admins").insert({ email, role, campus, permissions: defaultPerms });
-  if(error){ showToast("Failed: " + error.message, "error"); return; }
+  // Step 2 — Create auth account with temporary password
+  const { error: signupErr } = await sb.auth.signUp({ email, password });
+  if(signupErr && !signupErr.message.toLowerCase().includes("already")){
+    // Rollback admins insert if auth fails
+    await sb.from("admins").delete().eq("email", email);
+    showToast("Auth account failed: " + signupErr.message, "error");
+    return;
+  }
 
   const roleLabel = role === "super_admin" ? "Super Admin" : role === "event_lead" ? "Event Lead" : "Admin";
-  showToast(`${roleLabel} added! They must sign up to set their password.`);
-  document.getElementById("newAdminEmail").value  = "";
-  document.getElementById("newAdminRole").value   = "event_lead";
-  document.getElementById("newAdminCampus").value = "All";
+  showToast(`✅ ${roleLabel} added! Share the temporary password with them securely.`);
+
+  // Show a copy-friendly summary
+  document.getElementById("addAdminNote").innerHTML = `
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px;margin-top:8px;">
+      <div style="font-weight:700;color:#15803d;margin-bottom:6px;">✅ Account created successfully!</div>
+      <div style="font-size:12px;color:#374151;line-height:1.8;">
+        <strong>Email:</strong> ${esc(email)}<br>
+        <strong>Role:</strong> ${roleLabel}<br>
+        <strong>Temp Password:</strong> <code style="background:#e5e7eb;padding:1px 6px;border-radius:4px;">${esc(password)}</code><br>
+        <strong>Note:</strong> They will be asked to change their password on first login.
+      </div>
+    </div>`;
+
+  document.getElementById("newAdminEmail").value    = "";
+  document.getElementById("newAdminPassword").value = "";
+  document.getElementById("newAdminRole").value     = "event_lead";
+  document.getElementById("newAdminCampus").value   = "All";
   loadAdmins();
   loadDashboard();
 }
@@ -5596,6 +5647,47 @@ document.querySelectorAll(".table-wrap table").forEach(table => {
   table.parentNode.insertBefore(wrapper, table);
   wrapper.appendChild(table);
 });
+
+function togglePwdVisibility(inputId, btn){
+  const input = document.getElementById(inputId);
+  if(!input) return;
+  const show = input.type === "password";
+  input.type = show ? "text" : "password";
+  btn.textContent = show ? "🙈" : "👁️";
+}
+
+function showForceChangePassword(){
+  document.getElementById("changePasswordTitle").textContent = "🔐 Set Your New Password";
+  const modal   = document.getElementById("changePasswordModal");
+  const body    = modal.querySelector(".modal-body");
+  const closeBtn= modal.querySelector(".modal-close");
+
+  if(!body.querySelector(".force-notice")){
+    const notice = document.createElement("div");
+    notice.className = "force-notice";
+    notice.style.cssText = "background:#fef9c3;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#92400e;";
+    notice.innerHTML = "⚠️ You are using a <strong>temporary password</strong>. Please set a new personal password to continue.";
+    body.prepend(notice);
+  }
+
+  if(closeBtn) closeBtn.style.display = "none";
+
+  const saveBtn = modal.querySelector(".btn-primary");
+  if(saveBtn) saveBtn.onclick = async () => {
+    const newPw  = document.getElementById("newPassword").value;
+    const confPw = document.getElementById("confirmNewPassword").value;
+    if(!newPw || newPw.length < 8){ showToast("Password must be at least 8 characters", "error"); return; }
+    if(newPw !== confPw){ showToast("Passwords do not match", "error"); return; }
+    const { error } = await sb.auth.updateUser({ password: newPw });
+    if(error){ showToast("Failed: " + error.message, "error"); return; }
+    await sb.from("admins").update({ must_change_password: false }).eq("email", currentUser.email);
+    showToast("✅ Password updated! Welcome aboard.");
+    if(closeBtn) closeBtn.style.display = "";
+    closeModal("changePasswordModal");
+  };
+
+  modal.classList.add("open");
+}
 
 checkSession();
 </script>
