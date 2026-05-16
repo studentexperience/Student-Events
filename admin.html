@@ -2477,7 +2477,13 @@
 /* ══ SUPABASE INIT ══ */
 const SUPABASE_URL = "https://dgzuqvffnbfybngoadse.supabase.co";
 const SUPABASE_KEY = "sb_publishable_77t5gCD7M620CzcMwESN-A_oAuqz6B8";
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    storageKey: "aku-admin-session",
+    autoRefreshToken: true,
+    persistSession: true,
+  }
+});
 
 let currentUser        = null;
 let currentRole        = null;
