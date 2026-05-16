@@ -1,13 +1,19 @@
-const CACHE_NAME = "aku-campus-life-v1";
+const CACHE_NAME = "aku-campus-life-v2";
 
-// Pages and assets to cache for offline use
+// Only cache public pages — never admin or event-hub
 const STATIC_ASSETS = [
   "/Student-Events/index.html",
   "/Student-Events/clubs.html",
   "/Student-Events/news.html",
   "/Student-Events/forms.html",
-  "/Student-Events/event-hub.html",
   "/Student-Events/manifest.json",
+  "/Student-Events/offline.html",
+];
+
+// Pages that should NEVER be cached (authenticated portals)
+const NO_CACHE_PATHS = [
+  "/Student-Events/admin.html",
+  "/Student-Events/event-hub.html",
 ];
 
 // ── Install: cache static assets ──
@@ -43,6 +49,12 @@ self.addEventListener("activate", event => {
 // ── Fetch: network-first for API calls, cache-first for static ──
 self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);
+
+  // Never cache admin or event-hub pages
+  if(NO_CACHE_PATHS.some(p => url.pathname.includes(p))){
+    event.respondWith(fetch(event.request));
+    return;
+  }
 
   // Always go network-first for Supabase API calls
   if(url.hostname.includes("supabase.co")){
