@@ -2443,16 +2443,27 @@
       <p id="changePasswordMsg" style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.6;"></p>
       <div class="field" style="margin-bottom:14px;">
         <label>New Password</label>
-        <input type="password" id="newPassword" placeholder="Min. 8 characters" />
+        <div style="position:relative;">
+          <input type="password" id="newPassword" placeholder="Min. 8 characters" style="padding-right:40px;" oninput="validatePasswordStrength(this.value)" />
+          <button type="button" onclick="togglePwdVisibility('newPassword',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:14px;">👁️</button>
+        </div>
+        <!-- Strength indicator -->
+        <div id="pwStrengthBar" style="height:4px;border-radius:999px;background:#e5e7eb;margin-top:6px;overflow:hidden;">
+          <div id="pwStrengthFill" style="height:100%;width:0%;border-radius:999px;transition:all .3s;"></div>
+        </div>
+        <div id="pwStrengthLabel" style="font-size:11px;margin-top:3px;color:var(--muted);"></div>
       </div>
       <div class="field" style="margin-bottom:4px;">
         <label>Confirm New Password</label>
-        <input type="password" id="confirmPassword" placeholder="Repeat password" />
+        <div style="position:relative;">
+          <input type="password" id="confirmNewPassword" placeholder="Repeat password" style="padding-right:40px;" />
+          <button type="button" onclick="togglePwdVisibility('confirmNewPassword',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:14px;">👁️</button>
+        </div>
       </div>
       <div id="changePasswordError" style="font-size:12px;color:var(--danger);min-height:18px;margin-top:6px;"></div>
       <div class="form-actions">
         <button class="btn btn-secondary" id="changePasswordSkip" onclick="closeModal('changePasswordModal')" style="display:none;">Skip for now</button>
-        <button class="btn btn-primary" onclick="handleChangePassword()">Update Password</button>
+        <button class="btn btn-primary" id="updatePasswordBtn" onclick="handleChangePassword()">Update Password</button>
       </div>
     </div>
   </div>
@@ -4879,18 +4890,20 @@ function openChangePassword(isFirstLogin = false){
   const close = document.getElementById("changePasswordClose");
   const title = document.getElementById("changePasswordTitle");
 
-  document.getElementById("newPassword").value     = "";
-  document.getElementById("confirmPassword").value = "";
+  document.getElementById("newPassword").value         = "";
+  document.getElementById("confirmNewPassword").value  = "";
   document.getElementById("changePasswordError").textContent = "";
+  document.getElementById("pwStrengthFill").style.width  = "0%";
+  document.getElementById("pwStrengthLabel").textContent = "";
 
   if(isFirstLogin){
-    title.textContent = "👋 Welcome! Set Your Password";
-    msg.textContent   = "Your account was created by the Super Admin. Please set a new personal password before continuing.";
-    skip.style.display  = "inline-flex";   // allow skipping but nudge them
-    close.style.display = "none";          // hide X to nudge them
+    title.textContent   = "🔐 Set Your New Password";
+    msg.textContent     = "You are using a temporary password. Please set a new personal password to continue.";
+    skip.style.display  = "none";
+    close.style.display = "none";
   } else {
-    title.textContent = "Change Password";
-    msg.textContent   = "Enter a new password for your account.";
+    title.textContent   = "Change Password";
+    msg.textContent     = "Enter a new password for your account.";
     skip.style.display  = "none";
     close.style.display = "block";
   }
@@ -4898,30 +4911,78 @@ function openChangePassword(isFirstLogin = false){
   modal.classList.add("open");
 }
 
+function validatePasswordStrength(pw){
+  const bar   = document.getElementById("pwStrengthFill");
+  const label = document.getElementById("pwStrengthLabel");
+  if(!bar || !label) return;
+
+  let score = 0;
+  if(pw.length >= 8)  score++;
+  if(pw.length >= 12) score++;
+  if(/[A-Z]/.test(pw)) score++;
+  if(/[0-9]/.test(pw)) score++;
+  if(/[^A-Za-z0-9]/.test(pw)) score++;
+
+  const levels = [
+    { pct:"20%", color:"#ef4444", label:"Very weak" },
+    { pct:"40%", color:"#f97316", label:"Weak" },
+    { pct:"60%", color:"#eab308", label:"Fair" },
+    { pct:"80%", color:"#22c55e", label:"Strong" },
+    { pct:"100%",color:"#16a34a", label:"Very strong ✓" },
+  ];
+  const lvl = levels[Math.min(score, levels.length) - 1] || levels[0];
+  bar.style.width      = lvl.pct;
+  bar.style.background = lvl.color;
+  label.style.color    = lvl.color;
+  label.textContent    = pw.length === 0 ? "" : lvl.label;
+}
+
 async function handleChangePassword(){
   const newPw  = document.getElementById("newPassword").value;
-  const confPw = document.getElementById("confirmPassword").value;
+  const confPw = document.getElementById("confirmNewPassword").value;
   const errEl  = document.getElementById("changePasswordError");
+  const btn    = document.getElementById("updatePasswordBtn");
 
   errEl.textContent = "";
 
-  if(newPw.length < 8){
-    errEl.textContent = "Password must be at least 8 characters.";
+  if(!newPw || newPw.length < 8){
+    errEl.textContent = "❌ Password must be at least 8 characters.";
+    return;
+  }
+  if(!/[A-Z]/.test(newPw)){
+    errEl.textContent = "❌ Must contain at least one uppercase letter.";
+    return;
+  }
+  if(!/[0-9]/.test(newPw)){
+    errEl.textContent = "❌ Must contain at least one number.";
     return;
   }
   if(newPw !== confPw){
-    errEl.textContent = "Passwords do not match.";
+    errEl.textContent = "❌ Passwords do not match.";
     return;
   }
+
+  btn.disabled = true;
+  btn.textContent = "Updating…";
 
   const { error } = await sb.auth.updateUser({ password: newPw });
   if(error){
-    errEl.textContent = "Failed: " + error.message;
+    errEl.textContent = "❌ " + error.message;
+    btn.disabled = false;
+    btn.textContent = "Update Password";
     return;
   }
 
+  // Clear must_change_password flag if this was a forced change
+  await sb.from("admins")
+    .update({ must_change_password: false })
+    .eq("email", currentUser.email);
+
+  btn.disabled = false;
+  btn.textContent = "Update Password";
   closeModal("changePasswordModal");
-  showToast("Password updated successfully! 🎉");
+  showToast("✅ Password updated successfully!");
+}
 }
 
 /* Detect first login — Supabase sets created_at = last_sign_in_at on first login */
@@ -5657,36 +5718,7 @@ function togglePwdVisibility(inputId, btn){
 }
 
 function showForceChangePassword(){
-  document.getElementById("changePasswordTitle").textContent = "🔐 Set Your New Password";
-  const modal   = document.getElementById("changePasswordModal");
-  const body    = modal.querySelector(".modal-body");
-  const closeBtn= modal.querySelector(".modal-close");
-
-  if(!body.querySelector(".force-notice")){
-    const notice = document.createElement("div");
-    notice.className = "force-notice";
-    notice.style.cssText = "background:#fef9c3;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#92400e;";
-    notice.innerHTML = "⚠️ You are using a <strong>temporary password</strong>. Please set a new personal password to continue.";
-    body.prepend(notice);
-  }
-
-  if(closeBtn) closeBtn.style.display = "none";
-
-  const saveBtn = modal.querySelector(".btn-primary");
-  if(saveBtn) saveBtn.onclick = async () => {
-    const newPw  = document.getElementById("newPassword").value;
-    const confPw = document.getElementById("confirmNewPassword").value;
-    if(!newPw || newPw.length < 8){ showToast("Password must be at least 8 characters", "error"); return; }
-    if(newPw !== confPw){ showToast("Passwords do not match", "error"); return; }
-    const { error } = await sb.auth.updateUser({ password: newPw });
-    if(error){ showToast("Failed: " + error.message, "error"); return; }
-    await sb.from("admins").update({ must_change_password: false }).eq("email", currentUser.email);
-    showToast("✅ Password updated! Welcome aboard.");
-    if(closeBtn) closeBtn.style.display = "";
-    closeModal("changePasswordModal");
-  };
-
-  modal.classList.add("open");
+  openChangePassword(true);
 }
 
 checkSession();
