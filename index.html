@@ -537,6 +537,25 @@
       .organizer-banner{ font-size:11.5px; padding:8px 14px; }
     }
 
+    /* Notify Me button */
+    .notify-btn {
+      flex-shrink: 0;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 1.5px solid #e5e7eb;
+      background: white;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .18s;
+      padding: 0;
+    }
+    .notify-btn:hover { border-color: #7c3aed; background: #f5f3ff; }
+    .notify-btn.active { border-color: #7c3aed; background: #f5f3ff; }
+
     /* Add to Calendar button */
     .add-to-cal-btn {
       display: inline-flex;
@@ -1457,7 +1476,8 @@ document.addEventListener("DOMContentLoaded", () => {
         : "";
 
       // Interested counter — only show for upcoming events
-      const isInterested = hasUserInterested(e.id);
+      const isInterested  = hasUserInterested(e.id);
+      const isNotified    = isSubscribedToEvent(e.id);
       const interestedHtml = (mode === "upcoming" && e.id) ? `
         <div class="interested-row">
           <button class="interested-btn ${isInterested ? 'active' : ''}" 
@@ -1469,6 +1489,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <span>${e.interested === 1 ? 'person' : 'people'} interested</span>
           </button>
           ${e.id && e.date ? `<button class="add-to-cal-btn" onclick="downloadICS('${e.id}')" title="Add to your calendar">📆 Save</button>` : ""}
+          ${e.id ? `<button class="notify-btn ${isNotified ? 'active' : ''}" id="notify-${e.id}" onclick="toggleEventNotification('${e.id}', this)" title="${isNotified ? 'Stop notifications' : 'Notify me before this event'}">${isNotified ? '🔔' : '🔕'}</button>` : ""}
         </div>` : "";
 
       // Cover: real image → use it; missing → pick from curated student activity pool
@@ -1511,6 +1532,89 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   function hasUserInterested(eventId){
     return getInterestedSet().has(eventId);
+  }
+
+  /* ── Push Notifications ── */
+  const VAPID_PUBLIC_KEY  = "BBtB5ea361OUjuTYK_bROCPl9tzf-WNbHM_nmKZngM9iEdy5qCJoJ-lJqfYLSRUDB6QTbFR15Rblc-JE09MNLQ4";
+
+  function urlBase64ToUint8Array(b64){
+    const pad = "=".repeat((4 - b64.length % 4) % 4);
+    const raw = atob((b64 + pad).replace(/-/g,"+").replace(/_/g,"/"));
+    return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+  }
+
+  function getNotifEvents(){
+    try{ return JSON.parse(localStorage.getItem("notif-events") || "[]"); }
+    catch{ return []; }
+  }
+  function isSubscribedToEvent(id){ return getNotifEvents().includes(id); }
+  function saveNotifEvent(id){
+    const arr = getNotifEvents();
+    if(!arr.includes(id)){ arr.push(id); localStorage.setItem("notif-events", JSON.stringify(arr)); }
+  }
+  function removeNotifEvent(id){
+    localStorage.setItem("notif-events", JSON.stringify(getNotifEvents().filter(x => x !== id)));
+  }
+
+  async function subscribeToPush(){
+    if(!("serviceWorker" in navigator && "PushManager" in window)){
+      alert("Push notifications aren't supported on this browser."); return null;
+    }
+    const perm = await Notification.requestPermission();
+    if(perm !== "granted"){ alert("Please allow notifications to get event reminders."); return null; }
+    const reg = await navigator.serviceWorker.ready;
+    let sub   = await reg.pushManager.getSubscription();
+    if(!sub){
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+    }
+    const j = sub.toJSON();
+    await sb.from("push_subscriptions").upsert({
+      endpoint:  j.endpoint,
+      p256dh:    j.keys.p256dh,
+      auth:      j.keys.auth,
+      event_ids: getNotifEvents(),
+    }, { onConflict: "endpoint" });
+    return sub;
+  }
+
+  window.toggleEventNotification = async function(eventId, btn){
+    const already = isSubscribedToEvent(eventId);
+    if(already){
+      removeNotifEvent(eventId);
+      btn.textContent = "🔕";
+      btn.classList.remove("active");
+      btn.title = "Notify me before this event";
+      const reg = await navigator.serviceWorker?.ready;
+      const sub = await reg?.pushManager?.getSubscription();
+      if(sub) await sb.from("push_subscriptions").update({ event_ids: getNotifEvents() }).eq("endpoint", sub.endpoint);
+      showCardToast("🔕 Notifications turned off for this event");
+    } else {
+      const sub = await subscribeToPush();
+      if(!sub) return;
+      saveNotifEvent(eventId);
+      await sb.from("push_subscriptions").update({ event_ids: getNotifEvents() }).eq("endpoint", sub.endpoint);
+      btn.textContent = "🔔";
+      btn.classList.add("active");
+      btn.title = "Stop notifications";
+      showCardToast("🔔 You'll get reminders 24hrs and 1hr before this event!");
+    }
+  };
+
+  function showCardToast(msg){
+    let t = document.getElementById("cardToast");
+    if(!t){
+      t = document.createElement("div");
+      t.id = "cardToast";
+      t.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e1b4b;color:white;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;z-index:9999;transition:opacity .3s;font-family:'Poppins',sans-serif;";
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = "1";
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.style.opacity = "0", 3000);
   }
 
   // Make toggle accessible from inline onclick
