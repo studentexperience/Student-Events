@@ -2718,11 +2718,6 @@ function hasPermission(key){
   return currentPermissions[key] !== false;
 }
 
-function canAccessCampus(campus){
-  if(currentRole === "super_admin") return true;
-  const camps = currentPermissions.campus || ["All"];
-  return camps.includes("All") || camps.includes(campus);
-}
 
 function showAdminPanel(){
   document.getElementById("loginScreen").style.display = "none";
@@ -3659,16 +3654,13 @@ function handlePermRoleChange(sel){
 /* ══ PERMISSIONS MODAL ══ */
 function openPermissionsModal(id, email){
   // Look up permissions from allAdmins instead of passing via onclick
-  const adminRecord = allAdmins.find(a => a.id === id);
-  const perms = adminRecord?.permissions || {};
-  const p = { ...DEFAULT_PERMS, ...perms };
+  const adminRecord    = allAdmins.find(a => a.id === id);
+  const perms          = adminRecord?.permissions || {};
+  const p              = { ...DEFAULT_PERMS, ...perms };
+  const currentAdminRole = adminRecord?.role || "admin";
 
   document.getElementById("permissionsAdminId").value          = id;
   document.getElementById("permissionsAdminEmail").textContent = `Editing permissions for: ${email}`;
-
-  // Find the admin's current role from allAdmins list
-  const adminRecord = allAdmins.find(a => a.id === id);
-  const currentAdminRole = adminRecord?.role || "admin";
   document.getElementById("permRole").value = currentAdminRole;
 
   // Trigger role UI update
@@ -4593,6 +4585,7 @@ function openReviewModal(id){
   `;
   document.getElementById("reviewProposalModal").classList.add("open");
   loadMessageThread(id);
+}
 
 function detailRow(label, value){
   return `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:3px;">${label}</div><div>${value}</div></div>`;
