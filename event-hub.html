@@ -414,6 +414,35 @@
     .status-postponed    { background: #f3f4f6; color: #374151; }
     .status-cancelled    { background: #fef2f2; color: #9f1239; }
 
+    /* Card inline message thread */
+    .card-thread {
+      border-top: 1px solid #f3f4f6;
+      padding: 10px 16px 12px;
+    }
+    .card-thread-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+    }
+    .card-thread-header:hover { color: var(--accent); }
+    .card-thread-messages {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 180px;
+      overflow-y: auto;
+      margin: 8px 0;
+    }
+    .card-thread-reply {
+      display: flex;
+      gap: 8px;
+    }
+
     /* Timeline inside card */
     .proposal-timeline {
       border-top: 1px solid #f3f4f6;
@@ -1275,6 +1304,8 @@ async function loadProposals(){
   if(error){ showToast("Failed to load proposals", "error"); return; }
   allProposals = data || [];
   renderProposals();
+  subscribeToProposalUpdates();
+  loadAllCardBadges();
   updateStats();
 }
 
@@ -1346,7 +1377,7 @@ function proposalCardHTML(p){
   }).join("");
 
   return `
-    <div class="proposal-card">
+    <div class="proposal-card" id="card-${p.id}">
       <div class="proposal-card-top">
         <div class="proposal-status-bar" style="background:${sc};"></div>
         <div class="proposal-body">
@@ -1361,11 +1392,160 @@ function proposalCardHTML(p){
       </div>
       ${noteHtml}
       <div class="proposal-timeline">${timelineHtml}</div>
+
+      <!-- Inline Message Thread -->
+      <div class="card-thread" id="thread-${p.id}">
+        <div class="card-thread-header" onclick="toggleCardThread('${p.id}')">
+          <span>💬 Messages</span>
+          <span class="thread-unread-badge" id="unread-${p.id}" style="display:none;background:#ef4444;color:white;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;"></span>
+          <span class="thread-toggle-icon" id="toggle-icon-${p.id}" style="margin-left:auto;color:var(--muted);font-size:12px;">▸ Show</span>
+        </div>
+        <div class="card-thread-body" id="thread-body-${p.id}" style="display:none;">
+          <div class="card-thread-messages" id="thread-msgs-${p.id}"></div>
+          <div class="card-thread-reply">
+            <textarea id="thread-reply-${p.id}" rows="2" placeholder="Reply to admin…"
+              style="flex:1;padding:8px 11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:'Poppins',sans-serif;font-size:12px;resize:none;outline:none;"
+              onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
+            <button onclick="sendCardReply('${p.id}')"
+              style="padding:8px 14px;background:#7c3aed;color:white;border:none;border-radius:10px;font-family:'Poppins',sans-serif;font-size:12px;font-weight:700;cursor:pointer;align-self:flex-end;white-space:nowrap;">
+              Send
+            </button>
+          </div>
+        </div>
+      </div>
     </div>`;
 }
 
 /* ── View proposal detail ── */
-/* ── Message Thread (Club side) ── */
+/* ── Card inline message thread ── */
+async function toggleCardThread(proposalId){
+  const body = document.getElementById(`thread-body-${proposalId}`);
+  const icon = document.getElementById(`toggle-icon-${proposalId}`);
+  if(!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'flex';
+  body.style.flexDirection = 'column';
+  icon.textContent = isOpen ? '▸ Show' : '▾ Hide';
+  if(!isOpen) await loadCardMessages(proposalId);
+}
+
+async function loadCardMessages(proposalId){
+  const container = document.getElementById(`thread-msgs-${proposalId}`);
+  const badge     = document.getElementById(`unread-${proposalId}`);
+  if(!container) return;
+
+  const { data } = await sb.from("proposal_messages")
+    .select("*").eq("proposal_id", proposalId)
+    .order("created_at", { ascending: true });
+
+  const msgs = data || [];
+
+  // Update unread badge (messages from admin not yet seen)
+  const adminMsgs = msgs.filter(m => m.sender_type === "admin");
+  if(badge){
+    badge.textContent   = adminMsgs.length;
+    badge.style.display = adminMsgs.length > 0 ? "inline-block" : "none";
+  }
+
+  if(!msgs.length){
+    container.innerHTML = `<div style="font-size:12px;color:#9ca3af;padding:6px 0;">No messages yet.</div>`;
+    return;
+  }
+
+  container.innerHTML = msgs.map(m => {
+    const isAdmin = m.sender_type === "admin";
+    const time    = new Date(m.created_at).toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+    const bg      = isAdmin ? "#eff6ff" : "#f0fdf4";
+    const color   = isAdmin ? "#1e40af" : "#15803d";
+    const align   = isAdmin ? "flex-start" : "flex-end";
+    const radius  = isAdmin ? "4px 10px 10px 10px" : "10px 4px 10px 10px";
+    const label   = isAdmin ? "🏫 Admin" : "🏷️ You";
+    return `<div style="display:flex;flex-direction:column;align-items:${align};gap:2px;">
+      <div style="background:${bg};color:${color};padding:7px 11px;border-radius:${radius};font-size:12px;line-height:1.5;max-width:85%;">${esc(m.message)}</div>
+      <div style="font-size:10px;color:#9ca3af;">${label} · ${time}</div>
+    </div>`;
+  }).join("");
+
+  container.scrollTop = container.scrollHeight;
+}
+
+async function sendCardReply(proposalId){
+  const textarea = document.getElementById(`thread-reply-${proposalId}`);
+  const text = textarea?.value.trim();
+  if(!text){ showToast("Type a message first", "error"); return; }
+
+  const { error } = await sb.from("proposal_messages").insert({
+    proposal_id:  proposalId,
+    sender_email: currentClub.email,
+    sender_type:  "club",
+    message:      text,
+  });
+  if(error){ showToast("Failed: " + error.message, "error"); return; }
+
+  // Notify admins
+  const { data: admins } = await sb.from("admins").select("email").in("role",["admin","super_admin"]);
+  const p = allProposals.find(x => x.id === proposalId);
+  if(admins?.length && p){
+    await sb.from("notifications").insert(admins.map(a => ({
+      recipient: a.email, type: "proposal_message",
+      title: "💬 Club Replied on Proposal",
+      message: `Re: "${p.event_name}" from ${currentClub.name} — ${text.substring(0,100)}${text.length>100?"…":""}`,
+      proposal_id: proposalId, is_read: false,
+    })));
+  }
+
+  textarea.value = "";
+  showToast("✅ Message sent!");
+  await loadCardMessages(proposalId);
+}
+
+/* ── Realtime: auto-refresh cards when status changes ── */
+function subscribeToProposalUpdates(){
+  sb.channel("proposal-updates")
+    .on("postgres_changes", {
+      event: "UPDATE",
+      schema: "public",
+      table: "event_proposals",
+      filter: `club_email=eq.${currentClub.email}`
+    }, payload => {
+      // Update the proposal in memory
+      const idx = allProposals.findIndex(p => p.id === payload.new.id);
+      if(idx !== -1) allProposals[idx] = { ...allProposals[idx], ...payload.new };
+      // Re-render just that card
+      const card = document.getElementById(`card-${payload.new.id}`);
+      if(card){
+        const newCard = document.createElement("div");
+        newCard.innerHTML = proposalCardHTML(allProposals[idx]);
+        card.replaceWith(newCard.firstElementChild);
+      }
+      // Show toast if status changed
+      const statusLabels = {
+        needs_info: "💬 Admin needs more information on your proposal",
+        approved:   "🎉 Your event has been approved!",
+        declined:   "❌ Your proposal was declined",
+        assigned:   "📌 An Event Lead has been assigned",
+        postponed:  "⏸️ Your event has been postponed",
+        cancelled:  "🚫 Your event was cancelled",
+      };
+      const msg = statusLabels[payload.new.status];
+      if(msg) showToast(msg, payload.new.status === "approved" || payload.new.status === "assigned" ? "success" : "error");
+    })
+    .subscribe();
+}
+
+/* ── Load unread badges on initial load ── */
+async function loadAllCardBadges(){
+  const { data } = await sb.from("proposal_messages").select("proposal_id, sender_type");
+  if(!data) return;
+  const adminMsgsByProposal = {};
+  data.filter(m => m.sender_type === "admin").forEach(m => {
+    adminMsgsByProposal[m.proposal_id] = (adminMsgsByProposal[m.proposal_id] || 0) + 1;
+  });
+  Object.entries(adminMsgsByProposal).forEach(([pid, count]) => {
+    const badge = document.getElementById(`unread-${pid}`);
+    if(badge){ badge.textContent = count; badge.style.display = "inline-block"; }
+  });
+}
 async function loadHubMessages(proposalId){
   const list = document.getElementById("hubMessageList");
   if(!list) return;
