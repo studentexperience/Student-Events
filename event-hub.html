@@ -1501,24 +1501,17 @@ async function sendCardReply(proposalId){
 
 /* ── Realtime: auto-refresh cards when status changes ── */
 function subscribeToProposalUpdates(){
-  sb.channel("proposal-updates")
+  sb.channel("hub-proposal-updates")
     .on("postgres_changes", {
       event: "UPDATE",
       schema: "public",
       table: "event_proposals",
       filter: `club_email=eq.${currentClub.email}`
-    }, payload => {
-      // Update the proposal in memory
-      const idx = allProposals.findIndex(p => p.id === payload.new.id);
-      if(idx !== -1) allProposals[idx] = { ...allProposals[idx], ...payload.new };
-      // Re-render just that card
-      const card = document.getElementById(`card-${payload.new.id}`);
-      if(card){
-        const newCard = document.createElement("div");
-        newCard.innerHTML = proposalCardHTML(allProposals[idx]);
-        card.replaceWith(newCard.firstElementChild);
-      }
-      // Show toast if status changed
+    }, async payload => {
+      // Reload all proposals to get fresh data
+      await loadProposals();
+
+      // Show toast for status changes
       const statusLabels = {
         needs_info: "💬 Admin needs more information on your proposal",
         approved:   "🎉 Your event has been approved!",
@@ -1526,9 +1519,10 @@ function subscribeToProposalUpdates(){
         assigned:   "📌 An Event Lead has been assigned",
         postponed:  "⏸️ Your event has been postponed",
         cancelled:  "🚫 Your event was cancelled",
+        under_review: "🔍 Your proposal is under review",
       };
       const msg = statusLabels[payload.new.status];
-      if(msg) showToast(msg, payload.new.status === "approved" || payload.new.status === "assigned" ? "success" : "error");
+      if(msg) showToast(msg, ["approved","assigned"].includes(payload.new.status) ? "success" : "error");
     })
     .subscribe();
 }
