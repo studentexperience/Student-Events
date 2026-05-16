@@ -60,65 +60,33 @@
       white-space:nowrap;
     }
 
-    /* Topbar nav links */
-    .topbar-nav {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-      flex: 1;
-    }
-    .topbar-nav a {
-      padding: 7px 12px;
-      border-radius: 8px;
-      color: var(--muted);
-      text-decoration: none;
-      font-size: 13px;
-      font-weight: 600;
-      white-space: nowrap;
-      transition: all .15s;
-    }
-    .topbar-nav a:hover { background: #f3f4f6; color: var(--ink); }
-    .topbar-nav a.active { background: #eef2ff; color: #1f2a64; }
-    .topbar-nav a.eventhub {
-      color: #7c3aed;
-      background: #f5f3ff;
-    }
-    .topbar-nav a.eventhub:hover { background: #ede9fe; }
-
-    /* ===== Main layout — no side nav on desktop ===== */
+    /* ===== Main layout: left nav + content ===== */
     .shell{
-      display:block;
+      display:grid;
+      grid-template-columns: 160px 1fr;
       min-height: calc(100vh - 56px);
     }
 
-    /* Side nav — hidden on desktop, shows on mobile as drawer */
+    /* Left navigation */
     .nav{
-      display: none;
-    }
-    .nav.open{
-      display:block;
-      position:fixed;
-      top:56px; left:0;
-      width:220px;
-      height:calc(100vh - 56px);
       background:var(--panel);
       border-right:1px solid var(--border);
       padding:14px 10px;
-      z-index:200;
-      box-shadow:4px 0 16px rgba(0,0,0,.12);
-      overflow-y:auto;
     }
     .nav a{
       display:block;
-      padding:10px 12px;
-      margin:4px 0;
+      padding:9px 12px;
+      margin:3px 0;
       border-radius:10px;
       color:#111;
       text-decoration:none;
-      font-size:14px;
+      font-size:13px;
+      font-weight:500;
     }
     .nav a:hover{ background:#f3f4f6; }
     .nav a.active{ background:#eef2ff; color:#1f2a64; font-weight:600; }
+    .nav a.eventhub{ color:#7c3aed; font-weight:700; }
+    .nav a.eventhub:hover{ background:#f5f3ff; }
 
     /* ===== Two-column content: filters + cards ===== */
     .page-grid{
@@ -511,31 +479,40 @@
     /* =============================================
        RESPONSIVE BREAKPOINTS
     ============================================= */
-
-    /* Large desktop — 4 cards */
     @media (min-width: 1400px){
       .page-grid{ grid-template-columns: 220px 1fr; }
       .cards{ grid-template-columns: repeat(4, 1fr); }
     }
-
-    /* Laptop 1280px — 3 cards */
     @media (max-width: 1280px){
       .page-grid{ grid-template-columns: 180px 1fr; gap:14px; }
       .cards{ grid-template-columns: repeat(3, 1fr); }
-      .topbar-nav a{ font-size:12px; padding:6px 10px; }
+      .field input, .field select{ font-size:12px; padding:6px 8px; }
     }
-
-    /* Small laptop 1100px — 2 cards */
     @media (max-width: 1100px){
       .page-grid{ grid-template-columns: 160px 1fr; gap:12px; }
       .cards{ grid-template-columns: repeat(2, 1fr); }
       .filters{ padding:10px; }
-      .topbar-nav a{ font-size:11px; padding:5px 8px; }
     }
-
-    /* Tablet — hide topbar nav, show hamburger */
+    @media (max-width: 1024px){
+      .shell{ grid-template-columns: 140px 1fr; }
+      .nav a{ font-size:12px; padding:8px 8px; }
+      .content{ padding:14px; }
+      .page-grid{ grid-template-columns: 150px 1fr; gap:10px; }
+      .cards{ grid-template-columns: repeat(2, 1fr); }
+    }
     @media (max-width: 860px){
-      .topbar-nav{ display:none; }
+      .shell{ grid-template-columns: 1fr; }
+      .nav{
+        display:none;
+        position:fixed;
+        top:56px; left:0;
+        width:200px;
+        height:calc(100vh - 56px);
+        z-index:200;
+        box-shadow:4px 0 16px rgba(0,0,0,.12);
+        overflow-y:auto;
+      }
+      .nav.open{ display:block; }
       .nav-toggle{ display:block; }
       .page-grid{ grid-template-columns: 1fr; }
       .filters{ position:relative; top:auto; }
@@ -544,14 +521,11 @@
       .filters-inner.open{ display:block; }
       .cards{ grid-template-columns: repeat(2, 1fr); }
     }
-
-    /* Phone */
     @media (max-width: 540px){
       .content{ padding:12px; }
       .page-title{ font-size:22px; margin-bottom:12px; }
       .cards{ grid-template-columns: 1fr; gap:14px; }
-      .cover-img,
-      .cover-placeholder{ height:160px; }
+      .cover-img, .cover-placeholder{ height:160px; }
       .organizer-banner{ font-size:11.5px; padding:8px 14px; }
     }
 
@@ -1200,25 +1174,17 @@
   <header class="topbar">
     <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">&#9776;</button>
     <div class="brand">Campus Life</div>
-    <nav class="topbar-nav" id="topbarNav">
-      <a href="index.html">Home</a>
-      <a href="index.html" class="active">Events</a>
-      <a href="clubs.html">Clubs</a>
-      <a href="news.html">News</a>
-      <a href="forms.html">Forms</a>
-      <a href="event-hub.html" class="eventhub">✦ Event Hub</a>
-    </nav>
   </header>
 
   <div class="shell">
-    <!-- Side nav — mobile drawer only -->
+    <!-- Left navigation -->
     <nav class="nav" id="sideNav">
       <a href="index.html">Home</a>
       <a href="index.html" class="active">Events</a>
       <a href="clubs.html">Clubs</a>
       <a href="news.html">News</a>
       <a href="forms.html">Forms</a>
-      <a href="event-hub.html" style="color:#7c3aed;font-weight:700;">✦ Event Hub</a>
+      <a href="event-hub.html" class="eventhub">✦ Event Hub</a>
     </nav>
 
     <!-- Main content -->
