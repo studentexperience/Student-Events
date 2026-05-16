@@ -494,6 +494,9 @@
           <option value="Kampala">Kampala</option>
           <option value="Dar es Salaam">Dar es Salaam</option>
         </select>
+        <select id="categoryFilter">
+          <option value="">All Categories</option>
+        </select>
         <select id="filterSelect">
           <option value="">All Clubs</option>
         </select>
@@ -602,14 +605,15 @@ document.addEventListener("DOMContentLoaded", () => {
   let allClubs = [];
 
   /* ── DOM refs ── */
-  const searchQ      = document.getElementById("searchQ");
-  const campusFilter = document.getElementById("campusFilter");
-  const filterSelect = document.getElementById("filterSelect");
-  const clearBtn     = document.getElementById("clearBtn");
-  const clubsGrid    = document.getElementById("clubsGrid");
-  const emptyMsg     = document.getElementById("emptyMsg");
-  const resultCount  = document.getElementById("resultCount");
-  const pageSubtitle = document.getElementById("pageSubtitle");
+  const searchQ        = document.getElementById("searchQ");
+  const campusFilter   = document.getElementById("campusFilter");
+  const categoryFilter = document.getElementById("categoryFilter");
+  const filterSelect   = document.getElementById("filterSelect");
+  const clearBtn       = document.getElementById("clearBtn");
+  const clubsGrid      = document.getElementById("clubsGrid");
+  const emptyMsg       = document.getElementById("emptyMsg");
+  const resultCount    = document.getElementById("resultCount");
+  const pageSubtitle   = document.getElementById("pageSubtitle");
 
   /* ── Modal refs ── */
   const backdrop     = document.getElementById("modalBackdrop");
@@ -660,14 +664,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const q   = searchQ.value.trim().toLowerCase();
     const fv  = filterSelect.value;
     const cpv = campusFilter.value;
+    const ctv = categoryFilter.value;
 
     let list = allClubs
-      .filter(c => !fv  || c.name   === fv)
-      .filter(c => !cpv || c.campus === cpv)
+      .filter(c => !fv  || c.name     === fv)
+      .filter(c => !cpv || c.campus   === cpv)
+      .filter(c => !ctv || c.category === ctv)
       .filter(c => {
         if(!q) return true;
         return [c.name, c.email, c.description, c.events,
-                c.convenor, c.coConvenor, c.secretary, c.treasurer, c.campus]
+                c.convenor, c.coConvenor, c.secretary, c.treasurer, c.campus, c.category]
           .join(" ").toLowerCase().includes(q);
       });
 
@@ -835,6 +841,7 @@ document.addEventListener("DOMContentLoaded", () => {
     })).filter(c => c.name);
 
     // Populate filter dropdown
+    // Populate club filter dropdown
     filterSelect.innerHTML = `<option value="">All Clubs</option>`;
     allClubs.forEach(c => {
       const opt = document.createElement("option");
@@ -843,16 +850,28 @@ document.addEventListener("DOMContentLoaded", () => {
       filterSelect.appendChild(opt);
     });
 
+    // Populate category filter dynamically from data
+    const categories = [...new Set(allClubs.map(c => c.category).filter(Boolean))].sort();
+    categoryFilter.innerHTML = `<option value="">All Categories</option>`;
+    categories.forEach(cat => {
+      const opt = document.createElement("option");
+      opt.value = cat;
+      opt.textContent = cat;
+      categoryFilter.appendChild(opt);
+    });
+
     pageSubtitle.textContent = `${allClubs.length} clubs and societies at AKU`;
 
     // Wire up filters
     searchQ.addEventListener("input", render);
     campusFilter.addEventListener("change", render);
+    categoryFilter.addEventListener("change", render);
     filterSelect.addEventListener("change", render);
     clearBtn.addEventListener("click", () => {
-      searchQ.value      = "";
-      campusFilter.value = "";
-      filterSelect.value = "";
+      searchQ.value        = "";
+      campusFilter.value   = "";
+      categoryFilter.value = "";
+      filterSelect.value   = "";
       render();
     });
 
