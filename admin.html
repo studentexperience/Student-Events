@@ -2791,11 +2791,12 @@ function showAdminPanel(){
   document.getElementById("myEventsNavBtn").style.display = "";
   loadMyAssignedEvents();
 
-  // Start notifications
+  // Start notifications and realtime
   loadAdminNotifications();
   requestPushPermission();
   if(adminNotifInterval) clearInterval(adminNotifInterval);
   adminNotifInterval = setInterval(pollNotifications, 30000);
+  startRealtimeSubscriptions();
 
   if(isSuper) loadAdmins();
 }
@@ -4353,6 +4354,12 @@ function pipelineCard(p, today, isMine = true){
     }).join("")
   }</div>` : `<div style="font-size:11px;color:var(--muted);margin-top:6px;">👤 ${esc(p.assigned_to || "—")}</div>`;
 
+  // Show alert if admin reverted status to needs_info
+  const needsInfoBanner = p.status === "needs_info" ? `
+    <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:11px;color:#92400e;font-weight:600;">
+      💬 Admin needs more information — please check messages
+    </div>` : "";
+
   // Notes section — visible on both my cards and campus cards
   const notesHtml = `
     <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e5e7eb;">
@@ -4397,6 +4404,7 @@ function pipelineCard(p, today, isMine = true){
         <div style="margin-bottom:8px;">
           <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:${execSC.bg};color:${execSC.color};">${execSC.emoji} ${execSC.label}</span>
         </div>
+        ${needsInfoBanner}
         ${execBtnsHtml}
         ${notesHtml}
       </div>
@@ -5258,6 +5266,38 @@ async function sendProposalMessage(){
   loadMessageThread(proposalId);
   // Keep status as needs_info
 }
+
+/* ══ REALTIME SUBSCRIPTIONS ══ */
+function startRealtimeSubscriptions(){
+  // Refresh proposals table whenever any proposal changes
+  sb.channel("admin-proposals")
+    .on("postgres_changes", {
+      event: "UPDATE",
+      schema: "public",
+      table: "event_proposals"
+    }, payload => {
+      // Refresh the proposals list
+      loadProposals();
+      // Refresh pipeline if event lead portal is visible
+      const pipelineSection = document.getElementById("section-my-events");
+      if(pipelineSection && pipelineSection.style.display !== "none"){
+        loadMyAssignedEvents();
+      }
+    })
+    .subscribe();
+
+  // Refresh notifications when new messages arrive
+  sb.channel("admin-messages")
+    .on("postgres_changes", {
+      event: "INSERT",
+      schema: "public",
+      table: "proposal_messages"
+    }, () => {
+      loadAdminNotifications();
+    })
+    .subscribe();
+}
+
 let adminNotifInterval = null;
 
 async function loadAdminNotifications(){
