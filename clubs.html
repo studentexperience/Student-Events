@@ -415,6 +415,19 @@
     .campus-tag.dares    { background: #fdf4ff; color: #7e22ce; }
     .campus-tag.default  { background: #f3f4f6; color: #374151; }
 
+    .category-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: #fef3c7;
+      color: #92400e;
+      margin-bottom: 6px;
+    }
+
     /* ── Responsive ── */
     @media (max-width: 1280px) {
       .cards { grid-template-columns: repeat(3, 1fr); }
@@ -503,6 +516,7 @@
           <div class="modal-title-block">
             <div class="modal-title" id="modalTitle"></div>
             <div id="modalCampus" class="campus-tag" style="display:none;margin-bottom:4px;"></div>
+            <div id="modalCategory" class="category-tag" style="display:none;margin-bottom:4px;"></div>
             <a class="modal-email" id="modalEmail" href="#"></a>
           </div>
           <button class="modal-close" id="modalClose" aria-label="Close">✕</button>
@@ -708,6 +722,7 @@ document.addEventListener("DOMContentLoaded", () => {
               <div class="club-events">${esc(eventsPreview)}</div>
             ` : ""}
             <div class="club-leadership">${leaderHtml}</div>
+            ${c.category ? `<div class="category-tag">🏷️ ${esc(c.category)}</div>` : ""}
             ${c.campus ? `<div class="campus-tag ${campusClass(c.campus)}">🏫 ${esc(c.campus)}</div>` : ""}
             ${c.email ? `<a class="club-email" href="mailto:${esc(c.email)}" onclick="event.stopPropagation()">✉️ <span>${esc(c.email)}</span></a>` : ""}
           </div>
@@ -738,9 +753,14 @@ document.addEventListener("DOMContentLoaded", () => {
     modalEmail.href                = c.email ? `mailto:${c.email}` : "#";
     const modalCampus = document.getElementById("modalCampus");
     if(modalCampus){
-      modalCampus.textContent  = c.campus ? `🏫 ${c.campus}` : "";
+      modalCampus.textContent   = c.campus ? `🏫 ${c.campus}` : "";
       modalCampus.style.display = c.campus ? "inline-flex" : "none";
-      modalCampus.className = `campus-tag ${campusClass(c.campus || "")}`;
+      modalCampus.className     = `campus-tag ${campusClass(c.campus || "")}`;
+    }
+    const modalCategory = document.getElementById("modalCategory");
+    if(modalCategory){
+      modalCategory.textContent   = c.category ? `🏷️ ${c.category}` : "";
+      modalCategory.style.display = c.category ? "inline-flex" : "none";
     }
     modalDesc.textContent          = c.description || "—";
     modalEvents.textContent        = c.events || "";
@@ -810,6 +830,7 @@ document.addEventListener("DOMContentLoaded", () => {
       secretary:   (r.secretary   || "").trim(),
       treasurer:   (r.treasurer   || "").trim(),
       campus:      (r.campus      || "").trim(),
+      category:    (r.category    || "").trim(),
       logo:        driveUrl(r.logo_url || ""),
     })).filter(c => c.name);
 
