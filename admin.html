@@ -3495,7 +3495,7 @@ async function saveEvent(){
   // 🔔 Notify all push subscribers about new event
   if(!id && newEventData){
     try {
-      await fetch("https://dgzuqvffnbfybngoadse.supabase.co/functions/v1/send-push", {
+      await fetch("https://dgzuqvffnbfybngoadse.supabase.co/functions/v1/bright-processor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -3503,6 +3503,7 @@ async function saveEvent(){
           event: {
             id:         newEventData.id,
             name:       newEventData.name,
+            organiser:  newEventData.organiser,
             venue:      newEventData.venue,
             start_time: newEventData.start_time,
             event_date: newEventData.event_date,
@@ -4602,7 +4603,7 @@ async function updateProposalStatus(status){
 
       // 🔔 Notify all push subscribers about the new event
       try {
-        await fetch("https://dgzuqvffnbfybngoadse.supabase.co/functions/v1/send-push", {
+        await fetch("https://dgzuqvffnbfybngoadse.supabase.co/functions/v1/bright-processor", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -4610,6 +4611,7 @@ async function updateProposalStatus(status){
             event: {
               id:         newEvent.id,
               name:       newEvent.name,
+              organiser:  newEvent.organiser,
               venue:      newEvent.venue,
               start_time: newEvent.start_time,
               event_date: newEvent.event_date,
