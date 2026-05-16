@@ -3,23 +3,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Campus Life · Clubs & Societies</title>
+  <title>Campus Life · Events</title>
 
+  <!-- Poppins -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    :root {
-      --ink: #111827;
-      --muted: #6b7280;
-      --border: #e5e7eb;
-      --bg: #f3f4f6;
-      --panel: #ffffff;
-      --shadow: 0 6px 14px rgba(0,0,0,.10);
+    :root{
+      --ink:#111827;
+      --muted:#6b7280;
+      --border:#e5e7eb;
+      --bg:#f3f4f6;
+      --panel:#ffffff;
+      --shadow:0 6px 14px rgba(0,0,0,.10);
 
+      /* inclusive pastel palette */
       --b1:#F0F7FF; --a1:#D6E6FF;
       --b2:#F7F3FF; --a2:#E3DBFF;
       --b3:#FFF6EC; --a3:#FFE6CC;
@@ -28,425 +31,1141 @@
       --b6:#F5F5F5; --a6:#E1E1E1;
     }
 
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: 'Poppins', sans-serif;
-      background: var(--bg);
-      color: var(--ink);
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:'Poppins',sans-serif;
+      background:var(--bg);
+      color:var(--ink);
     }
 
-    /* ── Topbar ── */
-    .topbar {
-      height: 56px;
-      background: var(--panel);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      padding: 0 18px;
-      gap: 12px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
+    /* ===== Top header ===== */
+    .topbar{
+      height:56px;
+      background:var(--panel);
+      border-bottom:1px solid var(--border);
+      display:flex;
+      align-items:center;
+      padding:0 18px;
+      gap:6px;
+      position:sticky;
+      top:0;
+      z-index:100;
     }
-    .brand { font-weight: 600; letter-spacing: .2px; }
-    .nav-toggle {
-      display: none;
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 4px 6px;
-      font-size: 22px;
-      line-height: 1;
-      color: var(--ink);
+    .brand{
+      font-weight:700;
+      font-size:16px;
+      letter-spacing:.2px;
+      margin-right:8px;
+      white-space:nowrap;
     }
 
-    /* ── Shell ── */
-    .shell {
-      display: grid;
-      grid-template-columns: 180px 1fr;
+    /* ===== Main layout: left nav + content ===== */
+    .shell{
+      display:grid;
+      grid-template-columns: 160px 1fr;
       min-height: calc(100vh - 56px);
     }
 
-    /* ── Left nav ── */
-    .nav {
-      background: var(--panel);
-      border-right: 1px solid var(--border);
-      padding: 14px 10px;
+    /* Left navigation */
+    .nav{
+      background:var(--panel);
+      border-right:1px solid var(--border);
+      padding:14px 10px;
     }
-    .nav a {
-      display: block;
-      padding: 10px 12px;
-      margin: 4px 0;
-      border-radius: 10px;
-      color: #111;
-      text-decoration: none;
-      font-size: 14px;
+    .nav a{
+      display:block;
+      padding:9px 12px;
+      margin:3px 0;
+      border-radius:10px;
+      color:#111;
+      text-decoration:none;
+      font-size:13px;
+      font-weight:500;
     }
-    .nav a:hover { background: #f3f4f6; }
-    .nav a.active {
-      background: #eef2ff;
-      color: #1f2a64;
-      font-weight: 600;
+    .nav a:hover{ background:#f3f4f6; }
+    .nav a.active{ background:#eef2ff; color:#1f2a64; font-weight:600; }
+    .nav a.eventhub{ color:#7c3aed; font-weight:700; }
+    .nav a.eventhub:hover{ background:#f5f3ff; }
+
+    /* ===== Two-column content: filters + cards ===== */
+    .page-grid{
+      display:grid;
+      grid-template-columns: 200px 1fr;
+      gap:16px;
+      align-items:start;
     }
 
-    /* ── Content ── */
-    .content { padding: 22px; }
-    .page-title {
-      font-size: 28px;
-      font-weight: 700;
-      margin: 6px 0 4px;
-    }
-    .page-subtitle {
-      font-size: 14px;
-      color: var(--muted);
-      margin: 0 0 20px;
+    /* Content area */
+    .content{
+      padding:22px;
     }
 
-    /* ── Search bar row ── */
-    .search-row {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 22px;
-      flex-wrap: wrap;
-      align-items: center;
+    .page-title{
+      font-size:28px;
+      font-weight:700;
+      margin:6px 0 18px;
     }
-    .search-row input,
-    .search-row select {
-      padding: 10px 14px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      font-family: 'Poppins', sans-serif;
-      font-size: 14px;
-      background: var(--panel);
+
+    /* Hamburger — hidden on desktop */
+    .nav-toggle{
+      display:none;
+      background:none;
+      border:none;
+      font-size:22px;
+      cursor:pointer;
+      padding:4px 8px;
+      border-radius:8px;
+    }
+    .nav-toggle:hover{ background:#f3f4f6; }
+
+    /* ===== Two-column content: filters + cards ===== */
+    .page-grid{
+      display:grid;
+      grid-template-columns: 200px 1fr;
+      gap:16px;
+      align-items:start;
+    }
+
+    /* Filter panel */
+    .filters{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:14px;
       box-shadow: var(--shadow);
+      padding:16px;
+      position:sticky;
+      top:16px;
+      min-width:0;
     }
-    .search-row input { flex: 1; min-width: 200px; }
-    .search-row select { min-width: 180px; }
-    .search-row .btn-clear {
-      padding: 10px 18px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--panel);
-      font-family: 'Poppins', sans-serif;
-      font-size: 14px;
-      font-weight: 600;
+
+    .filter-title{
+      font-size:13px;
+      font-weight:600;
+      margin:2px 0 12px;
+      color:#111;
+    }
+
+    .field{
+      margin:0 0 12px;
+    }
+    .field label{
+      display:block;
+      font-size:12px;
+      color:#111;
+      font-weight:600;
+      margin-bottom:5px;
+    }
+    .field input,
+    .field select{
+      width:100%;
+      padding:8px 10px;
+      border-radius:9px;
+      border:1px solid #d1d5db;
+      font-family:'Poppins',sans-serif;
+      font-size:13px;
+      background:#fff;
+    }
+
+    .btn-row{
+      display:flex;
+      gap:10px;
+      margin-top:4px;
+    }
+    .btn{
+      width:100%;
+      padding:9px 10px;
+      border-radius:9px;
+      border:1px solid var(--ink);
+      background:var(--ink);
+      color:#fff;
+      font-weight:600;
+      cursor:pointer;
+      font-family:'Poppins',sans-serif;
+      font-size:13px;
+    }
+    .btn.secondary{
+      background:#fff;
+      color:var(--ink);
+      border:1px solid #d1d5db;
+      font-weight:600;
+    }
+
+    /* Toggle (Upcoming / Past) */
+    .toggle{
+      display:flex;
+      gap:10px;
+      margin:6px 0 14px;
+    }
+    .pill{
+      flex:1;
+      border:none;
+      border-radius:999px;
+      padding:8px 10px;
+      cursor:pointer;
+      background:#e5e7eb;
+      font-family:'Poppins',sans-serif;
+      font-weight:600;
+      font-size:13px;
+    }
+    .pill.active{
+      background:var(--ink);
+      color:#fff;
+    }
+
+    /* =============================================
+       CARDS GRID
+       Desktop (≥1280px): 4 columns
+       Laptop  (≥1024px): 3 columns
+       Tablet  (≥640px) : 2 columns
+       Mobile  (<640px) : 1 column
+    ============================================= */
+    .cards{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:18px;
+    }
+
+    .empty{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:18px;
+      color:#444;
+      box-shadow: var(--shadow);
+      font-size:14px;
+    }
+
+    /* =============================================
+       CARD LAYOUT (redesigned)
+       Structure:
+         .cover-img   – image placeholder at top
+         .body        – content (padded, 1.2× taller)
+           .title     – bold event name
+           .spacer    – two line-spaces gap
+           .meta      – date, time, venue
+         .organizer-banner – sticky bottom strip
+    ============================================= */
+    .card{
+      border-radius:16px;
+      overflow:hidden;
+      box-shadow: var(--shadow);
+      display:flex;
+      flex-direction:column;
+      background:var(--panel);
+    }
+
+    /* Cover image area */
+    .cover-img{
+      width:100%;
+      /* 1.2× height factor applied here too: base ~160px × 1.2 = ~192px */
+      height:192px;
+      object-fit:cover;
+      display:block;
+      background-size:cover;
+      background-position:center;
+      background-repeat:no-repeat;
+      flex-shrink:0;
+    }
+
+    /* Placeholder shown when no image URL is available */
+    .cover-placeholder{
+      width:100%;
+      height:192px;
+      flex-shrink:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:48px;
+      opacity:0.55;
+    }
+
+    /* Body: 1.2× padding (original ~12px 14px 14px → ~14px 17px 17px) */
+    .body{
+      padding:14px 17px 17px;
+      flex:1;
+      display:flex;
+      flex-direction:column;
+    }
+
+    /* Bold event name */
+    .title{
+      font-size:15.5px;
+      font-weight:700;
+      margin:0 0 0;
+      line-height:1.35;
+    }
+
+    /* Two line-spaces gap between title and meta */
+    .title-gap{
+      height:2em; /* two line-space equivalent */
+    }
+
+    /* Date / time / venue lines */
+    .meta{
+      font-size:13.5px;
+      margin:3px 0;
+      line-height:1.35;
+      color:#333;
+      display:flex;
+      align-items:flex-start;
+      gap:5px;
+    }
+    .meta-icon{
+      flex-shrink:0;
+      margin-top:1px;
+    }
+
+    /* Category chip (kept for reference, hidden in new layout — remove if unwanted) */
+    .chip{
+      margin-top:10px;
+      font-size:11.5px;
+      background:rgba(0,0,0,.07);
+      padding:3px 10px;
+      border-radius:999px;
+      align-self:flex-start;
+      font-weight:500;
+    }
+
+    /* =============================================
+       ORGANIZER BANNER — bottom of card
+    ============================================= */
+    .organizer-banner{
+      padding:9px 17px;
+      font-size:12px;
+      font-weight:600;
+      letter-spacing:.2px;
+      color:#fff;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      flex-shrink:0;
+      text-decoration:none;
+      display:block;
+      transition: filter .15s;
+    }
+    .organizer-banner:hover{
+      filter: brightness(1.15);
       cursor: pointer;
+    }
+    .organizer-banner::after{
+      content: " →";
+      opacity: 0;
+      transition: opacity .15s;
+    }
+    .organizer-banner:hover::after{
+      opacity: 1;
+    }
+
+    /* Campus tag on card */
+    .campus-tag{
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      font-size:11px;
+      font-weight:600;
+      padding:3px 9px;
+      border-radius:999px;
+      margin-top:8px;
+      align-self:flex-start;
+    }
+    .campus-tag.karachi    { background:#eff6ff; color:#1d4ed8; }
+    .campus-tag.nairobi    { background:#f0fdf4; color:#15803d; }
+    .campus-tag.kampala    { background:#fffbeb; color:#b45309; }
+    .campus-tag.dares      { background:#fdf4ff; color:#7e22ce; }
+    .campus-tag.default    { background:#f3f4f6; color:#374151; }
+
+    /* Interested button */
+    .interested-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed rgba(0,0,0,.1);
+      flex-wrap: nowrap;
+      min-width: 0;
+    }
+    .interested-btn {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 6px 6px;
+      border: 1.5px solid rgba(0,0,0,.12);
+      background: white;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ink);
+      cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      transition: all .18s ease;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .interested-btn span:last-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .result-count {
-      font-size: 13px;
-      color: var(--muted);
+    .interested-btn:hover {
+      border-color: #ef4444;
+      color: #ef4444;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(239,68,68,.15);
+    }
+    .interested-btn.active {
+      background: linear-gradient(135deg, #ef4444, #f97316);
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 4px 12px rgba(239,68,68,.3);
+    }
+    .interested-btn.active:hover {
+      transform: translateY(-1px) scale(1.02);
+    }
+    .interested-btn .heart-icon {
+      font-size: 14px;
+      transition: transform .25s ease;
+    }
+    .interested-btn:hover .heart-icon,
+    .interested-btn.active .heart-icon {
+      transform: scale(1.25);
+    }
+    .interested-count {
+      font-variant-numeric: tabular-nums;
+    }
+    /* Pulse animation when clicked */
+    @keyframes heart-pulse {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.4); }
+      70%  { transform: scale(0.9); }
+      100% { transform: scale(1); }
+    }
+    .interested-btn.pulse .heart-icon {
+      animation: heart-pulse .5s ease;
+    }
+    .nav-toggle{
+      display:none;
+      background:none;
+      border:none;
+      cursor:pointer;
+      padding:4px 6px;
+      font-size:22px;
+      line-height:1;
+      color:var(--ink);
+    }
+
+    /* Mobile filter toggle button */
+    .filter-toggle{
+      display:none;
+      width:100%;
+      padding:10px 14px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background:var(--panel);
+      font-family:'Poppins',sans-serif;
+      font-size:14px;
+      font-weight:600;
+      cursor:pointer;
+      text-align:left;
+      margin-bottom:12px;
+      box-shadow:var(--shadow);
+    }
+
+    /* =============================================
+       RESPONSIVE BREAKPOINTS
+    ============================================= */
+    @media (min-width: 1400px){
+      .page-grid{ grid-template-columns: 220px 1fr; }
+      .cards{ grid-template-columns: repeat(4, 1fr); }
+    }
+    @media (max-width: 1280px){
+      .page-grid{ grid-template-columns: 180px 1fr; gap:14px; }
+      .cards{ grid-template-columns: repeat(3, 1fr); }
+      .field input, .field select{ font-size:12px; padding:6px 8px; }
+    }
+    @media (max-width: 1100px){
+      .page-grid{ grid-template-columns: 160px 1fr; gap:12px; }
+      .cards{ grid-template-columns: repeat(2, 1fr); }
+      .filters{ padding:10px; }
+    }
+    @media (max-width: 1024px){
+      .shell{ grid-template-columns: 140px 1fr; }
+      .nav a{ font-size:12px; padding:8px 8px; }
+      .content{ padding:14px; }
+      .page-grid{ grid-template-columns: 150px 1fr; gap:10px; }
+      .cards{ grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 860px){
+      .shell{ grid-template-columns: 1fr; }
+      .nav{
+        display:none;
+        position:fixed;
+        top:56px; left:0;
+        width:200px;
+        height:calc(100vh - 56px);
+        z-index:200;
+        box-shadow:4px 0 16px rgba(0,0,0,.12);
+        overflow-y:auto;
+      }
+      .nav.open{ display:block; }
+      .nav-toggle{ display:block; }
+      .page-grid{ grid-template-columns: 1fr; }
+      .filters{ position:relative; top:auto; }
+      .filter-toggle{ display:block; }
+      .filters-inner{ display:none; }
+      .filters-inner.open{ display:block; }
+      .cards{ grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 540px){
+      .content{ padding:12px; }
+      .page-title{ font-size:22px; margin-bottom:12px; }
+      .cards{ grid-template-columns: 1fr; gap:14px; }
+      .cover-img, .cover-placeholder{ height:160px; }
+      .organizer-banner{ font-size:11.5px; padding:8px 14px; }
+    }
+
+    /* Add to Calendar button */
+    .add-to-cal-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 6px 8px;
+      background: #f0fdf4;
+      color: #16a34a;
+      border: 1.5px solid #bbf7d0;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      transition: all .15s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .add-to-cal-btn:hover {
+      background: #16a34a;
+      color: white;
+      border-color: #16a34a;
+    }
+
+    /* Calendar detail add-to-cal row */
+    .cal-detail-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* ── CALENDAR VIEW ── */
+    .view-switch {
+      display: inline-flex;
+      gap: 6px;
+      background: white;
+      border-radius: 999px;
+      padding: 4px;
+      box-shadow: var(--shadow);
       margin-bottom: 18px;
     }
-
-    /* ── Cards grid ── */
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 20px;
+    .view-switch button {
+      padding: 8px 18px;
+      border-radius: 999px;
+      border: none;
+      background: transparent;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .18s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
-    .empty {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 20px;
-      color: #444;
-      font-size: 14px;
-      box-shadow: var(--shadow);
+    .view-switch button:hover { color: #2563eb; }
+    .view-switch button.active {
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      color: white;
+      box-shadow: 0 3px 10px rgba(37,99,235,.3);
     }
 
-    /* ── Club card ── */
-    .club-card {
-      background: var(--panel);
+    /* Calendar container */
+    .calendar-wrap {
+      background: white;
       border-radius: 18px;
       box-shadow: var(--shadow);
       overflow: hidden;
+      display: none;
+    }
+    .calendar-wrap.visible { display: block; }
+
+    .calendar-header {
       display: flex;
-      flex-direction: column;
-      transition: transform .18s ease, box-shadow .18s ease;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .cal-nav-btn {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: white;
       cursor: pointer;
-    }
-    .club-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 28px rgba(0,0,0,.14);
-    }
-
-    /* Colour bar at top */
-    .club-card .top-bar {
-      height: 8px;
-      flex-shrink: 0;
-    }
-
-    /* Avatar / icon area */
-    .club-avatar {
-      height: 90px;
+      font-size: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 40px;
-      flex-shrink: 0;
+      transition: all .15s;
     }
-
-    .club-body {
-      padding: 14px 16px 16px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .club-name {
-      font-size: 16px;
+    .cal-nav-btn:hover { border-color: #2563eb; color: #2563eb; }
+    .cal-month-label {
+      font-size: 18px;
       font-weight: 700;
-      line-height: 1.35;
-      margin: 0 0 8px;
       color: var(--ink);
-    }
-
-    .club-desc {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.5;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      margin: 0 0 12px;
       flex: 1;
+      text-align: center;
+      min-width: 140px;
     }
-
-    /* Signature events */
-    .club-events-label {
-      font-size: 11px;
+    .cal-today-btn {
+      padding: 7px 16px;
+      border-radius: 999px;
+      border: 1.5px solid #2563eb;
+      background: white;
+      color: #2563eb;
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
       font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .cal-today-btn:hover { background: #2563eb; color: white; }
+
+    /* Days-of-week row */
+    .cal-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      border-bottom: 1px solid var(--border);
+      background: #f9fafb;
+    }
+    .cal-weekday {
+      text-align: center;
+      padding: 10px 4px;
+      font-size: 11px;
+      font-weight: 700;
       color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: .6px;
-      margin-bottom: 4px;
-    }
-    .club-events {
-      font-size: 11.5px;
-      color: #333;
-      line-height: 1.5;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      margin-bottom: 14px;
+      letter-spacing: .5px;
     }
 
-    /* Leadership row */
-    .club-leadership {
+    /* Day cells grid */
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+    }
+    .cal-day {
+      min-height: 100px;
+      padding: 8px;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      position: relative;
+      transition: background .15s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow: hidden;
+    }
+    .cal-day:nth-child(7n) { border-right: none; }
+    .cal-day:hover:not(.empty):not(.no-events) { background: #f8fafc; }
+    /* ════════════════════════════════════════
+       CALENDAR — Gen-Z Aesthetic Redesign
+       Glassmorphism · Gradients · Micro-interactions
+    ════════════════════════════════════════ */
+
+    /* Calendar outer container */
+    .calendar-wrap {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow:
+        0 20px 60px rgba(102,126,234,.35),
+        0 4px 16px rgba(0,0,0,.12);
+      display: none;
+    }
+    .calendar-wrap.visible { display: block; }
+
+    /* Inner white card */
+    .cal-inner {
+      background: rgba(255,255,255,.96);
+      backdrop-filter: blur(20px);
+      margin: 3px;
+      border-radius: 22px;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 26px 16px;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: linear-gradient(135deg, #667eea08 0%, #764ba208 100%);
+    }
+
+    .cal-month-label {
+      font-size: 26px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      flex: 1;
+      text-align: center;
+      letter-spacing: -0.5px;
+      min-width: 160px;
+    }
+
+    .cal-nav-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, #667eea22, #764ba222);
+      color: #764ba2;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .2s cubic-bezier(.34,1.56,.64,1);
+    }
+    .cal-nav-btn:hover {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      transform: scale(1.1);
+      box-shadow: 0 4px 14px rgba(118,75,162,.4);
+    }
+
+    .cal-today-btn {
+      padding: 8px 18px;
+      border-radius: 999px;
+      border: 2px solid transparent;
+      background: linear-gradient(white, white) padding-box,
+                  linear-gradient(135deg, #667eea, #f093fb) border-box;
+      color: #764ba2;
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s ease;
+      letter-spacing: .3px;
+    }
+    .cal-today-btn:hover {
+      background: linear-gradient(135deg, #667eea, #f093fb);
+      color: white;
+      box-shadow: 0 4px 14px rgba(118,75,162,.4);
+    }
+
+    /* ── Weekday row ── */
+    .cal-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      padding: 0 8px;
+      margin-bottom: 4px;
+    }
+    .cal-weekday {
+      text-align: center;
+      padding: 8px 4px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      background: linear-gradient(135deg, #667eea, #f093fb);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── Day cells ── */
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      padding: 0 8px 8px;
+    }
+
+    .cal-day {
+      min-height: 90px;
+      padding: 8px 6px 6px;
+      border-radius: 14px;
+      cursor: pointer;
+      position: relative;
+      transition: all .2s cubic-bezier(.34,1.56,.64,1);
       display: flex;
       flex-direction: column;
       gap: 3px;
-      margin-bottom: 14px;
-    }
-    .leadership-item {
-      display: flex;
-      align-items: baseline;
-      gap: 5px;
-      font-size: 11.5px;
-    }
-    .leadership-role {
-      color: var(--muted);
-      font-weight: 500;
-      white-space: nowrap;
-      font-size: 11px;
-    }
-    .leadership-name {
-      color: var(--ink);
-      font-weight: 600;
       overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      background: transparent;
+    }
+    .cal-day:hover:not(.empty):not(.no-events) {
+      background: linear-gradient(135deg, #667eea12, #f093fb12);
+      transform: scale(1.04);
+      box-shadow: 0 4px 16px rgba(102,126,234,.15);
+      z-index: 2;
+    }
+    .cal-day.empty { cursor: default; opacity: .35; }
+    .cal-day.no-events { cursor: default; }
+    .cal-day.no-events:hover { transform: none; background: none; box-shadow: none; }
+
+    /* Today */
+    .cal-day.today { background: linear-gradient(135deg, #667eea12, #f093fb18); }
+    .cal-day.today .cal-day-num-wrap {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-text-fill-color: white;
+      box-shadow: 0 3px 10px rgba(118,75,162,.4);
     }
 
-    /* Email button */
-    .club-email {
+    /* Selected */
+    .cal-day.selected {
+      background: linear-gradient(135deg, #667eea20, #f093fb25) !important;
+      box-shadow: 0 0 0 2px #764ba2 !important;
+      transform: scale(1.04);
+    }
+
+    /* Has events */
+    .cal-day.has-events::after {
+      content: "";
+      position: absolute;
+      bottom: 4px; right: 5px;
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #f093fb);
+    }
+
+    /* Day number wrapper */
+    .cal-day-num-wrap {
+      width: 28px; height: 28px;
+      border-radius: 50%;
       display: flex;
       align-items: center;
-      gap: 7px;
-      font-size: 12px;
-      color: var(--muted);
-      text-decoration: none;
-      padding: 7px 10px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      margin-top: 4px;
-      transition: background .15s;
-      overflow: hidden;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-bottom: 2px;
+      transition: all .2s ease;
     }
-    .club-email:hover { background: #f3f4f6; }
-    .club-email span {
+
+    .cal-day-num {
+      font-size: 13px;
+      font-weight: 700;
+      color: #374151;
+      line-height: 1;
+    }
+    .cal-day.empty .cal-day-num { color: #c4b5d4; }
+
+    /* Event pills */
+    .cal-event-pill {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 6px;
+      color: white;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      line-height: 1.5;
+      box-shadow: 0 1px 4px rgba(0,0,0,.15);
+    }
+    .cal-event-more {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: linear-gradient(135deg, #667eea33, #f093fb33);
+      color: #764ba2;
+      width: fit-content;
     }
 
-    /* ── Modal overlay ── */
-    .modal-backdrop {
+    /* Dots for mobile */
+    .cal-event-dot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .cal-day-dots { display: none; }
+
+    /* ── Day detail panel (desktop) ── */
+    .cal-detail {
+      padding: 0;
+      display: none;
+      background: linear-gradient(135deg, #667eea08 0%, #f093fb08 100%);
+      border-top: 1px solid #f0e6ff;
+    }
+    .cal-detail.visible { display: block; }
+
+    .cal-detail-inner {
+      padding: 20px 24px 24px;
+    }
+    .cal-detail-title {
+      font-size: 15px;
+      font-weight: 800;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .cal-detail-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 10px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #667eea, #f093fb);
+      font-size: 11px;
+      font-weight: 700;
+      color: white;
+      -webkit-text-fill-color: white;
+    }
+    .cal-detail-events { display: grid; gap: 10px; }
+    .cal-detail-event {
+      background: white;
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      transition: all .2s cubic-bezier(.34,1.56,.64,1);
+      box-shadow: 0 2px 8px rgba(102,126,234,.08);
+      border: 1px solid #f0e6ff;
+    }
+    .cal-detail-event:hover {
+      transform: translateY(-3px) scale(1.01);
+      box-shadow: 0 8px 24px rgba(102,126,234,.18);
+      border-color: #c4a8ff;
+    }
+    .cal-detail-color {
+      width: 4px;
+      align-self: stretch;
+      border-radius: 999px;
+      flex-shrink: 0;
+    }
+    .cal-detail-body { flex: 1; min-width: 0; }
+    .cal-detail-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 5px;
+    }
+    .cal-detail-meta {
+      font-size: 11.5px;
+      color: #6b7280;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .cal-detail-meta span { display: inline-flex; align-items: center; gap: 3px; }
+    .cal-detail-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* Add to Cal button */
+    .add-to-cal-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 14px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      transition: all .2s cubic-bezier(.34,1.56,.64,1);
+      box-shadow: 0 3px 10px rgba(118,75,162,.3);
+    }
+    .add-to-cal-btn:hover {
+      transform: scale(1.06);
+      box-shadow: 0 6px 18px rgba(118,75,162,.45);
+    }
+
+    /* Calendar detail add-to-cal row */
+    .cal-detail-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* ── Responsive tablet ── */
+    @media (max-width: 860px) {
+      .cal-day { min-height: 72px; padding: 6px 4px 4px; gap: 2px; }
+      .cal-event-pill { font-size: 9px; padding: 1px 5px; }
+      .cal-month-label { font-size: 20px; }
+      .cal-day-num-wrap { width: 24px; height: 24px; }
+      .cal-day-num { font-size: 12px; }
+    }
+
+    /* ── Responsive mobile ── */
+    @media (max-width: 560px) {
+      .calendar-header { padding: 16px 14px 12px; }
+      .cal-grid { gap: 2px; padding: 0 6px 6px; }
+      .cal-day { min-height: 52px; padding: 5px 3px 3px; border-radius: 10px; }
+      .cal-event-pill { display: none; }
+      .cal-day-dots {
+        display: flex;
+        gap: 2px;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 3px;
+      }
+      .cal-day-num-wrap { width: 22px; height: 22px; }
+      .cal-day-num { font-size: 11px; }
+      .cal-weekday { font-size: 9px; letter-spacing: .4px; }
+      .cal-month-label { font-size: 17px; }
+      .cal-nav-btn { width: 34px; height: 34px; font-size: 15px; }
+      .cal-today-btn { padding: 6px 14px; font-size: 11px; }
+    }
+
+    /* ── Mobile bottom sheet modal ── */
+    .cal-mobile-modal {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,.45);
-      z-index: 500;
+      z-index: 999;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .cal-mobile-modal.open { display: flex; }
+    .cal-mobile-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(102,126,234,.3);
+      backdrop-filter: blur(4px);
+    }
+    .cal-mobile-sheet {
+      position: relative;
+      background: white;
+      width: 100%;
+      max-height: 82vh;
+      border-radius: 28px 28px 0 0;
+      overflow-y: auto;
+      padding: 0 0 36px;
+      animation: slideUp .3s cubic-bezier(.34,1.56,.64,1);
+      box-shadow: 0 -10px 60px rgba(102,126,234,.25);
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    .cal-mobile-handle {
+      width: 44px; height: 5px;
+      background: linear-gradient(135deg, #667eea, #f093fb);
+      border-radius: 999px;
+      margin: 14px auto 16px;
+      opacity: .5;
+    }
+    .cal-mobile-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px 14px;
+      border-bottom: 1px solid #f0e6ff;
+    }
+    .cal-mobile-title {
+      font-size: 16px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .cal-mobile-close {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, #667eea22, #f093fb22);
+      color: #764ba2;
+      font-size: 15px;
+      cursor: pointer;
+      display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
-    }
-    .modal-backdrop.open { display: flex; }
-
-    .modal {
-      background: var(--panel);
-      border-radius: 20px;
-      width: 100%;
-      max-width: 640px;
-      max-height: 88vh;
-      overflow-y: auto;
-      box-shadow: 0 24px 60px rgba(0,0,0,.25);
-      display: flex;
-      flex-direction: column;
-    }
-
-    .modal-top-bar { height: 10px; border-radius: 20px 20px 0 0; flex-shrink: 0; }
-
-    .modal-content { padding: 24px 28px 28px; }
-
-    .modal-header {
-      display: flex;
-      align-items: flex-start;
-      gap: 16px;
-      margin-bottom: 18px;
-    }
-    .modal-icon { font-size: 46px; line-height: 1; flex-shrink: 0; }
-    .modal-title-block { flex: 1; }
-    .modal-title {
-      font-size: 20px;
       font-weight: 700;
-      margin: 0 0 4px;
-      line-height: 1.25;
+      transition: all .2s ease;
     }
-    .modal-email {
-      font-size: 13px;
-      color: var(--muted);
-      text-decoration: none;
+    .cal-mobile-close:hover {
+      background: linear-gradient(135deg, #667eea, #f093fb);
+      color: white;
     }
-    .modal-email:hover { text-decoration: underline; }
-    .modal-close {
-      background: none;
-      border: none;
-      font-size: 22px;
-      cursor: pointer;
-      color: var(--muted);
-      padding: 0 0 0 12px;
-      line-height: 1;
+    .cal-mobile-events { padding: 16px 18px; display: grid; gap: 12px; }
+    .cal-mobile-event {
+      background: linear-gradient(135deg, #667eea06, #f093fb06);
+      border: 1px solid #f0e6ff;
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      box-shadow: 0 2px 8px rgba(102,126,234,.08);
+    }
+    .cal-mobile-color {
+      width: 4px;
+      align-self: stretch;
+      border-radius: 999px;
       flex-shrink: 0;
     }
-
-    .modal-section { margin-bottom: 20px; }
-    .modal-section-title {
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .7px;
-      color: var(--muted);
-      margin: 0 0 8px;
-    }
-    .modal-section p {
+    .cal-mobile-name {
       font-size: 14px;
-      line-height: 1.65;
-      color: #333;
-      margin: 0;
-      white-space: pre-line;
+      font-weight: 700;
+      margin-bottom: 5px;
+      color: #1f2937;
     }
+    .cal-mobile-meta {
+      font-size: 12px;
+      color: #6b7280;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .cal-mobile-actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
 
-    /* Events list in modal */
-    .modal-events-list {
-      font-size: 13.5px;
-      line-height: 1.7;
-      color: #333;
-      white-space: pre-line;
-      margin: 0;
-    }
-
-    /* Leadership grid in modal */
-    .modal-leadership {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .modal-leader {
-      background: var(--bg);
-      border-radius: 10px;
-      padding: 10px 14px;
-    }
-    .modal-leader-role {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .5px;
-      color: var(--muted);
-      margin-bottom: 3px;
-    }
-    .modal-leader-name {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--ink);
-      white-space: pre-line;
-    }
-
-    /* ── Campus tag ── */
-    .campus-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 11px;
-      font-weight: 600;
-      padding: 3px 9px;
-      border-radius: 999px;
-      margin-top: 10px;
-      margin-bottom: 10px;
-      align-self: flex-start;
-    }
-    .campus-tag.karachi  { background: #eff6ff; color: #1d4ed8; }
-    .campus-tag.nairobi  { background: #f0fdf4; color: #15803d; }
-    .campus-tag.kampala  { background: #fffbeb; color: #b45309; }
-    .campus-tag.dares    { background: #fdf4ff; color: #7e22ce; }
-    .campus-tag.default  { background: #f3f4f6; color: #374151; }
-
-    /* ── Responsive ── */
-    @media (max-width: 1280px) {
-      .cards { grid-template-columns: repeat(3, 1fr); }
-    }
-    @media (max-width: 1024px) {
-      .shell { grid-template-columns: 1fr; }
-      .nav {
-        display: none;
-        position: fixed;
-        top: 56px; left: 0;
-        width: 200px;
-        height: calc(100vh - 56px);
-        z-index: 200;
-        box-shadow: 4px 0 16px rgba(0,0,0,.12);
-        overflow-y: auto;
-      }
-      .nav.open { display: block; }
-      .nav-toggle { display: block; }
-      .content { padding: 18px; }
-      .cards { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 600px) {
-      .content { padding: 12px; }
-      .page-title { font-size: 22px; }
-      .cards { grid-template-columns: 1fr; gap: 14px; }
-      .modal-leadership { grid-template-columns: 1fr; }
-      .modal-content { padding: 18px 18px 22px; }
-      .search-row input, .search-row select { min-width: 0; width: 100%; }
-    }
     @media (max-width: 360px) {
-      .topbar { padding: 0 12px; }
-      .brand { font-size: 14px; }
+      .cal-day { min-height: 44px; }
+    }
+      flex-shrink: 0;
+    }
+    .cal-mobile-name {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: var(--ink);
+    }
+    .cal-mobile-meta {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .cal-mobile-actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+    @media (max-width: 360px) {
+      .cal-day { min-height: 46px; }
     }
   </style>
 </head>
@@ -458,409 +1177,857 @@
   </header>
 
   <div class="shell">
+    <!-- Left navigation -->
     <nav class="nav" id="sideNav">
       <a href="index.html">Home</a>
-      <a href="index.html">Events</a>
-      <a href="clubs.html" class="active">Clubs</a>
+      <a href="index.html" class="active">Events</a>
+      <a href="clubs.html">Clubs</a>
       <a href="news.html">News</a>
       <a href="forms.html">Forms</a>
+      <a href="event-hub.html" class="eventhub">✦ Event Hub</a>
     </nav>
 
+    <!-- Main content -->
     <main class="content">
-      <div class="page-title">Clubs &amp; Societies</div>
-      <div class="page-subtitle" id="pageSubtitle">Loading clubs…</div>
+      <div class="page-title">Events</div>
 
-      <div class="search-row">
-        <input id="searchQ" type="text" placeholder="🔍  Search clubs, events, people…" />
-        <select id="campusFilter">
-          <option value="">All Campuses</option>
-          <option value="Karachi">Karachi</option>
-          <option value="Nairobi">Nairobi</option>
-          <option value="Kampala">Kampala</option>
-          <option value="Dar es Salaam">Dar es Salaam</option>
-        </select>
-        <select id="filterSelect">
-          <option value="">All Clubs</option>
-        </select>
-        <button class="btn-clear" id="clearBtn" type="button">Clear</button>
+      <!-- View switch -->
+      <div class="view-switch">
+        <button class="active" id="viewListBtn" type="button">📋 List</button>
+        <button id="viewCalBtn" type="button">📅 Calendar</button>
       </div>
 
-      <div class="result-count" id="resultCount"></div>
-      <div id="emptyMsg" class="empty" style="display:none;">No clubs match your search.</div>
-      <div id="clubsGrid" class="cards"></div>
+      <div class="page-grid">
+        <!-- Filters -->
+        <aside class="filters">
+          <button class="filter-toggle" id="filterToggle" type="button">🔍 Search &amp; Filter ▾</button>
+          <div class="filters-inner" id="filtersInner">
+          <div class="filter-title">Search Events</div>
+
+          <div class="toggle">
+            <button id="upcomingBtn" class="pill active" type="button">Upcoming</button>
+            <button id="pastBtn" class="pill" type="button">Past</button>
+          </div>
+
+          <div class="field">
+            <label for="q">Search</label>
+            <input id="q" type="text" placeholder="Search…" />
+          </div>
+
+          <div class="field">
+            <label for="dateFilter">Date</label>
+            <input id="dateFilter" type="date" />
+          </div>
+
+          <div class="field">
+            <label for="clubFilter">Club</label>
+            <select id="clubFilter"></select>
+          </div>
+
+          <div class="field">
+            <label for="catFilter">Category</label>
+            <select id="catFilter"></select>
+          </div>
+
+          <div class="field">
+            <label for="campusFilter">Campus</label>
+            <select id="campusFilter">
+              <option value="">All Campuses</option>
+              <option value="Karachi">Karachi</option>
+              <option value="Nairobi">Nairobi</option>
+              <option value="Kampala">Kampala</option>
+              <option value="Dar es Salaam">Dar es Salaam</option>
+            </select>
+          </div>
+
+          <div class="btn-row">
+            <button id="clearBtn" class="btn secondary" type="button">Clear</button>
+          </div><!-- /.btn-row -->
+          </div><!-- /.filters-inner -->
+        </aside>
+
+        <!-- Cards (List View) -->
+        <section id="listViewSection">
+          <div id="emptyMsg" class="empty" style="display:none;"></div>
+          <div id="events" class="cards"></div>
+        </section>
+
+        <!-- Calendar View -->
+        <section id="calendarSection" style="display:none;">
+          <div class="calendar-wrap visible">
+            <div class="cal-inner">
+            <div class="calendar-header">
+              <button class="cal-nav-btn" id="calPrev" aria-label="Previous month">‹</button>
+              <div class="cal-month-label" id="calMonthLabel">—</div>
+              <button class="cal-nav-btn" id="calNext" aria-label="Next month">›</button>
+              <button class="cal-today-btn" id="calTodayBtn">Today</button>
+            </div>
+            <div class="cal-weekdays">
+              <div class="cal-weekday">Sun</div>
+              <div class="cal-weekday">Mon</div>
+              <div class="cal-weekday">Tue</div>
+              <div class="cal-weekday">Wed</div>
+              <div class="cal-weekday">Thu</div>
+              <div class="cal-weekday">Fri</div>
+              <div class="cal-weekday">Sat</div>
+            </div>
+            <div class="cal-grid" id="calGrid"></div>
+            <div class="cal-detail" id="calDetail"></div>
+            </div><!-- /cal-inner -->
+          </div>
+        </section>
+      </div>
     </main>
   </div>
 
-  <!-- Modal -->
-  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true">
-    <div class="modal" id="modal">
-      <div class="modal-top-bar" id="modalBar"></div>
-      <div class="modal-content">
-        <div class="modal-header">
-          <div class="modal-icon" id="modalIcon"></div>
-          <div class="modal-title-block">
-            <div class="modal-title" id="modalTitle"></div>
-            <div id="modalCampus" class="campus-tag" style="display:none;margin-bottom:4px;"></div>
-            <a class="modal-email" id="modalEmail" href="#"></a>
-          </div>
-          <button class="modal-close" id="modalClose" aria-label="Close">✕</button>
-        </div>
-
-        <div class="modal-section">
-          <div class="modal-section-title">About</div>
-          <p id="modalDesc"></p>
-        </div>
-
-        <div class="modal-section" id="modalEventsSection">
-          <div class="modal-section-title">Signature Events</div>
-          <div class="modal-events-list" id="modalEvents"></div>
-        </div>
-
-        <div class="modal-section">
-          <div class="modal-section-title">Leadership</div>
-          <div class="modal-leadership" id="modalLeadership"></div>
-        </div>
-      </div>
+<!-- Mobile calendar day modal -->
+<div class="cal-mobile-modal" id="calMobileModal">
+  <div class="cal-mobile-backdrop" onclick="closeMobileCalModal()"></div>
+  <div class="cal-mobile-sheet" id="calMobileSheet">
+    <div class="cal-mobile-handle"></div>
+    <div class="cal-mobile-header">
+      <div class="cal-mobile-title" id="calMobileTitle">Events</div>
+      <button class="cal-mobile-close" onclick="closeMobileCalModal()">✕</button>
     </div>
+    <div class="cal-mobile-events" id="calMobileEvents"></div>
   </div>
+</div>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
-  /* ── Nav toggle ── */
+  /* ---- Nav & filter toggles ---- */
   const navToggle = document.getElementById("navToggle");
   const sideNav   = document.getElementById("sideNav");
-  navToggle.addEventListener("click", () => sideNav.classList.toggle("open"));
-  document.addEventListener("click", (e) => {
-    if(sideNav.classList.contains("open") && !sideNav.contains(e.target) && e.target !== navToggle)
-      sideNav.classList.remove("open");
+  if(navToggle && sideNav){
+    navToggle.addEventListener("click", () => sideNav.classList.toggle("open"));
+    document.addEventListener("click", e => {
+      if(!sideNav.contains(e.target) && !navToggle.contains(e.target)){
+        sideNav.classList.remove("open");
+      }
+    });
+  }
+  const filtersInner = document.getElementById("filtersInner");
+
+  filterToggle.addEventListener("click", () => {
+    const isOpen = filtersInner.classList.toggle("open");
+    filterToggle.textContent = isOpen ? "🔍 Search & Filter ▴" : "🔍 Search & Filter ▾";
   });
 
-  /* ── Google Drive URL converter ── */
-  function driveUrl(raw){
-    if(!raw) return "";
-    raw = raw.trim();
-    if(!raw.includes("drive.google.com")) return raw;
-    const matchFile = raw.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-    const matchOpen = raw.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-    const id = matchFile?.[1] || matchOpen?.[1];
-    if(!id) return "";
-    // thumbnail endpoint is cross-origin safe and works for direct embedding
-    return `https://drive.google.com/thumbnail?id=${id}&sz=w400`;
-  }
+  const mq = window.matchMedia("(max-width: 860px)");
+  if(!mq.matches){ filtersInner.classList.add("open"); }
+  mq.addEventListener("change", (e) => {
+    if(!e.matches) filtersInner.classList.add("open");
+  });
 
-  // Club-name → specific emoji override for better visuals
-  const ICON_MAP = {
-    "aurora":           "🌅",
-    "athletics":        "🏃",
-    "music":            "🎵",
-    "explorer":         "🧭",
-    "ied activity":     "🎪",
-    "entrepreneurial":  "💡",
-    "photography":      "📷",
-    "majlis":           "🏛️",
-    "chess":            "♟️",
-    "arts and culture": "🎨",
-    "rowing":           "🚣",
-    "climate":          "🌍",
-    "public speaking":  "🎤",
-    "journalism":       "📰",
-    "literary":         "📖",
-    "publication":      "📖",
-    "research forum":   "🔬",
-    "synergy":          "⚡",
-    "falah":            "❤️",
-    "mun":              "🌐",
-    "sports":           "🏅",
-    "graduate":         "🎓",
-  };
+  /* ---- CSV / events logic ---- */
 
-  function getIcon(name){
-    const lower = name.toLowerCase();
-    for(const [key, emoji] of Object.entries(ICON_MAP)){
-      if(lower.includes(key)) return emoji;
-    }
-    return "🎓";
-  }
+  const today = new Date();
+  today.setHours(0,0,0,0);
 
-  let allClubs = [];
+  let mode = "upcoming";
+  let allEvents = [];
 
-  /* ── DOM refs ── */
-  const searchQ      = document.getElementById("searchQ");
-  const campusFilter = document.getElementById("campusFilter");
-  const filterSelect = document.getElementById("filterSelect");
-  const clearBtn     = document.getElementById("clearBtn");
-  const clubsGrid    = document.getElementById("clubsGrid");
-  const emptyMsg     = document.getElementById("emptyMsg");
-  const resultCount  = document.getElementById("resultCount");
-  const pageSubtitle = document.getElementById("pageSubtitle");
-
-  /* ── Modal refs ── */
-  const backdrop     = document.getElementById("modalBackdrop");
-  const modalBar     = document.getElementById("modalBar");
-  const modalIcon    = document.getElementById("modalIcon");
-  const modalTitle   = document.getElementById("modalTitle");
-  const modalEmail   = document.getElementById("modalEmail");
-  const modalDesc    = document.getElementById("modalDesc");
-  const modalEvents  = document.getElementById("modalEvents");
-  const modalEventsSection = document.getElementById("modalEventsSection");
-  const modalLeadership    = document.getElementById("modalLeadership");
-  const modalClose   = document.getElementById("modalClose");
-
-  /* ── Palette — distinct color per club, no canvas needed ── */
   const PALETTE = [
-    { bg:"#FFF0F3", bar:"#e63462" },
-    { bg:"#FFF6EC", bar:"#e07b39" },
-    { bg:"#FFFBEB", bar:"#d97706" },
-    { bg:"#F0FDF4", bar:"#16a34a" },
-    { bg:"#F0F7FF", bar:"#2563eb" },
-    { bg:"#F5F3FF", bar:"#7c3aed" },
-    { bg:"#FDF4FF", bar:"#a21caf" },
-    { bg:"#FFF1F2", bar:"#be123c" },
-    { bg:"#ECFDF5", bar:"#059669" },
-    { bg:"#EFF6FF", bar:"#1d4ed8" },
-    { bg:"#F0FDFA", bar:"#0d9488" },
-    { bg:"#FEF2F2", bar:"#dc2626" },
-    { bg:"#FFF7ED", bar:"#ea580c" },
-    { bg:"#FAFAF9", bar:"#44403c" },
-    { bg:"#F7F3FF", bar:"#6d28d9" },
-    { bg:"#ECFEFF", bar:"#0891b2" },
-    { bg:"#F0FFF4", bar:"#15803d" },
-    { bg:"#FEF9C3", bar:"#a16207" },
-    { bg:"#FDF2F8", bar:"#9d174d" },
-    { bg:"#F1F5F9", bar:"#334155" },
-    { bg:"#FFF5F5", bar:"#c0392b" },
-    { bg:"#F0F9FF", bar:"#0369a1" },
-    { bg:"#F5F0FF", bar:"#5b21b6" },
+    {base:getCss('--b1'), accent:getCss('--a1')},
+    {base:getCss('--b2'), accent:getCss('--a2')},
+    {base:getCss('--b3'), accent:getCss('--a3')},
+    {base:getCss('--b4'), accent:getCss('--a4')},
+    {base:getCss('--b5'), accent:getCss('--a5')},
+    {base:getCss('--b6'), accent:getCss('--a6')},
   ];
 
-  /* ── Render ── */
+  // Accent colours used for the organizer banner background
+  const BANNER_COLORS = [
+    '#4f7cff','#7c5cbf','#e07b39','#2a9d6f','#c94f6a','#555555'
+  ];
+
+  const ALL_CLUBS = [
+    "ACC MC - Undergraduate","ACC SONAM - Graduate","ACC SONAM - Undergraduate","ACCs FAS","Activity Club IED",
+    "AKU Athletics Club","AKU Chess Club","AKU Graduate Education Student Society (AGESS)","AKU Journalism Club",
+    "AKU Majlis","AKU MUN","AKU Photography Club","Arts and Culture Committee (AAC) (AKU-FAS)",
+    "Arts and Culture Committee (AAC) (AKU-IED)","Arts and Culture Committee (AAC) (AKU-SONAM) Graduate",
+    "Arts and Culture Committee (AAC) (AKU-SONAM) Undergraduate","Arts and Culture Committee (ACC) (AKU-MC)",
+    "Aurora","Class Representative","Club for Theatrics (ACT)","Entrepreneurial Society (AES)","Explorers Club",
+    "FALAH (FAS)","FALAH (MBBS)","FALAH (SONAM)","Music Society","OSEP Internal","Public Speaking Forum (PSF)",
+    "Publication and Literary Society (APLS) (FAS)","Publication and Literary Society (APLS) (MBBS)",
+    "Publication and Literary Society (APLS) (SONAM)","Rowing Club (ARC)","Society for Arts and Culture",
+    "Society of Climate Conservation and Health (SoCCH)","Sports Society","Student Research Forum (SRF) (FAS)",
+    "Student Research Forum (SRF) (MBBS)","Student Research Forum (SRF) (SONAM)","SRF-FAS Conference",
+    "Synergy (FAS)","Synergy (MBBS)","Synergy (SONAM)"
+  ].slice().sort();
+
+  const ALL_CATEGORIES = [
+    "Recreational/Social","Sports","Competition","Workshop/Session",
+    "Orientation","Meeting","Welfare","Other"
+  ].slice().sort();
+
+  // DOM refs
+  const q           = document.getElementById("q");
+  const dateFilter  = document.getElementById("dateFilter");
+  const clubFilter  = document.getElementById("clubFilter");
+  const catFilter   = document.getElementById("catFilter");
+  const campusFilter= document.getElementById("campusFilter");
+  const clearBtn    = document.getElementById("clearBtn");
+  const eventsEl    = document.getElementById("events");
+  const emptyMsg    = document.getElementById("emptyMsg");
+  const upcomingBtn = document.getElementById("upcomingBtn");
+  const pastBtn     = document.getElementById("pastBtn");
+
+  function buildDropdown(el, placeholder, list){
+    el.innerHTML = `<option value="">${placeholder}</option>` +
+      list.map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
+  }
+
+  function escapeHtml(str){
+    return String(str ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function getCss(varName){
+    return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  }
+
+  function sameDay(d1, d2){ return d1 && d2 && d1.getTime() === d2.getTime(); }
+
+  // Format a JS Date as "Mon DD, YYYY"
+  function formatDate(d){
+    if(!d) return "";
+    return d.toLocaleDateString("en-US", {month:"short", day:"numeric", year:"numeric"});
+  }
+
+  function render(){
+    const qv  = q.value.trim().toLowerCase();
+    const cv  = clubFilter.value;
+    const tv  = catFilter.value;
+    const cpv = campusFilter.value;
+    const dv  = dateFilter.value ? new Date(dateFilter.value + "T00:00:00") : null;
+
+    let list = allEvents.filter(e => mode === "upcoming" ? e.date >= today : e.date < today);
+
+    list = list
+      .filter(e => !cv  || e.organiser === cv)
+      .filter(e => !tv  || e.category  === tv)
+      .filter(e => !cpv || e.campus    === cpv)
+      .filter(e => !dv  || sameDay(e.date, dv))
+      .filter(e => !qv  || `${e.name} ${e.organiser} ${e.category} ${e.venue} ${e.time} ${e.campus}`.toLowerCase().includes(qv));
+
+    list.sort((a,b) => mode === "upcoming" ? a.date - b.date : b.date - a.date);
+
+    eventsEl.innerHTML = "";
+    emptyMsg.style.display = "none";
+
+    if(!list.length){
+      emptyMsg.style.display = "block";
+      if(cv){
+        emptyMsg.textContent = "✨ Looks like our clubs and societies are taking a short break before the fun begins again :-)";
+      } else if(tv){
+        emptyMsg.textContent = "💡 Don't see any relevant event? How about you bring the event and OSEP would love to support you in planning and execution of the event.";
+      } else if(cpv){
+        emptyMsg.textContent = `📍 No ${mode === "upcoming" ? "upcoming" : "past"} events found for ${cpv} campus.`;
+      } else {
+        emptyMsg.textContent = mode === "upcoming" ? "No upcoming events to show." : "No past events to show.";
+      }
+      return;
+    }
+
+    list.forEach((e, i) => {
+      const {base, accent} = PALETTE[i % PALETTE.length];
+      const bannerColor    = BANNER_COLORS[i % BANNER_COLORS.length];
+      // Meta lines
+      const dateLine  = e.date  ? `<div class="meta"><span class="meta-icon">📅</span>${escapeHtml(formatDate(e.date))}</div>` : "";
+      const timeLine  = e.time  ? `<div class="meta"><span class="meta-icon">⏰</span>${escapeHtml(e.time)}</div>` : "";
+      const venueLine = e.venue ? `<div class="meta"><span class="meta-icon">📍</span>${escapeHtml(e.venue)}</div>` : "";
+      const campusTag = e.campus ? `<div class="campus-tag ${campusClass(e.campus)}">🏫 ${escapeHtml(e.campus)}</div>` : "";
+      const bannerHtml = e.organiser
+        ? `<a class="organizer-banner" href="clubs.html?club=${encodeURIComponent(e.organiser)}" style="background:${bannerColor};" title="View ${escapeHtml(e.organiser)} on Clubs page">🎭 ${escapeHtml(e.organiser)}</a>`
+        : "";
+
+      // Interested counter — only show for upcoming events
+      const isInterested = hasUserInterested(e.id);
+      const interestedHtml = (mode === "upcoming" && e.id) ? `
+        <div class="interested-row">
+          <button class="interested-btn ${isInterested ? 'active' : ''}" 
+                  data-event-id="${e.id}" 
+                  onclick="toggleInterested(event, '${e.id}')"
+                  title="${isInterested ? "You're interested!" : "Mark as interested"}">
+            <span class="heart-icon">${isInterested ? '❤️' : '🤍'}</span>
+            <span class="interested-count" id="count-${e.id}">${e.interested || 0}</span>
+            <span>${e.interested === 1 ? 'person' : 'people'} interested</span>
+          </button>
+          ${e.id && e.date ? `<button class="add-to-cal-btn" onclick="downloadICS('${e.id}')" title="Add to your calendar">📆 Save</button>` : ""}
+        </div>` : "";
+
+      // Cover: real image → use it; missing → pick from curated student activity pool
+      const coverHtml = e.image
+        ? `<img class="cover-img" src="${escapeHtml(e.image)}" alt="${escapeHtml(e.name)}" loading="lazy" />`
+        : `<img class="cover-img" src="${getActivityImage(e.category, i)}" alt="${escapeHtml(e.name)}" loading="lazy" onerror="this.src='https://picsum.photos/seed/${i + 10}/800/420'" />`;
+
+      eventsEl.insertAdjacentHTML("beforeend", `
+        <article class="card" style="background:${base}">
+          ${coverHtml}
+          <div class="body">
+            <div class="title">${escapeHtml(e.name)}</div>
+            <div class="title-gap"></div>
+            ${dateLine}
+            ${timeLine}
+            ${venueLine}
+            <div class="chip">${escapeHtml(e.category)}</div>
+            ${campusTag}
+            ${interestedHtml}
+          </div>
+          ${bannerHtml}
+        </article>
+      `);
+    });
+  }
+
   function campusClass(campus){
     const map = { "Karachi":"karachi", "Nairobi":"nairobi", "Kampala":"kampala", "Dar es Salaam":"dares" };
     return map[campus] || "default";
   }
 
-  function render(){
-    const q   = searchQ.value.trim().toLowerCase();
-    const fv  = filterSelect.value;
-    const cpv = campusFilter.value;
+  /* ── Interested counter ── */
+  // Track which events this device has marked interested (localStorage)
+  function getInterestedSet(){
+    try { return new Set(JSON.parse(localStorage.getItem("interestedEvents") || "[]")); }
+    catch { return new Set(); }
+  }
+  function saveInterestedSet(set){
+    localStorage.setItem("interestedEvents", JSON.stringify([...set]));
+  }
+  function hasUserInterested(eventId){
+    return getInterestedSet().has(eventId);
+  }
 
-    let list = allClubs
-      .filter(c => !fv  || c.name   === fv)
-      .filter(c => !cpv || c.campus === cpv)
-      .filter(c => {
-        if(!q) return true;
-        return [c.name, c.email, c.description, c.events,
-                c.convenor, c.coConvenor, c.secretary, c.treasurer, c.campus]
-          .join(" ").toLowerCase().includes(q);
-      });
+  // Make toggle accessible from inline onclick
+  window.toggleInterested = async function(evt, eventId){
+    evt.stopPropagation();
+    evt.preventDefault();
 
-    clubsGrid.innerHTML = "";
-    emptyMsg.style.display = "none";
-    resultCount.textContent = `Showing ${list.length} of ${allClubs.length} clubs`;
+    const btn       = evt.currentTarget;
+    const countEl   = document.getElementById(`count-${eventId}`);
+    const heartEl   = btn.querySelector(".heart-icon");
+    const labelEl   = btn.querySelector("span:last-child");
+    const interested = getInterestedSet();
+    const isAdding   = !interested.has(eventId);
 
-    if(!list.length){
-      emptyMsg.style.display = "block";
-      return;
+    // Optimistic UI update — instant feedback
+    btn.classList.add("pulse");
+    setTimeout(() => btn.classList.remove("pulse"), 500);
+
+    let currentCount = parseInt(countEl.textContent, 10) || 0;
+    const newCount   = isAdding ? currentCount + 1 : Math.max(0, currentCount - 1);
+    countEl.textContent = newCount;
+    heartEl.textContent = isAdding ? "❤️" : "🤍";
+    btn.classList.toggle("active", isAdding);
+    labelEl.textContent = newCount === 1 ? "person interested" : "people interested";
+
+    // Disable while saving to prevent rapid double-clicks
+    btn.disabled = true;
+
+    try {
+      const fn = isAdding ? "increment_event_interest" : "decrement_event_interest";
+      const { data, error } = await sb.rpc(fn, { event_id: eventId });
+      if(error) throw error;
+
+      // Sync local state
+      if(isAdding) interested.add(eventId);
+      else         interested.delete(eventId);
+      saveInterestedSet(interested);
+
+      // Sync count from server (handles concurrent users)
+      if(typeof data === "number"){
+        countEl.textContent = data;
+        labelEl.textContent = data === 1 ? "person interested" : "people interested";
+        // Update local cache
+        const ev = allEvents.find(x => x.id === eventId);
+        if(ev) ev.interested = data;
+      }
+    } catch(err){
+      // Revert on failure
+      countEl.textContent = currentCount;
+      heartEl.textContent = isAdding ? "🤍" : "❤️";
+      btn.classList.toggle("active", !isAdding);
+      labelEl.textContent = currentCount === 1 ? "person interested" : "people interested";
+      console.error("Failed to update interest:", err);
+    } finally {
+      btn.disabled = false;
     }
+  };
 
-    list.forEach((c, i) => {
-      const pal      = PALETTE[i % PALETTE.length];
-      const icon     = getIcon(c.name);
-      const cardId   = `club-card-${i}`;
+  /* ------------------------------------------------------------------ */
+  /*  Curated category-matched student activity photos                  */
+  /*  All IDs are verified Picsum photos showing campus/student life     */
+  /* ------------------------------------------------------------------ */
 
-      // Logo avatar — white pill so logo always stands out against any bg color
-      const avatarHtml = c.logo
-        ? `<div class="club-avatar" style="background:#ffffff;">
-             <img
-               src="${c.logo}"
-               alt="${esc(c.name)} logo"
-               data-card="${cardId}"
-               style="width:100%;height:100%;object-fit:contain;border-radius:8px;"
-               onerror="this.parentElement.innerHTML='${icon}';this.parentElement.style.fontSize='40px';" />
-           </div>`
-        : `<div class="club-avatar" style="background:${pal.bg}">${icon}</div>`;
+  const ACTIVITY_PHOTOS = {
+    "Sports":              [1080, 1040, 416, 452, 485, 533, 618, 901],
+    "Competition":         [256, 274, 291, 326, 366, 389, 430, 484],
+    "Workshop/Session":    [159, 167, 177, 180, 204, 214, 221, 225],
+    "Meeting":             [70,  92,  107, 119, 132, 141, 148, 153],
+    "Orientation":         [1, 10, 20, 30, 40, 50, 60, 80],
+    "Recreational/Social": [397, 399, 400, 403, 407, 409, 411, 413],
+    "Welfare":             [247, 250, 251, 252, 253, 254, 255, 257],
+    "Other":               [325, 330, 335, 340, 345, 350, 355, 360],
+  };
 
-      // Compact events preview
-      const eventsPreview = c.events
-        ? c.events.replace(/^\s*[\d\-\*\.]+\s*/gm, "").split("\n")
-            .filter(Boolean).slice(0, 3).join(" · ")
-        : "";
+  // Default pool used when category doesn't match or is missing
+  const DEFAULT_PHOTOS    = [100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210];
 
-      const leaderHtml = [
-        c.convenor   ? `<div class="leadership-item"><span class="leadership-role">Convenor:</span><span class="leadership-name">${esc(c.convenor.split("\n")[0])}</span></div>` : "",
-        c.coConvenor ? `<div class="leadership-item"><span class="leadership-role">Co-Convenor:</span><span class="leadership-name">${esc(c.coConvenor.split("\n")[0])}</span></div>` : "",
-        c.secretary  ? `<div class="leadership-item"><span class="leadership-role">Secretary:</span><span class="leadership-name">${esc(c.secretary.split("\n")[0])}</span></div>` : "",
-        c.treasurer  ? `<div class="leadership-item"><span class="leadership-role">Treasurer:</span><span class="leadership-name">${esc(c.treasurer.split("\n")[0])}</span></div>` : "",
-      ].join("");
-
-      clubsGrid.insertAdjacentHTML("beforeend", `
-        <article class="club-card" id="${cardId}" data-idx="${allClubs.indexOf(c)}" style="background:${pal.bg}" tabindex="0" role="button" aria-label="View ${esc(c.name)} details">
-          <div class="top-bar" style="background:${pal.bar}"></div>
-          ${avatarHtml}
-          <div class="club-body">
-            <div class="club-name">${esc(c.name)}</div>
-            <div class="club-desc">${esc(c.description)}</div>
-            ${eventsPreview ? `
-              <div class="club-events-label">Signature Events</div>
-              <div class="club-events">${esc(eventsPreview)}</div>
-            ` : ""}
-            <div class="club-leadership">${leaderHtml}</div>
-            ${c.campus ? `<div class="campus-tag ${campusClass(c.campus)}">🏫 ${esc(c.campus)}</div>` : ""}
-            ${c.email ? `<a class="club-email" href="mailto:${esc(c.email)}" onclick="event.stopPropagation()">✉️ <span>${esc(c.email)}</span></a>` : ""}
-          </div>
-        </article>
-      `);
-    });
-
-    // Attach click → open modal
-    clubsGrid.querySelectorAll(".club-card").forEach(card => {
-      const open = () => openModal(allClubs[Number(card.dataset.idx)], PALETTE[Number(card.dataset.idx) % PALETTE.length]);
-      card.addEventListener("click", open);
-      card.addEventListener("keydown", e => { if(e.key === "Enter" || e.key === " ") open(); });
-    });
+  function getActivityImage(category, index){
+    const pool = ACTIVITY_PHOTOS[category] || DEFAULT_PHOTOS;
+    const id   = pool[index % pool.length];
+    return `https://picsum.photos/id/${id}/800/420`;
   }
 
-  /* ── Modal ── */
-  function openModal(c, pal){
-    modalBar.style.background = pal.bar;
-    if(c.logo){
-      modalIcon.innerHTML = `<img src="${c.logo}" alt="${c.name} logo"
-        style="width:56px;height:56px;object-fit:contain;border-radius:10px;background:#fff;padding:4px;"
-        onerror="this.parentElement.textContent='${getIcon(c.name)}'" />`;
-    } else {
-      modalIcon.textContent = getIcon(c.name);
-    }
-    modalTitle.textContent         = c.name;
-    modalEmail.textContent         = c.email || "";
-    modalEmail.href                = c.email ? `mailto:${c.email}` : "#";
-    const modalCampus = document.getElementById("modalCampus");
-    if(modalCampus){
-      modalCampus.textContent  = c.campus ? `🏫 ${c.campus}` : "";
-      modalCampus.style.display = c.campus ? "inline-flex" : "none";
-      modalCampus.className = `campus-tag ${campusClass(c.campus || "")}`;
-    }
-    modalDesc.textContent          = c.description || "—";
-    modalEvents.textContent        = c.events || "";
-    modalEventsSection.style.display = c.events ? "" : "none";
-
-    // Leadership
-    const roles = [
-      { role: "Convenor",      val: c.convenor    },
-      { role: "Co-Convenor",   val: c.coConvenor  },
-      { role: "Gen. Secretary",val: c.secretary   },
-      { role: "Treasurer",     val: c.treasurer   },
-    ].filter(r => r.val);
-
-    modalLeadership.innerHTML = roles.map(r => `
-      <div class="modal-leader">
-        <div class="modal-leader-role">${esc(r.role)}</div>
-        <div class="modal-leader-name">${esc(r.val)}</div>
-      </div>
-    `).join("");
-
-    backdrop.classList.add("open");
-    document.body.style.overflow = "hidden";
-  }
-
-  function closeModal(){
-    backdrop.classList.remove("open");
-    document.body.style.overflow = "";
-  }
-
-  modalClose.addEventListener("click", closeModal);
-  backdrop.addEventListener("click", e => { if(e.target === backdrop) closeModal(); });
-  document.addEventListener("keydown", e => { if(e.key === "Escape") closeModal(); });
-
-  /* ── Helpers ── */
-  function esc(str){
-    return String(str ?? "")
-      .replaceAll("&","&amp;").replaceAll("<","&lt;")
-      .replaceAll(">","&gt;").replaceAll('"',"&quot;");
-  }
-
-  /* ── Supabase init ── */
+  /* ---- Supabase init ---- */
   const SUPABASE_URL = "https://dgzuqvffnbfybngoadse.supabase.co";
   const SUPABASE_KEY = "sb_publishable_77t5gCD7M620CzcMwESN-A_oAuqz6B8";
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  /* ── Load clubs from Supabase ── */
-  async function loadClubs(){
-    pageSubtitle.textContent = "Loading clubs…";
+  /* ---- Load events from Supabase ---- */
+  async function loadEvents(){
+    eventsEl.innerHTML = "";
+    emptyMsg.style.display  = "none";
+    emptyMsg.textContent    = "⏳ Loading events…";
+    emptyMsg.style.display  = "block";
 
     const { data, error } = await sb
-      .from("clubs")
+      .from("events")
       .select("*")
-      .order("name", { ascending: true });
+      .order("event_date", { ascending: true });
 
     if(error){
-      pageSubtitle.textContent = "Failed to load clubs. Please try again later.";
+      emptyMsg.textContent = "Failed to load events. Please try again later.";
       return;
     }
 
-    allClubs = (data || []).map(r => ({
-      name:        (r.name        || "").trim(),
-      email:       (r.email       || "").trim(),
-      description: (r.description || "").trim(),
-      events:      (r.events      || "").trim(),
-      convenor:    (r.convenor    || "").trim(),
-      coConvenor:  (r.co_convenor || "").trim(),
-      secretary:   (r.secretary   || "").trim(),
-      treasurer:   (r.treasurer   || "").trim(),
-      campus:      (r.campus      || "").trim(),
-      logo:        driveUrl(r.logo_url || ""),
-    })).filter(c => c.name);
+    allEvents = (data || []).map(r => ({
+      id:        r.id,
+      organiser: (r.organiser  || "").trim(),
+      name:      (r.name       || "").trim(),
+      category:  (r.category   || "").trim(),
+      venue:     (r.venue      || "").trim(),
+      time:      (r.start_time || "").trim(),
+      campus:    (r.campus     || "").trim(),
+      date:      r.event_date ? (() => { const d = new Date(r.event_date); d.setHours(0,0,0,0); return d; })() : null,
+      image:     (r.cover_image|| "").trim(),
+      interested: r.interested_count || 0,
+    })).filter(e => e.name && e.date);
 
-    // Populate filter dropdown
-    filterSelect.innerHTML = `<option value="">All Clubs</option>`;
-    allClubs.forEach(c => {
-      const opt = document.createElement("option");
-      opt.value = c.name;
-      opt.textContent = c.name;
-      filterSelect.appendChild(opt);
-    });
+    // Build dropdowns from live data merged with master lists
+    const clubsFromData = [...new Set(allEvents.map(e => e.organiser).filter(Boolean))];
+    const catsFromData  = [...new Set(allEvents.map(e => e.category).filter(Boolean))];
+    const mergedClubs   = [...new Set([...ALL_CLUBS, ...clubsFromData])].sort();
+    const mergedCats    = [...new Set([...ALL_CATEGORIES, ...catsFromData])].sort();
 
-    pageSubtitle.textContent = `${allClubs.length} clubs and societies at AKU`;
+    buildDropdown(clubFilter, "All Clubs", mergedClubs);
+    buildDropdown(catFilter,  "All Categories", mergedCats);
 
-    // Wire up filters
-    searchQ.addEventListener("input", render);
-    campusFilter.addEventListener("change", render);
-    filterSelect.addEventListener("change", render);
-    clearBtn.addEventListener("click", () => {
-      searchQ.value      = "";
-      campusFilter.value = "";
-      filterSelect.value = "";
-      render();
-    });
-
+    emptyMsg.style.display = "none";
     render();
-
-    // Check if a club name was passed in the URL → auto-open its modal
-    const urlParams  = new URLSearchParams(window.location.search);
-    const targetClub = urlParams.get("club");
-    if(targetClub){
-      const target = targetClub.toLowerCase().trim();
-
-      // 1. Exact match
-      let match = allClubs.find(c => c.name.toLowerCase() === target);
-
-      // 2. Partial match — club name contains the organiser name or vice versa
-      if(!match){
-        match = allClubs.find(c =>
-          c.name.toLowerCase().includes(target) ||
-          target.includes(c.name.toLowerCase())
-        );
-      }
-
-      if(match){
-        const idx = allClubs.indexOf(match);
-        const pal = PALETTE[idx % PALETTE.length];
-        openModal(match, pal);
-      }
-    }
   }
 
-  loadClubs();
+  // Wire up filter controls — re-render both list and calendar
+  function onFilterChange(){
+    if(calSection.style.display !== "none") renderCalendar();
+    else render();
+  }
+  q.addEventListener("input", onFilterChange);
+  dateFilter.addEventListener("change", onFilterChange);
+  clubFilter.addEventListener("change", onFilterChange);
+  catFilter.addEventListener("change", onFilterChange);
+  campusFilter.addEventListener("change", onFilterChange);
+
+  clearBtn.addEventListener("click", () => {
+    q.value = "";
+    dateFilter.value  = "";
+    clubFilter.value  = "";
+    catFilter.value   = "";
+    campusFilter.value= "";
+    render();
+  });
+
+  upcomingBtn.addEventListener("click", () => {
+    mode = "upcoming";
+    upcomingBtn.classList.add("active");
+    pastBtn.classList.remove("active");
+    render();
+  });
+
+  pastBtn.addEventListener("click", () => {
+    mode = "past";
+    pastBtn.classList.add("active");
+    upcomingBtn.classList.remove("active");
+    render();
+  });
+
+  loadEvents();
+
+  /* ══ VIEW SWITCH (List ↔ Calendar) ══ */
+  const viewListBtn  = document.getElementById("viewListBtn");
+  const viewCalBtn   = document.getElementById("viewCalBtn");
+  const listSection  = document.getElementById("listViewSection");
+  const calSection   = document.getElementById("calendarSection");
+  const pageGrid     = document.querySelector(".page-grid");
+
+  viewListBtn.addEventListener("click", () => {
+    viewListBtn.classList.add("active");
+    viewCalBtn.classList.remove("active");
+    listSection.style.display = "";
+    calSection.style.display  = "none";
+  });
+
+  viewCalBtn.addEventListener("click", () => {
+    viewCalBtn.classList.add("active");
+    viewListBtn.classList.remove("active");
+    listSection.style.display = "none";
+    calSection.style.display  = "";
+    renderCalendar();
+  });
+
+  /* ══ ADD TO CALENDAR (.ics) ══ */
+  function pad(n){ return String(n).padStart(2, "0"); }
+
+  function toUTCString(date){
+    // Returns UTC timestamp in iCal format: YYYYMMDDTHHMMSSZ
+    return date.getUTCFullYear()
+      + pad(date.getUTCMonth() + 1)
+      + pad(date.getUTCDate())
+      + "T" + pad(date.getUTCHours())
+      + pad(date.getUTCMinutes())
+      + pad(date.getUTCSeconds()) + "Z";
+  }
+
+  function parseEventDateTime(date, timeStr){
+    // Build a proper Date object from the event date + time string
+    const d = new Date(date);
+    let hours = 9, mins = 0;
+    if(timeStr){
+      const parts = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+      if(parts){
+        hours = parseInt(parts[1]);
+        mins  = parseInt(parts[2]);
+        const meridiem = (parts[3] || "").toUpperCase();
+        if(meridiem === "PM" && hours < 12) hours += 12;
+        if(meridiem === "AM" && hours === 12) hours = 0;
+      }
+    }
+    d.setHours(hours, mins, 0, 0);
+    return d;
+  }
+
+  function escapeICS(str){
+    // ICS requires escaping of special chars
+    return (str || "")
+      .replace(/\\/g, "\\\\")
+      .replace(/;/g, "\\;")
+      .replace(/,/g, "\\,")
+      .replace(/\n/g, "\\n");
+  }
+
+  function foldICSLine(line){
+    // ICS spec: lines must be max 75 octets, fold with CRLF + single space
+    if(line.length <= 75) return line;
+    let out = "";
+    while(line.length > 75){
+      out += line.slice(0, 75) + "\r\n ";
+      line = line.slice(75);
+    }
+    return out + line;
+  }
+
+  function generateICS(ev){
+    const startDate = parseEventDateTime(ev.date, ev.time);
+    const endDate   = new Date(startDate.getTime() + 60 * 60 * 1000); // +1 hour
+    const now       = new Date();
+    const uid       = `${ev.id || Math.random().toString(36).slice(2)}@akucampuslife.edu`;
+
+    const desc = [
+      ev.organiser ? `Organised by: ${ev.organiser}` : "",
+      ev.campus    ? `Campus: ${ev.campus}`           : "",
+      ev.category  ? `Category: ${ev.category}`       : "",
+      "AKU Campus Life — studentexperience.github.io/Student-Events/",
+    ].filter(Boolean).join("\\n");
+
+    const lines = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//AKU Campus Life//EN",
+      "CALSCALE:GREGORIAN",
+      "METHOD:PUBLISH",
+      "X-WR-CALNAME:AKU Campus Life",
+      "BEGIN:VEVENT",
+      `UID:${uid}`,
+      `DTSTAMP:${toUTCString(now)}`,
+      `DTSTART:${toUTCString(startDate)}`,
+      `DTEND:${toUTCString(endDate)}`,
+      `SUMMARY:${escapeICS(ev.name)}`,
+      `DESCRIPTION:${desc}`,
+      `LOCATION:${escapeICS(ev.venue || "")}`,
+      "STATUS:CONFIRMED",
+      "TRANSP:OPAQUE",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ];
+
+    return lines.map(foldICSLine).join("\r\n");
+  }
+
+  window.downloadICS = function(eventId){
+    const ev = allEvents.find(e => e.id === eventId);
+    if(!ev || !ev.date){ alert("Event details not available."); return; }
+
+    const ics      = generateICS(ev);
+    const filename = (ev.name || "event").replace(/[^a-z0-9]/gi, "_") + ".ics";
+
+    // iOS Safari doesn't support Blob + a.download
+    // Use data: URI which works across all browsers and mobile
+    const dataUri  = "data:text/calendar;charset=utf-8," + encodeURIComponent(ics);
+
+    // Try modern Blob approach first (works on Android, desktop)
+    // Fall back to data: URI for iOS Safari
+    try {
+      const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch(e){
+      // Fallback: open data URI directly (iOS opens in calendar)
+      window.open(dataUri);
+    }
+  };
+
+  /* ══ CALENDAR ══ */
+  let calDate     = new Date();
+  let calSelected = null;
+  const CAL_MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const CAL_PALETTE = ["#2563eb","#7c3aed","#16a34a","#f59e0b","#dc2626","#0891b2","#db2777","#9333ea"];
+
+  function colorForEvent(e, idx){
+    // Stable color based on organiser name hash
+    if(!e.organiser) return CAL_PALETTE[idx % CAL_PALETTE.length];
+    let hash = 0;
+    for(let i = 0; i < e.organiser.length; i++) hash = e.organiser.charCodeAt(i) + ((hash << 5) - hash);
+    return CAL_PALETTE[Math.abs(hash) % CAL_PALETTE.length];
+  }
+
+  function getFilteredCalEvents(){
+    const qv  = q.value.trim().toLowerCase();
+    const cv  = clubFilter.value;
+    const tv  = catFilter.value;
+    const cpv = campusFilter.value;
+    return allEvents
+      .filter(e => !cv  || e.organiser === cv)
+      .filter(e => !tv  || e.category  === tv)
+      .filter(e => !cpv || e.campus    === cpv)
+      .filter(e => !qv  || `${e.name} ${e.organiser} ${e.category} ${e.venue} ${e.time} ${e.campus}`.toLowerCase().includes(qv));
+  }
+
+  function eventsOnDate(date){
+    return getFilteredCalEvents().filter(e => e.date && sameDay(e.date, date));
+  }
+
+  function renderCalendar(){
+    const grid       = document.getElementById("calGrid");
+    const monthLabel = document.getElementById("calMonthLabel");
+    const detailEl   = document.getElementById("calDetail");
+
+    const year  = calDate.getFullYear();
+    const month = calDate.getMonth();
+    monthLabel.textContent = `${CAL_MONTHS[month]} ${year}`;
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysIn   = new Date(year, month + 1, 0).getDate();
+    const todayD   = new Date(); todayD.setHours(0,0,0,0);
+
+    let html = "";
+
+    // Leading empty cells
+    for(let i = 0; i < firstDay; i++){
+      html += `<div class="cal-day empty"></div>`;
+    }
+
+    // Days of month
+    for(let d = 1; d <= daysIn; d++){
+      const date    = new Date(year, month, d);
+      const dayEvts = eventsOnDate(date);
+      const isToday = sameDay(date, todayD);
+      const isSel   = calSelected && sameDay(date, calSelected);
+      const hasEvts = dayEvts.length > 0;
+
+      const classes = [
+        "cal-day",
+        isToday ? "today" : "",
+        isSel   ? "selected" : "",
+        hasEvts ? "has-events" : "no-events"
+      ].filter(Boolean).join(" ");
+
+      // Up to 2 event pills + "more" indicator (desktop/tablet)
+      const pills = dayEvts.slice(0, 2).map((e, i) => {
+        const color = colorForEvent(e, i);
+        return `<div class="cal-event-pill" style="background:${color};" title="${escapeHtml(e.name)}">${escapeHtml(e.name)}</div>`;
+      }).join("");
+      const more = dayEvts.length > 2 ? `<div class="cal-event-more">+${dayEvts.length - 2} more</div>` : "";
+
+      // Dots for mobile view
+      const dots = dayEvts.slice(0, 4).map((e, i) =>
+        `<span class="cal-event-dot" style="background:${colorForEvent(e, i)};"></span>`
+      ).join("");
+
+      html += `
+        <div class="${classes}" data-date="${date.toISOString()}" ${hasEvts ? `onclick="window.selectCalDay('${date.toISOString()}')"` : ""}>
+          <div class="cal-day-num-wrap">
+            <div class="cal-day-num">${d}</div>
+          </div>
+          ${pills}
+          ${more}
+          <div class="cal-day-dots">${dots}</div>
+        </div>`;
+    }
+
+    grid.innerHTML = html;
+
+    // Render detail panel for selected day (or today by default if has events)
+    if(!calSelected){
+      const todayEvts = eventsOnDate(todayD);
+      if(todayEvts.length > 0 && sameDay(new Date(year,month,1), new Date(todayD.getFullYear(),todayD.getMonth(),1))){
+        calSelected = todayD;
+      }
+    }
+    renderCalDetail();
+  }
+
+  function renderCalDetail(){
+    const detailEl = document.getElementById("calDetail");
+    if(!calSelected){
+      detailEl.classList.remove("visible");
+      detailEl.innerHTML = "";
+      return;
+    }
+    const evts = eventsOnDate(calSelected);
+    if(evts.length === 0){
+      detailEl.classList.remove("visible");
+      detailEl.innerHTML = "";
+      return;
+    }
+
+    const dateLabel = calSelected.toLocaleDateString("en-GB", {
+      weekday: "long", day: "numeric", month: "long", year: "numeric"
+    });
+
+    detailEl.innerHTML = `
+      <div class="cal-detail-inner">
+        <div class="cal-detail-title">
+          <span>✦</span>
+          <span>${escapeHtml(dateLabel)}</span>
+          <span class="cal-detail-badge">${evts.length} event${evts.length !== 1 ? "s" : ""}</span>
+        </div>
+        <div class="cal-detail-events">
+          ${evts.map((e, i) => {
+            const color = colorForEvent(e, i);
+            const tm    = e.time  ? `<span>⏰ ${escapeHtml(e.time)}</span>`  : "";
+            const vn    = e.venue ? `<span>📍 ${escapeHtml(e.venue)}</span>` : "";
+            const og    = e.organiser ? `<span>🎭 ${escapeHtml(e.organiser)}</span>` : "";
+            const cm    = e.campus ? `<span>🏫 ${escapeHtml(e.campus)}</span>` : "";
+            const clubHref = e.organiser ? `href="clubs.html?club=${encodeURIComponent(e.organiser)}"` : "";
+            const icsBtn = e.id ? `<button class="add-to-cal-btn" onclick="event.preventDefault();event.stopPropagation();downloadICS('${e.id}')">📆 Save to Calendar</button>` : "";
+            return `
+              <div class="cal-detail-event">
+                <div class="cal-detail-color" style="background:${color};"></div>
+                <div class="cal-detail-body">
+                  <div class="cal-detail-name">${e.organiser ? `<a ${clubHref} style="color:inherit;text-decoration:none;" onclick="event.stopPropagation()">${escapeHtml(e.name)}</a>` : escapeHtml(e.name)}</div>
+                  <div class="cal-detail-meta">${tm}${vn}${og}${cm}</div>
+                  <div class="cal-detail-actions">${icsBtn}</div>
+                </div>
+              </div>`;
+          }).join("")}
+        </div>
+      </div>`;
+    detailEl.classList.add("visible");
+  }
+
+  // Expose day click handler
+  window.selectCalDay = function(isoDate){
+    calSelected = new Date(isoDate);
+
+    // Mobile — show slide-up modal instead of bottom panel
+    if(window.innerWidth <= 768){
+      const evts = eventsOnDate(calSelected);
+      if(!evts.length) return;
+      showMobileCalModal(calSelected, evts);
+      return;
+    }
+
+    renderCalendar();
+  };
+
+  window.closeMobileCalModal = function(){
+    document.getElementById("calMobileModal").classList.remove("open");
+    document.body.style.overflow = "";
+  };
+
+  function showMobileCalModal(date, evts){
+    const dateLabel = date.toLocaleDateString("en-GB", {
+      weekday: "long", day: "numeric", month: "long"
+    });
+    document.getElementById("calMobileTitle").textContent = dateLabel;
+    document.getElementById("calMobileEvents").innerHTML = evts.map((e, i) => {
+      const color  = colorForEvent(e, i);
+      const tm     = e.time  ? `<span>⏰ ${escapeHtml(e.time)}</span>`  : "";
+      const vn     = e.venue ? `<span>📍 ${escapeHtml(e.venue)}</span>` : "";
+      const og     = e.organiser ? `<span>🎭 ${escapeHtml(e.organiser)}</span>` : "";
+      const icsBtn = e.id ? `<button class="add-to-cal-btn" onclick="downloadICS('${e.id}')">📆 Add to Calendar</button>` : "";
+      const clubLink = e.organiser
+        ? `<a href="clubs.html?club=${encodeURIComponent(e.organiser)}" style="color:#2563eb;font-size:12px;font-weight:600;text-decoration:none;">View Club →</a>`
+        : "";
+      return `
+        <div class="cal-mobile-event">
+          <div class="cal-mobile-color" style="background:${color};"></div>
+          <div style="flex:1;min-width:0;">
+            <div class="cal-mobile-name">${escapeHtml(e.name)}</div>
+            <div class="cal-mobile-meta">${tm}${vn}${og}</div>
+            <div class="cal-mobile-actions">${icsBtn}${clubLink}</div>
+          </div>
+        </div>`;
+    }).join("");
+
+    document.getElementById("calMobileModal").classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+
+  // Calendar nav
+  document.getElementById("calPrev").addEventListener("click", () => {
+    calDate.setMonth(calDate.getMonth() - 1);
+    calSelected = null;
+    renderCalendar();
+  });
+  document.getElementById("calNext").addEventListener("click", () => {
+    calDate.setMonth(calDate.getMonth() + 1);
+    calSelected = null;
+    renderCalendar();
+  });
+  document.getElementById("calTodayBtn").addEventListener("click", () => {
+    calDate = new Date();
+    calSelected = new Date();
+    calSelected.setHours(0,0,0,0);
+    renderCalendar();
+  });
+
+  // Close mobile modal on Escape
+  document.addEventListener("keydown", e => {
+    if(e.key === "Escape") window.closeMobileCalModal();
+  });
 
 });
 </script>
