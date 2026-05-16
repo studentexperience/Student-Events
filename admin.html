@@ -3497,7 +3497,10 @@ async function saveEvent(){
     try {
       await fetch("https://dgzuqvffnbfybngoadse.supabase.co/functions/v1/bright-processor", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type":  "application/json",
+          "Authorization": `Bearer ${SUPABASE_KEY}`,
+        },
         body: JSON.stringify({
           type: "new_event",
           event: {
@@ -4605,7 +4608,10 @@ async function updateProposalStatus(status){
       try {
         await fetch("https://dgzuqvffnbfybngoadse.supabase.co/functions/v1/bright-processor", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type":  "application/json",
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+          },
           body: JSON.stringify({
             type: "new_event",
             event: {
