@@ -1,0 +1,54 @@
+{
+  "name": "AKU Campus Life",
+  "short_name": "Campus Life",
+  "description": "AKU Student Events, Clubs, News and Forms",
+  "start_url": "/Student-Events/index.html",
+  "scope": "/Student-Events/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "lang": "en",
+  "categories": ["education", "lifestyle"],
+  "icons": [
+    {
+      "src": "https://studentexperience.github.io/Student-Events/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://studentexperience.github.io/Student-Events/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://studentexperience.github.io/Student-Events/screenshot.png",
+      "sizes": "1280x720",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Events",
+      "short_name": "Events",
+      "url": "/Student-Events/index.html",
+      "icons": [{ "src": "https://studentexperience.github.io/Student-Events/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Clubs",
+      "short_name": "Clubs",
+      "url": "/Student-Events/clubs.html",
+      "icons": [{ "src": "https://studentexperience.github.io/Student-Events/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Event Hub",
+      "short_name": "Event Hub",
+      "url": "/Student-Events/event-hub.html",
+      "icons": [{ "src": "https://studentexperience.github.io/Student-Events/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
