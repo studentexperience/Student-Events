@@ -992,7 +992,13 @@
 <script>
 const SUPABASE_URL = "https://dgzuqvffnbfybngoadse.supabase.co";
 const SUPABASE_KEY = "sb_publishable_77t5gCD7M620CzcMwESN-A_oAuqz6B8";
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    storageKey: "aku-eventhub-session",
+    autoRefreshToken: true,
+    persistSession: true,
+  }
+});
 
 /* ── State ── */
 let currentClub    = null; // { email, club_name, campus }
