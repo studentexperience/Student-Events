@@ -1354,6 +1354,25 @@ document.addEventListener("DOMContentLoaded", () => {
   today.setHours(0,0,0,0);
 
   let mode = "upcoming";
+  // Normalise any time string to minutes since midnight for sorting
+  function parseTimeToMinutes(t){
+    if(!t) return 9999;
+    t = t.trim().toUpperCase();
+    // 24-hour: 14:40, 09:00
+    let m = t.match(/^(\d{1,2}):(\d{2})$/);
+    if(m) return parseInt(m[1]) * 60 + parseInt(m[2]);
+    // 12-hour: 6:00PM, 7 PM, 2:30 AM
+    m = t.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/);
+    if(m){
+      let h = parseInt(m[1]);
+      const mins = m[2] ? parseInt(m[2]) : 0;
+      if(m[3] === "PM" && h !== 12) h += 12;
+      if(m[3] === "AM" && h === 12) h = 0;
+      return h * 60 + mins;
+    }
+    return 9999;
+  }
+
   let allEvents = [];
 
   const PALETTE = [
@@ -1713,7 +1732,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const { data, error } = await sb
       .from("events")
       .select("*")
-      .order("event_date", { ascending: true });
+      .order("event_date", { ascending: true })
+      .order("start_time", { ascending: true });
 
     if(error){
       emptyMsg.textContent = "Failed to load events. Please try again later.";
@@ -1731,7 +1751,14 @@ document.addEventListener("DOMContentLoaded", () => {
       date:      r.event_date ? (() => { const d = new Date(r.event_date); d.setHours(0,0,0,0); return d; })() : null,
       image:     (r.cover_image|| "").trim(),
       interested: r.interested_count || 0,
-    })).filter(e => e.name && e.date);
+      _sortTime: parseTimeToMinutes(r.start_time || ""),
+    })).filter(e => e.name && e.date)
+      .sort((a, b) => {
+        // Sort by date first, then by time within same day
+        const dateDiff = a.date - b.date;
+        if(dateDiff !== 0) return dateDiff;
+        return a._sortTime - b._sortTime;
+      });
 
     // Build dropdowns from live data merged with master lists
     const clubsFromData = [...new Set(allEvents.map(e => e.organiser).filter(Boolean))];
