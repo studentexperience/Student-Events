@@ -4656,7 +4656,35 @@ async function updateProposalStatus(status){
   showToast(labels[status] || "Updated!");
   noteField.style.display = "none";
   document.getElementById("reviewNote").value = "";
-  closeModal("reviewProposalModal");
+
+  // If approved — keep modal open, show assign section
+  if(status === "approved" && hasPermission("assign_events")){
+    // Refresh the proposal in memory
+    await loadProposals();
+    const updated = allAdminProposals.find(x => x.id === id);
+
+    // Show assign section with a prompt
+    const assignSec = document.getElementById("assignSection");
+    assignSec.style.display = "block";
+
+    // Add a nudge banner above assign section
+    let nudge = document.getElementById("assignNudge");
+    if(!nudge){
+      nudge = document.createElement("div");
+      nudge.id = "assignNudge";
+      nudge.style.cssText = "background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#15803d;font-weight:600;";
+      assignSec.prepend(nudge);
+    }
+    nudge.textContent = "✅ Event approved! Now assign it to an Event Lead below.";
+
+    // Scroll to assign section
+    assignSec.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    // Hide status buttons to reduce clutter
+    document.getElementById("statusActionSection").style.display = "none";
+  } else {
+    closeModal("reviewProposalModal");
+  }
   loadProposals();
 }
 
@@ -4697,6 +4725,11 @@ async function assignProposal(){
   }
 
   showToast("📌 Event assigned successfully!");
+  // Restore status section for next time modal opens
+  const statusSec = document.getElementById("statusActionSection");
+  if(statusSec) statusSec.style.display = "block";
+  const nudge = document.getElementById("assignNudge");
+  if(nudge) nudge.remove();
   closeModal("reviewProposalModal");
   loadProposals();
   loadAdminNotifications();
