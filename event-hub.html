@@ -934,6 +934,21 @@
 </div>
 
 <!-- ══ PROPOSAL MODAL ══ -->
+<!-- Pending Report Warning Modal -->
+<div class="modal-backdrop" id="pendingReportModal">
+  <div class="modal" style="max-width:460px;text-align:center;">
+    <div style="font-size:48px;margin-bottom:12px;">📝</div>
+    <div class="modal-title" style="margin-bottom:8px;">Post-Event Report Required</div>
+    <p style="font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:8px;" id="pendingReportMsg"></p>
+    <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:14px;margin-bottom:20px;font-size:13px;color:#92400e;">
+      ⚠️ You cannot submit a new event proposal until the post-event report for your previous event has been submitted and confirmed by the Event Lead.
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button class="btn btn-secondary" onclick="closeModal('pendingReportModal')">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="proposalModal">
   <div class="modal">
     <div class="modal-header">
@@ -1074,14 +1089,32 @@ const STATUS_CONFIG = {
   cancelled:    { label:"Cancelled",     emoji:"🚫", cls:"status-cancelled" },
 };
 
-const TIMELINE_STEPS = [
-  { key:"submitted",    label:"Submitted",    emoji:"📤" },
-  { key:"under_review", label:"Reviewing",    emoji:"🔍" },
-  { key:"approved",     label:"Approved",     emoji:"✅" },
-  { key:"assigned",     label:"Assigned",     emoji:"📌" },
+/* ── Two-phase timeline config ── */
+const PHASE1_STEPS = [
+  { key:"submitted",    label:"Submitted",     emoji:"📤" },
+  { key:"under_review", label:"Under Review",  emoji:"🔍" },
+  { key:"needs_info",   label:"Info Needed",   emoji:"💬" },
+  { key:"approved",     label:"Approved",      emoji:"✅" },
 ];
 
-const STATUS_ORDER = ["submitted","under_review","approved","assigned"];
+const PHASE2_STEPS = [
+  { key:"assigned",         label:"Assigned",       emoji:"📌" },
+  { key:"in_progress",      label:"In Progress",    emoji:"▶️" },
+  { key:"completed",        label:"Event Done",     emoji:"🎉" },
+  { key:"report_submitted", label:"Report Filed",   emoji:"📝" },
+];
+
+const TERMINAL_STATUSES = {
+  declined:  { label:"Declined",  emoji:"❌", color:"#b91c1c", bg:"#fef2f2" },
+  postponed: { label:"Postponed", emoji:"⏸️", color:"#374151", bg:"#f3f4f6" },
+  cancelled: { label:"Cancelled", emoji:"🚫", color:"#9f1239", bg:"#fff1f2" },
+};
+
+// Map admin status → phase1 index
+const PHASE1_ORDER = ["submitted","under_review","needs_info","approved"];
+
+// Map execution_status → phase2 index  
+const PHASE2_ORDER = ["assigned","in_progress","completed","report_submitted"];
 
 function statusBadge(status){
   const c = STATUS_CONFIG[status] || { label:status, emoji:"•", cls:"status-submitted" };
@@ -1363,18 +1396,42 @@ function proposalCardHTML(p){
     ${canEdit ? `<button class="btn btn-sm" style="background:#f5f3ff;color:var(--accent);border:1.5px solid #e9d5ff;" onclick="openProposalModal('${p.id}')">✏️ Edit</button>` : ""}
   `;
 
-  // Timeline
-  const curIdx    = STATUS_ORDER.indexOf(p.status);
-  const timelineHtml = TIMELINE_STEPS.map((step, i) => {
-    const done    = curIdx > i || (curIdx === i && p.status !== "declined" && p.status !== "needs_info");
-    const current = i === curIdx;
-    const cls     = done ? "done" : current ? "current" : "";
-    return `
-      <div class="timeline-step ${cls}">
-        <div class="timeline-dot">${done ? "✓" : step.emoji}</div>
-        <div class="timeline-label">${step.label}</div>
-      </div>`;
-  }).join("");
+  // ── Two-phase timeline ──
+  const isTerminal   = !!TERMINAL_STATUSES[p.status];
+  const isPhase2     = ["assigned","in_progress","completed","report_submitted"].includes(p.status) ||
+                       ["in_progress","completed","report_submitted","cancelled","postponed"].includes(p.execution_status);
+  const phase1Status = isPhase2 ? "approved" : p.status;
+  const phase1Idx    = PHASE1_ORDER.indexOf(phase1Status);
+  const phase2Idx    = isPhase2 ? PHASE2_ORDER.indexOf(p.execution_status || "assigned") : -1;
+
+  const phase1Html = isTerminal
+    ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:${TERMINAL_STATUSES[p.status].bg};border-radius:10px;margin-bottom:8px;">
+        <span style="font-size:20px;">${TERMINAL_STATUSES[p.status].emoji}</span>
+        <span style="font-weight:700;color:${TERMINAL_STATUSES[p.status].color};">${TERMINAL_STATUSES[p.status].label}</span>
+        ${p.status_reason ? `<span style="font-size:12px;color:#6b7280;margin-left:4px;">— ${esc(p.status_reason)}</span>` : ""}
+       </div>`
+    : `<div style="margin-bottom:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9ca3af;">Phase 1 — Admin Review</div>
+       <div class="proposal-timeline">${PHASE1_STEPS.map((step, i) => {
+         const done    = phase1Idx > i;
+         const current = phase1Idx === i;
+         const cls     = done ? "done" : current ? "current" : "";
+         return `<div class="timeline-step ${cls}">
+           <div class="timeline-dot">${done ? "✓" : step.emoji}</div>
+           <div class="timeline-label">${step.label}</div>
+         </div>`;
+       }).join("")}</div>`;
+
+  const phase2Html = isPhase2 && !isTerminal
+    ? `<div style="margin-top:10px;margin-bottom:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#7c3aed;">Phase 2 — Event Execution</div>
+       <div class="proposal-timeline">${PHASE2_STEPS.map((step, i) => {
+         const done    = phase2Idx > i;
+         const current = phase2Idx === i;
+         const cls     = done ? "done" : current ? "current" : "";
+         return `<div class="timeline-step ${cls}">
+           <div class="timeline-dot">${done ? "✓" : step.emoji}</div>
+           <div class="timeline-label">${step.label}</div>
+         </div>`;
+       }).join("")}</div>` : "";
 
   return `
     <div class="proposal-card" id="card-${p.id}">
@@ -1387,11 +1444,15 @@ function proposalCardHTML(p){
             <span style="color:#c4b5d4;">${timeAgo(p.submitted_at)}</span>
           </div>
           ${statusBadge(p.status)}
+          ${p.execution_status && p.execution_status !== "pending" ? `<span class="status-badge" style="background:#f5f3ff;color:#7c3aed;margin-left:4px;">${PHASE2_STEPS.find(s=>s.key===p.execution_status)?.emoji || ""} ${p.execution_status.replace(/_/g," ")}</span>` : ""}
         </div>
         <div class="proposal-actions">${actions}</div>
       </div>
       ${noteHtml}
-      <div class="proposal-timeline">${timelineHtml}</div>
+      <div style="padding:12px 16px 4px;">
+        ${phase1Html}
+        ${phase2Html}
+      </div>
 
       <!-- Inline Message Thread -->
       <div class="card-thread" id="thread-${p.id}">
@@ -1637,7 +1698,30 @@ function row(label, value){
 }
 
 /* ── Proposal form ── */
+function showPendingReportWarning(proposal){
+  const eventDate = formatDate(proposal.proposed_date);
+  document.getElementById("pendingReportMsg").textContent =
+    `Your event "${proposal.event_name}" (${eventDate}) has passed but the post-event report has not been submitted yet. Please ask your Event Lead to mark the report as submitted.`;
+  document.getElementById("pendingReportModal").classList.add("open");
+}
+
 function openProposalModal(id = null){
+  // ── Gate: block if club has overdue events without report ──
+  if(!id){ // only gate new proposals, not edits
+    const today = new Date(); today.setHours(0,0,0,0);
+    const pendingReport = allProposals.find(p => {
+      if(!p.proposed_date) return false;
+      const eventDate = new Date(p.proposed_date); eventDate.setHours(0,0,0,0);
+      return p.status === "assigned"
+        && eventDate < today
+        && !["report_submitted","cancelled","postponed"].includes(p.execution_status || "");
+    });
+    if(pendingReport){
+      // Show blocking modal instead
+      showPendingReportWarning(pendingReport);
+      return;
+    }
+  }
   document.getElementById("proposalModalTitle").textContent = id ? "Edit Proposal" : "New Event Proposal";
   document.getElementById("proposalId").value = id || "";
   document.getElementById("fImagePreview").innerHTML = "📸 Click to upload cover image";
