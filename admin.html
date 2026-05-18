@@ -4549,18 +4549,31 @@ function renderProposalsTable(list){
     tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">📨</div><div class="empty-state-text">No proposals found.</div></div></td></tr>`;
     return;
   }
+  const today = new Date(); today.setHours(0,0,0,0);
   tbody.innerHTML = list.map(p => {
     const sc = PROPOSAL_STATUS_CONFIG[p.status] || { label:p.status, color:"#555", bg:"#f3f4f6" };
     const statusBadge = `<span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;background:${sc.bg};color:${sc.color};">${sc.label}</span>`;
     const date = p.proposed_date ? new Date(p.proposed_date).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "—";
     const submitted = p.submitted_at ? new Date(p.submitted_at).toLocaleDateString("en-GB",{day:"numeric",month:"short"}) : "—";
-    return `<tr>
+
+    // Execution status badge
+    const EXEC_LABELS = { pending:"⏳ Pending", in_progress:"▶️ In Progress", completed:"✅ Done", report_submitted:"📝 Report Filed", postponed:"⏸️ Postponed", cancelled:"🚫 Cancelled" };
+    const execLabel   = p.execution_status && p.execution_status !== "pending" ? `<div style="font-size:10px;color:#7c3aed;margin-top:3px;">${EXEC_LABELS[p.execution_status]||p.execution_status}</div>` : "";
+
+    // Pending report warning
+    const needsReport = p.status === "assigned"
+      && p.proposed_date
+      && new Date(p.proposed_date) < today
+      && !["report_submitted","cancelled","postponed"].includes(p.execution_status||"");
+    const reportFlag = needsReport ? `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;background:#fef3c7;color:#92400e;display:block;margin-top:4px;">📝 Report Pending</span>` : "";
+
+    return `<tr ${needsReport ? 'style="background:#fffbeb;"' : ""}>
       <td style="font-weight:600;max-width:200px;" title="${esc(p.event_name)}">${esc(p.event_name)}</td>
       <td>${esc(p.club_name)}</td>
       <td>${p.campus ? `<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#eff6ff;color:#2563eb;">${esc(p.campus)}</span>` : "—"}</td>
       <td>${date}</td>
       <td>${esc(p.category || "—")}</td>
-      <td>${statusBadge}</td>
+      <td>${statusBadge}${execLabel}${reportFlag}</td>
       <td style="font-size:12px;color:var(--muted);">${submitted}</td>
       <td><div class="td-actions">
         <button class="btn btn-primary btn-sm" onclick="openReviewModal('${p.id}')">Review</button>
