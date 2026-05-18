@@ -1291,6 +1291,11 @@
             <div class="stat-sub">Registered societies</div>
           </div>
           <div class="stat-card">
+            <div class="stat-label">Onboarded Clubs</div>
+            <div class="stat-value" id="statOnboarded">—</div>
+            <div class="stat-sub">Approved on Event Hub</div>
+          </div>
+          <div class="stat-card">
             <div class="stat-label">Total Events</div>
             <div class="stat-value" id="statEvents">—</div>
             <div class="stat-sub">In the database</div>
@@ -1309,6 +1314,16 @@
             <div class="stat-label">News Articles</div>
             <div class="stat-value" id="statNews">—</div>
             <div class="stat-sub">Published articles</div>
+          </div>
+          <div class="stat-card" style="border-top-color:#7c3aed;">
+            <div class="stat-label">🔔 Push Subscribers</div>
+            <div class="stat-value" id="statSubscribers">—</div>
+            <div class="stat-sub">Students with notifications on</div>
+          </div>
+          <div class="stat-card" style="border-top-color:#0891b2;">
+            <div class="stat-label">❤️ Total Interests</div>
+            <div class="stat-value" id="statInterests">—</div>
+            <div class="stat-sub">Across all events</div>
           </div>
         </div>
 
@@ -2976,24 +2991,35 @@ async function loadDashboard(){
     { count: eventCount },
     { count: adminCount },
     { count: newsCount },
+    { count: onboardedCount },
+    { count: subscriberCount },
     { data: upcomingData },
     { data: allClubsData },
     { data: eventsData },
+    { data: interestData },
   ] = await Promise.all([
-    sb.from("clubs").select("*",  { count:"exact", head:true }),
-    sb.from("events").select("*", { count:"exact", head:true }),
-    sb.from("admins").select("*", { count:"exact", head:true }),
-    sb.from("news").select("*",   { count:"exact", head:true }),
+    sb.from("clubs").select("*",         { count:"exact", head:true }),
+    sb.from("events").select("*",        { count:"exact", head:true }),
+    sb.from("admins").select("*",        { count:"exact", head:true }),
+    sb.from("news").select("*",          { count:"exact", head:true }),
+    sb.from("club_accounts").select("*", { count:"exact", head:true }).eq("status","approved"),
+    sb.from("push_subscriptions").select("*", { count:"exact", head:true }),
     sb.from("events").select("event_date").gte("event_date", today),
     sb.from("clubs").select("campus"),
     sb.from("events").select("campus, event_date, category"),
+    sb.from("events").select("interested_count"),
   ]);
 
-  document.getElementById("statClubs").textContent    = clubCount    ?? "—";
-  document.getElementById("statEvents").textContent   = eventCount   ?? "—";
-  document.getElementById("statAdmins").textContent   = adminCount   ?? "—";
-  document.getElementById("statNews").textContent     = newsCount    ?? "—";
-  document.getElementById("statUpcoming").textContent = upcomingData?.length ?? "—";
+  const totalInterests = (interestData || []).reduce((sum, e) => sum + (e.interested_count || 0), 0);
+
+  document.getElementById("statClubs").textContent       = clubCount       ?? "—";
+  document.getElementById("statOnboarded").textContent   = onboardedCount  ?? "—";
+  document.getElementById("statEvents").textContent      = eventCount      ?? "—";
+  document.getElementById("statAdmins").textContent      = adminCount      ?? "—";
+  document.getElementById("statNews").textContent        = newsCount       ?? "—";
+  document.getElementById("statUpcoming").textContent    = upcomingData?.length ?? "—";
+  document.getElementById("statSubscribers").textContent = subscriberCount ?? "—";
+  document.getElementById("statInterests").textContent   = totalInterests  || "—";
 
   // Per-campus summary cards
   const campusGrid = document.getElementById("campusStatsGrid");
