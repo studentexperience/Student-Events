@@ -1079,35 +1079,35 @@ function timeAgo(str){
 
 /* ── Status helpers ── */
 const STATUS_CONFIG = {
-  submitted:    { label:"Submitted",     emoji:"📤", cls:"status-submitted" },
-  under_review: { label:"Under Review",  emoji:"🔍", cls:"status-under_review" },
-  needs_info:   { label:"Needs Info",    emoji:"💬", cls:"status-needs_info" },
-  approved:     { label:"Approved",      emoji:"✅", cls:"status-approved" },
-  assigned:     { label:"Assigned",      emoji:"📌", cls:"status-assigned" },
-  declined:     { label:"Declined",      emoji:"❌", cls:"status-declined" },
-  postponed:    { label:"Postponed",     emoji:"⏸️", cls:"status-postponed" },
-  cancelled:    { label:"Cancelled",     emoji:"🚫", cls:"status-cancelled" },
+  submitted:    { label:"Event Proposal Received",            emoji:"📥", cls:"status-submitted" },
+  under_review: { label:"In Review",           emoji:"🔍", cls:"status-under_review" },
+  needs_info:   { label:"Pending Information", emoji:"💬", cls:"status-needs_info" },
+  approved:     { label:"Approved",            emoji:"✅", cls:"status-approved" },
+  assigned:     { label:"OSE Member Assigned", emoji:"📌", cls:"status-assigned" },
+  declined:     { label:"Not Approved",        emoji:"❌", cls:"status-declined" },
+  postponed:    { label:"Rescheduled",         emoji:"⏸️", cls:"status-postponed" },
+  cancelled:    { label:"Cancelled",           emoji:"🚫", cls:"status-cancelled" },
 };
 
 /* ── Two-phase timeline config ── */
 const PHASE1_STEPS = [
-  { key:"submitted",    label:"Submitted",     emoji:"📤" },
-  { key:"under_review", label:"Under Review",  emoji:"🔍" },
-  { key:"needs_info",   label:"Info Needed",   emoji:"💬" },
-  { key:"approved",     label:"Approved",      emoji:"✅" },
+  { key:"submitted",    label:"Event Proposal Received",            emoji:"📥" },
+  { key:"under_review", label:"In Review",           emoji:"🔍" },
+  { key:"needs_info",   label:"Pending Information", emoji:"💬" },
+  { key:"approved",     label:"Approved",            emoji:"✅" },
 ];
 
 const PHASE2_STEPS = [
-  { key:"assigned",         label:"Assigned",       emoji:"📌" },
-  { key:"in_progress",      label:"In Progress",    emoji:"▶️" },
-  { key:"completed",        label:"Event Done",     emoji:"🎉" },
-  { key:"report_submitted", label:"Report Filed",   emoji:"📝" },
+  { key:"assigned",         label:"OSE Member Assigned",  emoji:"📌" },
+  { key:"in_progress",      label:"Preparation Underway", emoji:"▶️" },
+  { key:"completed",        label:"Event Held",           emoji:"🎉" },
+  { key:"report_submitted", label:"Closed",               emoji:"🔒" },
 ];
 
 const TERMINAL_STATUSES = {
-  declined:  { label:"Declined",  emoji:"❌", color:"#b91c1c", bg:"#fef2f2" },
-  postponed: { label:"Postponed", emoji:"⏸️", color:"#374151", bg:"#f3f4f6" },
-  cancelled: { label:"Cancelled", emoji:"🚫", color:"#9f1239", bg:"#fff1f2" },
+  declined:  { label:"Not Approved", emoji:"❌", color:"#b91c1c", bg:"#fef2f2" },
+  postponed: { label:"Rescheduled",  emoji:"⏸️", color:"#374151", bg:"#f3f4f6" },
+  cancelled: { label:"Cancelled",    emoji:"🚫", color:"#9f1239", bg:"#fff1f2" },
 };
 
 // Map admin status → phase1 index
@@ -1574,13 +1574,13 @@ function subscribeToProposalUpdates(){
 
       // Show toast for status changes
       const statusLabels = {
-        needs_info: "💬 Admin needs more information on your proposal",
-        approved:   "🎉 Your event has been approved!",
-        declined:   "❌ Your proposal was declined",
-        assigned:   "📌 An Event Lead has been assigned",
-        postponed:  "⏸️ Your event has been postponed",
-        cancelled:  "🚫 Your event was cancelled",
-        under_review: "🔍 Your proposal is under review",
+        needs_info:   "💬 Your proposal status: Pending Information — please check messages",
+        approved:     "🎉 Your event has been Approved!",
+        declined:     "❌ Your proposal was Not Approved",
+        assigned:     "📌 An OSE Member has been assigned to your event",
+        postponed:    "⏸️ Your event has been Rescheduled",
+        cancelled:    "🚫 Your event was Cancelled",
+        under_review: "🔍 Your proposal is now In Review",
       };
       const msg = statusLabels[payload.new.status];
       if(msg) showToast(msg, ["approved","assigned"].includes(payload.new.status) ? "success" : "error");
