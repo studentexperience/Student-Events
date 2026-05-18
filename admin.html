@@ -4163,12 +4163,12 @@ function insertLink(){
 /* ══ MY ASSIGNED EVENTS — Pipeline View ══ */
 
 const EXECUTION_STATUS = {
-  pending:          { label:"Pending",         emoji:"⏳", bg:"#f3f4f6", color:"#374151" },
-  in_progress:      { label:"In Progress",     emoji:"▶️", bg:"#eff6ff", color:"#2563eb" },
-  completed:        { label:"Completed",        emoji:"✅", bg:"#f0fdf4", color:"#15803d" },
-  report_submitted: { label:"Report Submitted", emoji:"📝", bg:"#f5f3ff", color:"#7c3aed" },
-  postponed:        { label:"Postponed",        emoji:"⏸️", bg:"#fff7ed", color:"#c2410c" },
-  cancelled:        { label:"Cancelled",        emoji:"🚫", bg:"#fef2f2", color:"#b91c1c" },
+  pending:          { label:"Awaiting Assignment",  emoji:"⏳", bg:"#f3f4f6", color:"#374151" },
+  in_progress:      { label:"Preparation Underway", emoji:"▶️", bg:"#eff6ff", color:"#2563eb" },
+  completed:        { label:"Event Held",           emoji:"🎉", bg:"#f0fdf4", color:"#15803d" },
+  report_submitted: { label:"Closed",               emoji:"🔒", bg:"#f5f3ff", color:"#7c3aed" },
+  postponed:        { label:"Rescheduled",          emoji:"⏸️", bg:"#fff7ed", color:"#c2410c" },
+  cancelled:        { label:"Cancelled",            emoji:"🚫", bg:"#fef2f2", color:"#b91c1c" },
 };
 
 /* ── Pipeline helpers — global scope, no closure issues ── */
@@ -4366,10 +4366,10 @@ function pipelineCard(p, today, isMine = true){
 
   const execBtnsHtml = isMine ? `<div class="pipeline-card-exec-btns">${
     [
-      { s:"in_progress",     l:"▶️ In Progress" },
-      { s:"completed",       l:"✅ Completed" },
-      { s:"report_submitted",l:"📝 Report" },
-      { s:"postponed",       l:"⏸️ Postponed" },
+      { s:"in_progress",     l:"▶️ Preparation Underway" },
+      { s:"completed",       l:"🎉 Event Held" },
+      { s:"report_submitted",l:"🔒 Close Event" },
+      { s:"postponed",       l:"⏸️ Rescheduled" },
       { s:"cancelled",       l:"🚫 Cancelled" },
     ].map(b => {
       const isCurr = (p.execution_status || "pending") === b.s;
@@ -4383,7 +4383,7 @@ function pipelineCard(p, today, isMine = true){
   // Show alert if admin reverted status to needs_info
   const needsInfoBanner = p.status === "needs_info" ? `
     <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:11px;color:#92400e;font-weight:600;">
-      💬 Admin needs more information — please check messages
+      💬 Status: Pending Information — admin has requested additional details. Please check messages.
     </div>` : "";
 
   // Notes section — visible on both my cards and campus cards
@@ -4505,14 +4505,14 @@ function assignedDetailCard(label, value){
 let allAdminProposals = [];
 
 const PROPOSAL_STATUS_CONFIG = {
-  submitted:    { label:"Submitted",    color:"#2563eb", bg:"#eff6ff" },
-  under_review: { label:"Under Review", color:"#854d0e", bg:"#fef9c3" },
-  needs_info:   { label:"Needs Info",   color:"#c2410c", bg:"#fff7ed" },
-  approved:     { label:"Approved",     color:"#15803d", bg:"#f0fdf4" },
-  assigned:     { label:"Assigned",     color:"#7c3aed", bg:"#f5f3ff" },
-  declined:     { label:"Declined",     color:"#b91c1c", bg:"#fef2f2" },
-  postponed:    { label:"Postponed",    color:"#374151", bg:"#f3f4f6" },
-  cancelled:    { label:"Cancelled",    color:"#9f1239", bg:"#fef2f2" },
+  submitted:    { label:"Event Proposal Received",            color:"#2563eb", bg:"#eff6ff" },
+  under_review: { label:"In Review",           color:"#854d0e", bg:"#fef9c3" },
+  needs_info:   { label:"Pending Information", color:"#c2410c", bg:"#fff7ed" },
+  approved:     { label:"Approved",            color:"#15803d", bg:"#f0fdf4" },
+  assigned:     { label:"OSE Member Assigned", color:"#7c3aed", bg:"#f5f3ff" },
+  declined:     { label:"Not Approved",        color:"#b91c1c", bg:"#fef2f2" },
+  postponed:    { label:"Rescheduled",         color:"#374151", bg:"#f3f4f6" },
+  cancelled:    { label:"Cancelled",           color:"#9f1239", bg:"#fef2f2" },
 };
 
 async function loadProposals(){
@@ -4736,7 +4736,27 @@ async function updateProposalStatus(status){
     }
   }
 
-  const labels = { approved:"✅ Approved!", under_review:"🔍 Marked under review", needs_info:"💬 Info requested", declined:"❌ Declined", postponed:"⏸️ Postponed", cancelled:"🚫 Cancelled" };
+  // Auto-message to club when status changes to under_review
+  if(status === "under_review" && p){
+    const autoMsg = "Your proposal is now In Review by the OSE team. Please note that final approval will require confirmation of all event logistics and requirements. Our team will reach out if any additional information is needed.";
+    await sb.from("proposal_messages").insert({
+      proposal_id:  id,
+      sender_email: currentUser.email,
+      sender_type:  "admin",
+      message:      autoMsg,
+    });
+    // Notify club
+    await sb.from("notifications").insert({
+      recipient:   p.club_email,
+      type:        "proposal_message",
+      title:       "🔍 Your Proposal is In Review",
+      message:     autoMsg,
+      proposal_id: id,
+      is_read:     false,
+    });
+  }
+
+  const labels = { approved:"✅ Approved!", under_review:"🔍 Now In Review", needs_info:"💬 Pending Information", declined:"❌ Not Approved", postponed:"⏸️ Rescheduled", cancelled:"🚫 Cancelled" };
   showToast(labels[status] || "Updated!");
   noteField.style.display = "none";
   document.getElementById("reviewNote").value = "";
