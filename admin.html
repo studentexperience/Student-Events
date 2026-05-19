@@ -4316,18 +4316,14 @@ async function loadMyAssignedEvents(){
       <div class="brief-items">${nudges.map(n=>`<div class="brief-item ${n.cls}">${n.emoji} ${n.text}</div>`).join("")}</div>
     </div>`;
 
-  // Mini Dashboard
-  const active    = myList.filter(p => ["pending","in_progress"].includes(p.execution_status||"pending")).length;
-  const doneCount = myList.filter(p => ["completed","report_submitted"].includes(p.execution_status||"pending")).length;
-  const closed    = myList.filter(p => ["cancelled","postponed"].includes(p.execution_status||"pending")).length;
+  // Mini Dashboard — derived directly from lane arrays so stats always match cards
   const dashEl = document.getElementById("leadDashboard");
   if(dashEl) dashEl.innerHTML = [
-    { num:myList.length,         label:"Total Assigned", color:"#7c3aed", icon:"📌" },
-    { num:my.thisWeek.length,    label:"This Week",      color:"#b45309", icon:"⚡" },
-    { num:active,                label:"Active",         color:"#2563eb", icon:"▶️" },
-    { num:doneCount,             label:"Completed",      color:"#15803d", icon:"✅" },
-    { num:closed,                label:"Closed",         color:"#dc2626", icon:"🚫" },
-    { num:campusList.length,     label:"Campus Events",  color:"#d97706", icon:"👥" },
+    { num:myList.length,          label:"Total Assigned",  color:"#7c3aed", icon:"📌" },
+    { num:my.thisWeek.length,     label:"⚡ This Week",    color:"#b45309", icon:"⚡" },
+    { num:my.upcoming.length,     label:"🔜 Upcoming",     color:"#2563eb", icon:"🔜" },
+    { num:my.completed.length,    label:"✅ Done/Closed",  color:"#15803d", icon:"✅" },
+    { num:campusList.length,      label:"👥 Campus Events",color:"#d97706", icon:"👥" },
   ].map(s=>`
     <div style="background:white;border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);border-top:3px solid ${s.color};">
       <div style="font-size:22px;font-weight:800;color:${s.color};">${s.num}</div>
