@@ -2577,6 +2577,51 @@
 </div>
 
 <!-- ══ CHANGE PASSWORD MODAL ══ -->
+<!-- ── Reset Password Modal (Super Admin → other admins) ── -->
+<div class="modal-backdrop" id="resetPasswordModal">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header">
+      <div class="modal-title">🔑 Reset Password</div>
+      <button class="modal-close" onclick="closeModal('resetPasswordModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="resetPasswordTarget" style="font-size:13px;color:var(--muted);margin-bottom:20px;padding:10px 14px;background:#f9fafb;border-radius:10px;"></div>
+
+      <div class="field">
+        <label>New Password *</label>
+        <div style="position:relative;">
+          <input type="password" id="resetNewPassword" placeholder="Enter new password" style="padding-right:44px;" />
+          <button type="button" onclick="togglePwdVisibility('resetNewPassword',this)"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:16px;color:var(--muted);">👁</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Confirm Password *</label>
+        <div style="position:relative;">
+          <input type="password" id="resetConfirmPassword" placeholder="Confirm new password" style="padding-right:44px;" />
+          <button type="button" onclick="togglePwdVisibility('resetConfirmPassword',this)"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:16px;color:var(--muted);">👁</button>
+        </div>
+      </div>
+
+      <!-- Password strength -->
+      <div id="resetPwdStrengthBar" style="height:4px;border-radius:2px;background:#e5e7eb;margin:-8px 0 16px;overflow:hidden;">
+        <div id="resetPwdStrengthFill" style="height:100%;width:0;transition:width .3s,background .3s;border-radius:2px;"></div>
+      </div>
+      <div id="resetPwdStrengthLabel" style="font-size:11px;color:var(--muted);margin-bottom:16px;"></div>
+
+      <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px 14px;font-size:12px;color:#92400e;margin-bottom:16px;">
+        ⚠️ The user will be required to change this password on their next login.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('resetPasswordModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitResetPassword()" style="background:#c2410c;border-color:#c2410c;">🔑 Reset Password</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="changePasswordModal">
   <div class="modal" style="max-width:420px;">
     <div class="modal-header">
@@ -3884,6 +3929,7 @@ function renderAdmins(list){
         </div>
         <div class="admin-actions" style="display:flex;gap:8px;flex-shrink:0;">
           ${!isMe ? `<button class="btn btn-secondary btn-sm" onclick="openPermissionsModal('${a.id}','${esc(a.email)}')">⚙️ Permissions</button>` : ""}
+          ${!isMe && currentRole === "super_admin" ? `<button class="btn btn-secondary btn-sm" onclick="openResetPasswordModal('${a.id}','${esc(a.email)}')" style="background:#fff7ed;color:#c2410c;border-color:#fed7aa;">🔑 Reset Password</button>` : ""}
           ${!isMe ? `<button class="btn btn-danger btn-sm" onclick="confirmDelete('admin','${a.id}','${esc(a.email)}')">Remove</button>` : `<span style="font-size:12px;color:var(--muted);">You</span>`}
         </div>
       </div>`;
@@ -5383,6 +5429,80 @@ function excelToDate(v){
   const d = new Date((Number(v) - 25569) * 86400000);
   return d.toISOString().split("T")[0];
 }
+
+/* ══ RESET PASSWORD (Super Admin) ══ */
+let resetTargetId    = null;
+let resetTargetEmail = null;
+
+function openResetPasswordModal(adminId, email){
+  resetTargetId    = adminId;
+  resetTargetEmail = email;
+  document.getElementById("resetPasswordTarget").innerHTML =
+    `Resetting password for: <strong>${esc(email)}</strong>`;
+  document.getElementById("resetNewPassword").value     = "";
+  document.getElementById("resetConfirmPassword").value = "";
+  document.getElementById("resetPwdStrengthFill").style.width      = "0";
+  document.getElementById("resetPwdStrengthLabel").textContent     = "";
+  document.getElementById("resetPasswordModal").classList.add("open");
+}
+
+async function submitResetPassword(){
+  const newPw     = document.getElementById("resetNewPassword").value;
+  const confirmPw = document.getElementById("resetConfirmPassword").value;
+
+  if(!newPw)            { showToast("Please enter a new password", "error"); return; }
+  if(newPw.length < 8)  { showToast("Password must be at least 8 characters", "error"); return; }
+  if(newPw !== confirmPw){ showToast("Passwords do not match", "error"); return; }
+
+  // Use Supabase Admin API via edge function (service role)
+  // We update via the admin update-user endpoint
+  const { error } = await sb.auth.admin.updateUserById(resetTargetId, {
+    password: newPw,
+  });
+
+  if(error){
+    // Fallback: send password reset email if admin API not available
+    if(error.message.includes("not authorized") || error.message.includes("not allowed")){
+      const { error: emailErr } = await sb.auth.resetPasswordForEmail(resetTargetEmail, {
+        redirectTo: window.location.origin + "/Student-Events/admin.html",
+      });
+      if(emailErr){ showToast("Failed: " + emailErr.message, "error"); return; }
+      showToast("📧 Password reset email sent to " + resetTargetEmail);
+      closeModal("resetPasswordModal");
+      return;
+    }
+    showToast("Failed: " + error.message, "error");
+    return;
+  }
+
+  // Mark must_change_password = true so they're prompted on next login
+  await sb.from("admins").update({ must_change_password: true }).eq("id", resetTargetId);
+
+  showToast("✅ Password reset successfully. User will be prompted to change it on next login.");
+  closeModal("resetPasswordModal");
+}
+
+// Password strength indicator for reset modal
+document.addEventListener("DOMContentLoaded", () => {
+  const inp = document.getElementById("resetNewPassword");
+  if(inp) inp.addEventListener("input", () => {
+    const v = inp.value;
+    let score = 0;
+    if(v.length >= 8)              score++;
+    if(v.length >= 12)             score++;
+    if(/[A-Z]/.test(v))            score++;
+    if(/[0-9]/.test(v))            score++;
+    if(/[^A-Za-z0-9]/.test(v))    score++;
+    const colors = ["","#ef4444","#f59e0b","#eab308","#22c55e","#16a34a"];
+    const labels = ["","Too weak","Weak","Fair","Strong","Very strong"];
+    const fill   = document.getElementById("resetPwdStrengthFill");
+    const label  = document.getElementById("resetPwdStrengthLabel");
+    fill.style.width      = (score * 20) + "%";
+    fill.style.background = colors[score] || "";
+    label.textContent     = labels[score] || "";
+    label.style.color     = colors[score] || "";
+  });
+});
 
 /* ══ CHANGE PASSWORD ══ */
 function openChangePassword(isFirstLogin = false){
