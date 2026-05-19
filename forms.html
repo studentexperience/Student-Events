@@ -316,7 +316,9 @@
     .nav-toggle { color: white !important; }
 
     /* ── CONSISTENT NAV ── */
-    .shell { grid-template-columns: 160px 1fr !important; }
+    @media (min-width: 1025px) {
+      .shell { grid-template-columns: 160px 1fr; }
+    }
     .nav { padding: 16px 8px !important; width: 160px; }
     .nav a {
       font-size: 13px !important;
