@@ -2893,7 +2893,21 @@ Chart.defaults.plugins.tooltip.boxPadding      = 4;
 Chart.defaults.animation                        = { duration: 700, easing: 'easeInOutQuart' };
 
 function destroyChart(id){
-  if(chartInstances[id]){ chartInstances[id].destroy(); delete chartInstances[id]; }
+  // Destroy existing Chart.js instance
+  if(chartInstances[id]){
+    chartInstances[id].destroy();
+    delete chartInstances[id];
+  }
+  // Replace canvas element entirely — prevents Chart.js stale state when switching types
+  const canvas = document.getElementById(id);
+  if(canvas){
+    const parent    = canvas.parentNode;
+    const newCanvas = document.createElement("canvas");
+    newCanvas.id    = id;
+    // Preserve any inline styles
+    newCanvas.style.cssText = canvas.style.cssText;
+    parent.replaceChild(newCanvas, canvas);
+  }
 }
 
 /* ── Gradient helpers ── */
@@ -3089,15 +3103,21 @@ function waitForVisible(canvasId, renderFn, attempts = 0){
   }
 }
 
+function safeRender(fn, label){
+  try { fn(); }
+  catch(e){ console.warn(`[Chart] ${label} failed:`, e); }
+}
+
 function renderAllCharts(){
-  waitForVisible("chartByCampus",      renderCampusChart);
-  waitForVisible("chartByMonth",       renderMonthChart);
-  waitForVisible("chartCampusByMonth", renderCampusMonthChart);
-  waitForVisible("chartByCategory",    renderCategoryChart);
+  waitForVisible("chartByCampus",      () => safeRender(renderCampusChart,      "Campus"));
+  waitForVisible("chartByMonth",       () => safeRender(renderMonthChart,        "Month"));
+  waitForVisible("chartCampusByMonth", () => safeRender(renderCampusMonthChart,  "CampusMonth"));
+  waitForVisible("chartByCategory",    () => safeRender(renderCategoryChart,     "Category"));
 }
 
 /* ── Chart 1: Events by Campus ── */
 function renderCampusChart(){
+  try {
   destroyChart("chartByCampus");
   const type   = document.getElementById("campusChartType").value;
   const counts = CAMPUSES.map(c => dashEventData.filter(e => e.campus === c).length);
@@ -3135,10 +3155,12 @@ function renderCampusChart(){
       } : {}
     }
   });
+  } catch(e){ console.warn("[Chart] Campus render failed:", e); }
 }
 
 /* ── Chart 2: Events by Month ── */
 function renderMonthChart(){
+  try {
   destroyChart("chartByMonth");
   const year   = parseInt(document.getElementById("monthChartYear").value);
   const type   = document.getElementById("monthChartType").value;
@@ -3184,10 +3206,12 @@ function renderMonthChart(){
       }
     }
   });
+  } catch(e){ console.warn("[Chart] Month render failed:", e); }
 }
 
 /* ── Chart 3: Events by Campus by Month ── */
 function renderCampusMonthChart(){
+  try {
   destroyChart("chartCampusByMonth");
   const year    = parseInt(document.getElementById("campusMonthYear").value);
   const type    = document.getElementById("campusMonthType").value === "line" ? "line" : "bar";
@@ -3233,10 +3257,12 @@ function renderCampusMonthChart(){
       }
     }
   });
+  } catch(e){ console.warn("[Chart] CampusMonth render failed:", e); }
 }
 
 /* ── Chart 4: Events by Category ── */
 function renderCategoryChart(){
+  try {
   destroyChart("chartByCategory");
   const campus   = document.getElementById("categoryChartCampus").value;
   const type     = document.getElementById("categoryChartType").value;
@@ -3324,6 +3350,7 @@ function renderCategoryChart(){
       cutout: type === "doughnut" ? "62%" : undefined,
     }
   });
+  } catch(e){ console.warn("[Chart] Category render failed:", e); }
 }
 
 /* ── Campus enforcement ── */
