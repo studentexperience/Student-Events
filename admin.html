@@ -1470,7 +1470,10 @@
             <div class="section-title">Arts &amp; Culture Committees</div>
             <div class="section-subtitle">Manage ACC bodies and class representatives</div>
           </div>
-          <button class="btn btn-primary" id="btn-add-acc" onclick="openAccModal()">+ Add ACC Body</button>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-secondary" onclick="importAccCSV()">📥 Import CSV</button>
+            <button class="btn btn-primary" id="btn-add-acc" onclick="openAccModal()">+ Add ACC Body</button>
+          </div>
         </div>
         <div class="table-wrap">
           <table>
@@ -5242,6 +5245,15 @@ async function revokeClub(id, name){
   showToast(`Access revoked for ${name}.`);
   loadClubApprovals();
 }
+function importAccCSV(){
+  csvImportTarget = "acc_bodies";
+  document.getElementById("csvModalTitle").textContent = "Import ACC CSV";
+  document.getElementById("csvModalDesc").textContent  = "Upload your acc-data.csv. Columns: ACC Name, Faculty, Campus, Description, Year, Program, Rep 1, Rep 2  —  one row per year class. Multiple rows with the same ACC Name are grouped automatically.";
+  document.getElementById("csvStatus").innerHTML = "";
+  document.getElementById("csvFile").value = "";
+  document.getElementById("csvModal").classList.add("open");
+}
+
 function importClubsCSV(){
   csvImportTarget = "clubs";
   document.getElementById("csvModalTitle").textContent = "Import Clubs CSV";
@@ -5274,7 +5286,46 @@ function handleCSVUpload(input){
       statusEl.innerHTML = `⏳ Importing ${res.data.length} rows…`;
 
       let rows;
-      if(csvImportTarget === "clubs"){
+      if(csvImportTarget === "acc_bodies"){
+        // Group rows by ACC Name — each CSV row is one year class
+        const grouped = new Map();
+        res.data.forEach(r => {
+          const name = (r["ACC Name"] || "").trim();
+          if(!name) return;
+          if(!grouped.has(name)){
+            grouped.set(name, {
+              name,
+              faculty:     (r["Faculty"]     || "").trim() || null,
+              campus:      (r["Campus"]      || "").trim() || null,
+              description: (r["Description"] || "").trim() || null,
+              members:     [],
+              updated_at:  new Date().toISOString(),
+            });
+          }
+          const year    = (r["Year"]    || "").trim();
+          const program = (r["Program"] || "").trim();
+          const rep1    = (r["Rep 1"]   || "").trim();
+          const rep2    = (r["Rep 2"]   || "").trim();
+          if(year || rep1 || rep2){
+            grouped.get(name).members.push({ year, program, rep1, rep2 });
+          }
+        });
+
+        const accRows = [...grouped.values()];
+        // Upsert by name
+        for(let i = 0; i < accRows.length; i += 50){
+          const chunk = accRows.slice(i, i + 50);
+          const { error } = await sb.from("acc_bodies").upsert(chunk, { onConflict: "name" });
+          if(error){ statusEl.innerHTML = `❌ Import failed: ${error.message}`; return; }
+          statusEl.innerHTML = `⏳ Imported ${Math.min(i+50, accRows.length)} of ${accRows.length}…`;
+        }
+        statusEl.innerHTML = `✅ Successfully imported ${accRows.length} ACC bodies!`;
+        loadACC();
+        loadDashboard();
+        setTimeout(() => closeModal("csvModal"), 2000);
+        return;
+
+      } else if(csvImportTarget === "clubs"){
         rows = res.data.map(r => ({
           name:        (r["Society Name"]       || "").trim(),
           email:       (r["Email"]              || "").trim(),
