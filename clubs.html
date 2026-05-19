@@ -461,10 +461,15 @@
     @media (max-width: 600px) {
       .content { padding: 12px; }
       .page-title { font-size: 22px; }
-      .cards { grid-template-columns: 1fr; gap: 14px; }
+      .cards { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .club-name { font-size: 13px; }
+      .club-desc { font-size: 11px; -webkit-line-clamp: 2; }
       .modal-leadership { grid-template-columns: 1fr; }
       .modal-content { padding: 18px 18px 22px; }
       .search-row input, .search-row select { min-width: 0; width: 100%; }
+    }
+    @media (max-width: 380px) {
+      .cards { grid-template-columns: 1fr; }
     }
     @media (max-width: 360px) {
       .topbar { padding: 0 12px; }
@@ -487,7 +492,9 @@
     .nav-toggle { color: white !important; }
 
     /* ── CONSISTENT NAV ── */
-    .shell { grid-template-columns: 160px 1fr !important; }
+    @media (min-width: 1025px) {
+      .shell { grid-template-columns: 160px 1fr; }
+    }
     .nav { padding: 16px 8px !important; width: 160px; }
     .nav a {
       font-size: 13px !important;
