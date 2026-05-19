@@ -199,13 +199,110 @@
       border-top:1px solid var(--border); display:flex; align-items:center; gap:6px;
     }
     .modal-rep:nth-child(even) { border-right:none; }
+
+    /* ── CAMPUS LIFE BRAND TOPBAR ── */
+    .topbar {
+      background: linear-gradient(135deg, #1e40af 0%, #2563eb 60%, #3b82f6 100%);
+      border-bottom: none;
+      box-shadow: 0 2px 12px rgba(37,99,235,.25);
+    }
+    .brand {
+      color: white;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: .3px;
+    }
+    .brand span { opacity: .75; font-weight: 400; }
+    .nav-toggle { color: white !important; }
+
+    /* ── CONSISTENT NAV ── */
+    .shell { grid-template-columns: 160px 1fr !important; }
+    .nav { padding: 16px 8px !important; width: 160px; }
+    .nav a {
+      font-size: 13px !important;
+      padding: 9px 12px !important;
+      margin: 2px 0 !important;
+      border-radius: 10px !important;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav a.active {
+      background: #eff6ff !important;
+      color: #1d4ed8 !important;
+      font-weight: 700 !important;
+      border-left: 3px solid #2563eb;
+      padding-left: 9px !important;
+    }
+    .nav a:hover:not(.active) { background: #f9fafb !important; }
+
+    /* ── SKELETON LOADER ── */
+    @keyframes shimmer {
+      0%   { background-position: -400px 0; }
+      100% { background-position: 400px 0; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+      background-size: 800px 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 10px;
+    }
+
+    /* ── CARD FADE-IN ── */
+    @keyframes cardFadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: cardFadeIn .3s ease forwards; }
+
+    /* ── TABLE ROW HOVER ── */
+    table tbody tr:hover { background: #f9fafb; cursor: pointer; }
+
+    /* ── MOBILE BOTTOM NAV ── */
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+      z-index: 200;
+      box-shadow: 0 -4px 12px rgba(0,0,0,.08);
+    }
+    .bottom-nav-inner {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .bottom-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      text-decoration: none;
+      color: #9ca3af;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 8px;
+      transition: color .15s;
+      min-width: 56px;
+    }
+    .bottom-nav-item.active { color: #2563eb; }
+    .bottom-nav-item span:first-child { font-size: 20px; }
+    @media (max-width: 768px) {
+      .bottom-nav { display: block; }
+      body { padding-bottom: 70px; }
+    }
+
   </style>
 </head>
 <body>
 
 <header class="topbar">
   <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">&#9776;</button>
-  <div class="brand">Campus Life</div>
+  <div class="brand">Campus Life <span>·</span></div>
 </header>
 
 <div class="shell">
@@ -294,6 +391,14 @@ function applyFilters(){
   renderGrid(filtered);
 }
 
+function accMonogram(name){
+  if(name.includes('ACC MC'))    return { text:'MC',  hue:220 };
+  if(name.includes('ACC SONAM') && name.includes('Graduate'))   return { text:'SNG', hue:160 };
+  if(name.includes('ACC SONAM')) return { text:'SNU', hue:190 };
+  if(name.includes('ACC FAS'))   return { text:'FAS', hue:280 };
+  return { text: name.split(' ').map(w=>w[0]).join('').substring(0,3).toUpperCase(), hue:240 };
+}
+
 function renderGrid(list){
   const grid = document.getElementById("accGrid");
   if(!list.length){
@@ -303,9 +408,10 @@ function renderGrid(list){
   grid.innerHTML = list.map(a => {
     const members    = (a.members || []).slice().sort((x,y) => parseInt(x.year||0) - parseInt(y.year||0));
     const totalReps  = members.reduce((n,m) => n + (m.rep1?1:0) + (m.rep2?1:0), 0);
-    const logoHtml   = a.logo_url
+    const mono     = accMonogram(a.name);
+    const logoHtml = a.logo_url
       ? `<div class="acc-logo"><img src="${esc(a.logo_url)}" alt="${esc(a.name)}" /></div>`
-      : `<div class="acc-logo" style="background:linear-gradient(135deg,#fef9c3,#fde68a);">🎭</div>`;
+      : `<div class="acc-logo" style="background:hsl(${mono.hue},55%,88%);color:hsl(${mono.hue},55%,28%);font-size:14px;font-weight:800;">${mono.text}</div>`;
 
     // Show first 3 year rows on the card
     const previewRows = members.slice(0, 3).map(m => `
@@ -319,7 +425,14 @@ function renderGrid(list){
         </div>
       </div>`).join("");
 
-    const moreCount = members.length > 3 ? `<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center;">+${members.length - 3} more years — click to view all</div>` : "";
+    const moreCount = members.length > 3
+      ? `<button onclick="openModal('${a.id}')" style="margin-top:10px;width:100%;padding:8px;
+          background:#fef9c3;color:#92400e;border:1.5px solid #fde68a;border-radius:10px;
+          font-family:'Poppins',sans-serif;font-size:12px;font-weight:700;cursor:pointer;
+          transition:all .15s;" onmouseover="this.style.background='#fde68a'"
+          onmouseout="this.style.background='#fef9c3'">
+          Show all ${members.length} year classes ↓
+        </button>` : "";
 
     return `
       <div class="acc-card" onclick="openModal('${a.id}')">
