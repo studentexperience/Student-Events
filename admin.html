@@ -5518,52 +5518,55 @@ async function loadTeamOverview(){
   const today = new Date(); today.setHours(0,0,0,0);
   const DONE  = ["completed","report_submitted","cancelled","postponed"];
 
-  // ── Summary stat cards ──
-  const totalAssigned = allProposals.length;
-  const totalActive   = allProposals.filter(p => !DONE.includes(p.execution_status||"pending")).length;
-  const totalDone     = allProposals.filter(p => ["completed","report_submitted"].includes(p.execution_status||"pending")).length;
-  const totalOverdue  = allProposals.filter(p => {
+  // Count by execution status
+  const count = (status) => allProposals.filter(p => (p.execution_status||"pending") === status).length;
+  const totalOverdue = allProposals.filter(p => {
     if(!p.proposed_date || DONE.includes(p.execution_status||"pending")) return false;
     return new Date(p.proposed_date) < today;
   }).length;
 
+  // ── Summary stat cards — matches execution status buttons ──
   document.getElementById("teamStatCards").innerHTML = [
-    { num:filteredLeads.length, label:"Event Leads",      color:"#7c3aed", icon:"👥" },
-    { num:totalAssigned,        label:"Total Assigned",   color:"#2563eb", icon:"📌" },
-    { num:totalActive,          label:"Active",           color:"#d97706", icon:"▶️" },
-    { num:totalDone,            label:"Completed",        color:"#15803d", icon:"✅" },
-    { num:totalOverdue,         label:"Overdue",          color:"#dc2626", icon:"⚠️" },
+    { num:filteredLeads.length,          label:"Event Leads",          color:"#7c3aed", icon:"👥" },
+    { num:allProposals.length,           label:"Total Assigned",        color:"#2563eb", icon:"📌" },
+    { num:count("in_progress"),          label:"Preparation Underway",  color:"#2563eb", icon:"▶️" },
+    { num:count("completed"),            label:"Event Held",            color:"#15803d", icon:"🎉" },
+    { num:count("report_submitted"),     label:"Closed",                color:"#7c3aed", icon:"🔒" },
+    { num:count("postponed"),            label:"Rescheduled",           color:"#c2410c", icon:"⏸️" },
+    { num:count("cancelled"),            label:"Cancelled",             color:"#b91c1c", icon:"🚫" },
+    { num:totalOverdue,                  label:"Overdue (No Report)",   color:"#dc2626", icon:"⚠️" },
   ].map(s=>`
     <div style="background:white;border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);border-top:4px solid ${s.color};">
       <div style="font-size:26px;font-weight:800;color:${s.color};">${s.num}</div>
       <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:2px;">${s.icon} ${s.label}</div>
     </div>`).join("");
 
-  // ── Lead cards ──
+  // ── Lead cards ── use same execution status config as pipeline
   const EXEC = {
-    pending:          { label:"Pending",         color:"#374151", bg:"#f3f4f6" },
-    in_progress:      { label:"In Progress",     color:"#2563eb", bg:"#eff6ff" },
-    completed:        { label:"Completed",        color:"#15803d", bg:"#f0fdf4" },
-    report_submitted: { label:"Report Submitted", color:"#7c3aed", bg:"#f5f3ff" },
-    postponed:        { label:"Postponed",        color:"#c2410c", bg:"#fff7ed" },
-    cancelled:        { label:"Cancelled",        color:"#b91c1c", bg:"#fef2f2" },
+    pending:          { label:"Awaiting Assignment",  color:"#374151", bg:"#f3f4f6" },
+    in_progress:      { label:"Preparation Underway", color:"#2563eb", bg:"#eff6ff" },
+    completed:        { label:"Event Held",           color:"#15803d", bg:"#f0fdf4" },
+    report_submitted: { label:"Closed",               color:"#7c3aed", bg:"#f5f3ff" },
+    postponed:        { label:"Rescheduled",          color:"#c2410c", bg:"#fff7ed" },
+    cancelled:        { label:"Cancelled",            color:"#b91c1c", bg:"#fef2f2" },
   };
 
   document.getElementById("teamLeadCards").innerHTML = filteredLeads.map(lead => {
-    const myEvents  = allProposals.filter(p => p.assigned_to === lead.email);
-    const active    = myEvents.filter(p => !DONE.includes(p.execution_status||"pending")).length;
-    const done      = myEvents.filter(p => ["completed","report_submitted"].includes(p.execution_status||"pending")).length;
-    const overdue   = myEvents.filter(p => {
+    const myEvents = allProposals.filter(p => p.assigned_to === lead.email);
+    const prep     = myEvents.filter(p => (p.execution_status||"pending") === "in_progress").length;
+    const held     = myEvents.filter(p => (p.execution_status||"pending") === "completed").length;
+    const closed   = myEvents.filter(p => (p.execution_status||"pending") === "report_submitted").length;
+    const overdue  = myEvents.filter(p => {
       if(!p.proposed_date || DONE.includes(p.execution_status||"pending")) return false;
       return new Date(p.proposed_date) < today;
     }).length;
-    const campus    = (lead.permissions?.campus || ["All"]).join(", ");
-    const initials  = lead.email[0].toUpperCase();
-    const cardId    = `lead-events-${lead.id}`;
+    const campus  = (lead.permissions?.campus || ["All"]).join(", ");
+    const initials = lead.email[0].toUpperCase();
+    const cardId   = `lead-events-${lead.id}`;
 
     const eventsHtml = myEvents.length ? myEvents.map(p => {
-      const ex  = EXEC[p.execution_status || "pending"];
-      const dt  = p.proposed_date ? new Date(p.proposed_date).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "—";
+      const ex = EXEC[p.execution_status || "pending"];
+      const dt = p.proposed_date ? new Date(p.proposed_date).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "—";
       const isOverdue = !DONE.includes(p.execution_status||"pending") && p.proposed_date && new Date(p.proposed_date) < today;
       return `<div class="lead-event-row">
         <div style="flex:1;min-width:0;">
@@ -5583,11 +5586,12 @@ async function loadTeamOverview(){
             <div style="font-size:14px;font-weight:700;color:var(--ink);">${esc(lead.email)}</div>
             <div style="font-size:12px;color:var(--muted);">📍 ${campus}</div>
           </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <span style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:999px;background:#f5f3ff;color:#7c3aed;">${myEvents.length} events</span>
-            <span style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:999px;background:#eff6ff;color:#2563eb;">${active} active</span>
-            <span style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:999px;background:#f0fdf4;color:#15803d;">${done} done</span>
-            ${overdue > 0 ? `<span style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:999px;background:#fef2f2;color:#dc2626;">⚠️ ${overdue} overdue</span>` : ""}
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+            <span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;background:#f5f3ff;color:#7c3aed;">📌 ${myEvents.length}</span>
+            ${prep   > 0 ? `<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;background:#eff6ff;color:#2563eb;">▶️ ${prep}</span>` : ""}
+            ${held   > 0 ? `<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;background:#f0fdf4;color:#15803d;">🎉 ${held}</span>` : ""}
+            ${closed > 0 ? `<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;background:#f5f3ff;color:#7c3aed;">🔒 ${closed}</span>` : ""}
+            ${overdue> 0 ? `<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;background:#fef2f2;color:#dc2626;">⚠️ ${overdue} overdue</span>` : ""}
             <span style="color:var(--muted);font-size:14px;" id="${cardId}-arrow">▸</span>
           </div>
         </div>
