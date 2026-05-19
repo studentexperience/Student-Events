@@ -47,8 +47,8 @@
     /* ── Topbar ── */
     .topbar {
       height: 56px;
-      background: var(--panel);
-      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, #1e40af 0%, #2563eb 60%, #3b82f6 100%);
+      border-bottom: none; box-shadow: 0 2px 12px rgba(37,99,235,.25);
       display: flex;
       align-items: center;
       padding: 0 18px;
@@ -57,7 +57,7 @@
       top: 0;
       z-index: 100;
     }
-    .brand { font-weight: 600; letter-spacing: .2px; }
+    .brand { color: white; font-size: 17px; font-weight: 700; letter-spacing: .2px; }
     .nav-toggle {
       display: none;
       background: none;
@@ -779,6 +779,8 @@ document.addEventListener("DOMContentLoaded", () => {
       display:flex;align-items:center;justify-content:center;
       font-size:${Math.round(size*0.35)}px;font-weight:700;flex-shrink:0;">${initials}</div>`;
   }
+
+  function categoryIcon(cat){
     if(!cat) return "🏷️";
     const c = cat.toLowerCase();
     if(c.includes("sport") || c.includes("athletic") || c.includes("rowing") || c.includes("chess") || c.includes("explorer") || c.includes("fitness")) return "🏆";
