@@ -470,13 +470,110 @@
       .topbar { padding: 0 12px; }
       .brand { font-size: 14px; }
     }
+
+    /* ── CAMPUS LIFE BRAND TOPBAR ── */
+    .topbar {
+      background: linear-gradient(135deg, #1e40af 0%, #2563eb 60%, #3b82f6 100%);
+      border-bottom: none;
+      box-shadow: 0 2px 12px rgba(37,99,235,.25);
+    }
+    .brand {
+      color: white;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: .3px;
+    }
+    .brand span { opacity: .75; font-weight: 400; }
+    .nav-toggle { color: white !important; }
+
+    /* ── CONSISTENT NAV ── */
+    .shell { grid-template-columns: 160px 1fr !important; }
+    .nav { padding: 16px 8px !important; width: 160px; }
+    .nav a {
+      font-size: 13px !important;
+      padding: 9px 12px !important;
+      margin: 2px 0 !important;
+      border-radius: 10px !important;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav a.active {
+      background: #eff6ff !important;
+      color: #1d4ed8 !important;
+      font-weight: 700 !important;
+      border-left: 3px solid #2563eb;
+      padding-left: 9px !important;
+    }
+    .nav a:hover:not(.active) { background: #f9fafb !important; }
+
+    /* ── SKELETON LOADER ── */
+    @keyframes shimmer {
+      0%   { background-position: -400px 0; }
+      100% { background-position: 400px 0; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+      background-size: 800px 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 10px;
+    }
+
+    /* ── CARD FADE-IN ── */
+    @keyframes cardFadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: cardFadeIn .3s ease forwards; }
+
+    /* ── TABLE ROW HOVER ── */
+    table tbody tr:hover { background: #f9fafb; cursor: pointer; }
+
+    /* ── MOBILE BOTTOM NAV ── */
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+      z-index: 200;
+      box-shadow: 0 -4px 12px rgba(0,0,0,.08);
+    }
+    .bottom-nav-inner {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .bottom-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      text-decoration: none;
+      color: #9ca3af;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 8px;
+      transition: color .15s;
+      min-width: 56px;
+    }
+    .bottom-nav-item.active { color: #2563eb; }
+    .bottom-nav-item span:first-child { font-size: 20px; }
+    @media (max-width: 768px) {
+      .bottom-nav { display: block; }
+      body { padding-bottom: 70px; }
+    }
+
   </style>
 </head>
 
 <body>
   <header class="topbar">
     <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">&#9776;</button>
-    <div class="brand">Campus Life</div>
+    <div class="brand">Campus Life <span>·</span></div>
   </header>
 
   <div class="shell">
@@ -548,9 +645,16 @@
           <div class="modal-section-title">Leadership</div>
           <div class="modal-leadership" id="modalLeadership"></div>
         </div>
-      </div>
-    </div>
-  </div>
+
+        <div style="padding:16px 20px 20px;border-top:1px solid #f3f4f6;">
+          <a id="modalViewEvents" href="index.html"
+            style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;
+            background:#eff6ff;color:#2563eb;border-radius:10px;font-size:13px;font-weight:700;
+            text-decoration:none;transition:background .15s;"
+            onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
+            📅 View this club's events →
+          </a>
+        </div>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
@@ -664,7 +768,17 @@ document.addEventListener("DOMContentLoaded", () => {
   ];
 
   /* ── Render ── */
-  function categoryIcon(cat){
+  function monogram(name, size = 52){
+    const words  = name.trim().split(/\s+/);
+    const initials = words.length >= 2
+      ? (words[0][0] + words[1][0]).toUpperCase()
+      : name.substring(0, 2).toUpperCase();
+    const hue = [...name].reduce((h, c) => h + c.charCodeAt(0), 0) % 360;
+    return `<div style="width:${size}px;height:${size}px;border-radius:14px;
+      background:hsl(${hue},55%,88%);color:hsl(${hue},55%,30%);
+      display:flex;align-items:center;justify-content:center;
+      font-size:${Math.round(size*0.35)}px;font-weight:700;flex-shrink:0;">${initials}</div>`;
+  }
     if(!cat) return "🏷️";
     const c = cat.toLowerCase();
     if(c.includes("sport") || c.includes("athletic") || c.includes("rowing") || c.includes("chess") || c.includes("explorer") || c.includes("fitness")) return "🏆";
@@ -725,9 +839,9 @@ document.addEventListener("DOMContentLoaded", () => {
                alt="${esc(c.name)} logo"
                data-card="${cardId}"
                style="width:100%;height:100%;object-fit:contain;border-radius:8px;"
-               onerror="this.parentElement.innerHTML='${icon}';this.parentElement.style.fontSize='40px';" />
+               onerror="this.parentElement.outerHTML='<div class=\'club-avatar\'>${monogram(c.name, 64).replace(/'/g, '&#39;')}</div>';" />
            </div>`
-        : `<div class="club-avatar" style="background:${pal.bg}">${icon}</div>`;
+        : `<div class="club-avatar">${monogram(c.name, 64)}</div>`;
 
       // Compact events preview
       const eventsPreview = c.events
@@ -783,6 +897,12 @@ document.addEventListener("DOMContentLoaded", () => {
     modalTitle.textContent         = c.name;
     modalEmail.textContent         = c.email || "";
     modalEmail.href                = c.email ? `mailto:${c.email}` : "#";
+
+    // View Events link
+    const viewEventsLink = document.getElementById("modalViewEvents");
+    if(viewEventsLink){
+      viewEventsLink.href = `index.html?organiser=${encodeURIComponent(c.name)}`;
+    }
     const modalCampus = document.getElementById("modalCampus");
     if(modalCampus){
       modalCampus.textContent   = c.campus ? `🏫 ${c.campus}` : "";
