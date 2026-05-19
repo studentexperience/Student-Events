@@ -1209,6 +1209,7 @@
       <a href="index.html">Home</a>
       <a href="index.html" class="active">Events</a>
       <a href="clubs.html">Clubs</a>
+      <a href="acc.html">ACC</a>
       <a href="news.html">News</a>
       <a href="forms.html">Forms</a>
     
@@ -1732,8 +1733,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const { data, error } = await sb
       .from("events")
       .select("*")
-      .order("event_date", { ascending: true })
-      .order("start_time", { ascending: true });
+      .order("event_date", { ascending: true });
 
     if(error){
       emptyMsg.textContent = "Failed to load events. Please try again later.";
