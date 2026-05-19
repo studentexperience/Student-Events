@@ -84,7 +84,7 @@
     /* ── ACC Card Grid ── */
     .acc-grid {
       display:grid;
-      grid-template-columns:repeat(auto-fill, minmax(340px, 1fr));
+      grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));
       gap:20px;
     }
 
@@ -301,7 +301,7 @@ function renderGrid(list){
     return;
   }
   grid.innerHTML = list.map(a => {
-    const members    = a.members || [];
+    const members    = (a.members || []).slice().sort((x,y) => parseInt(x.year||0) - parseInt(y.year||0));
     const totalReps  = members.reduce((n,m) => n + (m.rep1?1:0) + (m.rep2?1:0), 0);
     const logoHtml   = a.logo_url
       ? `<div class="acc-logo"><img src="${esc(a.logo_url)}" alt="${esc(a.name)}" /></div>`
@@ -350,7 +350,7 @@ function renderGrid(list){
 function openModal(id){
   const a       = allACC.find(x => x.id === id);
   if(!a) return;
-  const members = a.members || [];
+  const members = (a.members || []).slice().sort((x,y) => parseInt(x.year||0) - parseInt(y.year||0));
 
   document.getElementById("modalName").textContent     = a.name;
   document.getElementById("modalSubtitle").textContent = [a.faculty, a.campus].filter(Boolean).join(" · ");
