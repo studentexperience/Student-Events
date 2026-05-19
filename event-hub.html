@@ -155,18 +155,67 @@
     .login-screen {
       min-height: calc(100vh - 60px);
       display: flex;
+      align-items: stretch;
+      background: #f5f3ff;
+    }
+    .login-brand-panel {
+      flex: 1;
+      background: linear-gradient(135deg, #1e40af 0%, #4c1d95 60%, #6d28d9 100%);
+      display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 40px 20px;
-      background: linear-gradient(135deg, #f5f3ff 0%, #fdf4ff 50%, #fce7f3 100%);
+      padding: 60px 48px;
+      color: white;
+      min-height: 100%;
     }
-    .login-card {
-      background: white;
-      border-radius: 28px;
+    .login-brand-icon {
+      width: 80px; height: 80px;
+      background: rgba(255,255,255,.15);
+      border-radius: 24px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px;
+      margin-bottom: 28px;
+      backdrop-filter: blur(8px);
+    }
+    .login-brand-title {
+      font-size: 32px; font-weight: 800;
+      margin-bottom: 12px; text-align: center; line-height: 1.2;
+    }
+    .login-brand-sub {
+      font-size: 15px; opacity: .8; text-align: center; line-height: 1.7; max-width: 340px;
+    }
+    .login-brand-features {
+      margin-top: 40px; display: flex; flex-direction: column; gap: 14px;
+    }
+    .login-brand-feature {
+      display: flex; align-items: center; gap: 12px; font-size: 14px; opacity: .85;
+    }
+    .login-brand-feature-icon {
+      width: 32px; height: 32px; background: rgba(255,255,255,.15);
+      border-radius: 8px; display: flex; align-items: center;
+      justify-content: center; font-size: 16px; flex-shrink: 0;
+    }
+    .login-form-panel {
+      width: 480px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
       padding: 48px 44px;
+      background: white;
+    }
+    .login-form-inner { width: 100%; max-width: 380px; }
+    .login-card {
+      background: transparent;
+      border-radius: 0;
+      padding: 0;
       width: 100%;
-      max-width: 440px;
-      box-shadow: 0 20px 60px rgba(102,126,234,.18);
+      max-width: 380px;
+      box-shadow: none;
+    }
+    @media (max-width: 800px) {
+      .login-brand-panel { display: none; }
+      .login-form-panel { width: 100%; padding: 32px 24px; }
+      .login-screen { background: linear-gradient(135deg, #f5f3ff 0%, #fdf4ff 50%, #fce7f3 100%); }
+      .login-card { max-width: 440px; background: white; border-radius: 28px; padding: 40px 32px; box-shadow: 0 20px 60px rgba(102,126,234,.18); }
     }
     .login-icon {
       width: 70px; height: 70px;
@@ -814,6 +863,32 @@
 
 <!-- ══ LOGIN SCREEN ══ -->
 <div class="login-screen" id="loginScreen">
+  <!-- Brand panel (hidden on mobile) -->
+  <div class="login-brand-panel">
+    <div class="login-brand-icon">🎭</div>
+    <div class="login-brand-title">Event Hub</div>
+    <div class="login-brand-sub">The official portal for AKU clubs and societies to submit and track event proposals.</div>
+    <div class="login-brand-features">
+      <div class="login-brand-feature">
+        <div class="login-brand-feature-icon">📝</div>
+        <span>Submit event proposals in minutes</span>
+      </div>
+      <div class="login-brand-feature">
+        <div class="login-brand-feature-icon">📊</div>
+        <span>Track approval status in real time</span>
+      </div>
+      <div class="login-brand-feature">
+        <div class="login-brand-feature-icon">💬</div>
+        <span>Communicate directly with the OSE team</span>
+      </div>
+      <div class="login-brand-feature">
+        <div class="login-brand-feature-icon">🔔</div>
+        <span>Get notified instantly on updates</span>
+      </div>
+    </div>
+  </div>
+  <!-- Form panel -->
+  <div class="login-form-panel">
   <div class="login-card">
     <div class="login-icon">🎭</div>
     <div class="login-title" id="loginTitle">Welcome to Event Hub</div>
@@ -865,6 +940,7 @@
     <div class="login-note" id="loginNote">
       🔒 Only clubs pre-registered by the OSE team can request access. If your club is not registered, contact the OSE office first.
     </div>
+  </div>
   </div>
 </div>
 
