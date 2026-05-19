@@ -110,8 +110,8 @@
 
     .topbar {
       height: 56px;
-      background: var(--panel);
-      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, #1e40af 0%, #2563eb 60%, #3b82f6 100%);
+      border-bottom: none;
       display: flex;
       align-items: center;
       padding: 0 24px;
@@ -119,12 +119,12 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      box-shadow: var(--shadow);
+      box-shadow: 0 2px 12px rgba(37,99,235,.3);
     }
-    .topbar-brand { font-weight: 700; font-size: 16px; }
+    .topbar-brand { font-weight: 700; font-size: 16px; color: white; }
     .topbar-badge {
-      background: var(--accent-light);
-      color: var(--accent);
+      background: rgba(255,255,255,.2);
+      color: white;
       font-size: 11px;
       font-weight: 700;
       padding: 3px 10px;
@@ -137,20 +137,20 @@
       align-items: center;
       gap: 12px;
       font-size: 13px;
-      color: var(--muted);
+      color: rgba(255,255,255,.85);
     }
     .logout-btn {
       padding: 7px 14px;
       border-radius: 8px;
-      border: 1px solid var(--border);
-      background: white;
+      border: 1px solid rgba(255,255,255,.3);
+      background: rgba(255,255,255,.15);
       font-family: 'Poppins', sans-serif;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      color: var(--danger);
+      color: white;
     }
-    .logout-btn:hover { background: var(--danger-light); }
+    .logout-btn:hover { background: rgba(255,255,255,.25); }
 
     .admin-body {
       display: flex;
