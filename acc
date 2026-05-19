@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Campus Life" />
+  <link rel="apple-touch-icon" href="https://studentexperience.github.io/Student-Events/icon-192.png" />
+  <title>Campus Life · Arts &amp; Culture Committees</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --ink: #111827; --muted: #6b7280; --border: #e5e7eb;
+      --bg: #f3f4f6; --panel: #ffffff; --shadow: 0 6px 14px rgba(0,0,0,.10);
+      --accent: #2563eb; --acc-gold: #b45309; --acc-gold-bg: #fef9c3;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:'Poppins',sans-serif; background:var(--bg); color:var(--ink); }
+
+    /* ── Topbar ── */
+    .topbar {
+      height:56px; background:var(--panel); border-bottom:1px solid var(--border);
+      display:flex; align-items:center; padding:0 18px; gap:12px;
+      position:sticky; top:0; z-index:100;
+    }
+    .brand { font-weight:600; letter-spacing:.2px; }
+    .nav-toggle { background:none; border:none; font-size:22px; cursor:pointer; color:var(--ink); padding:4px; }
+
+    /* ── Shell ── */
+    .shell { display:flex; min-height:calc(100vh - 56px); }
+
+    /* ── Sidebar nav ── */
+    .nav {
+      width:160px; flex-shrink:0; background:var(--panel);
+      border-right:1px solid var(--border); padding:20px 0;
+      display:flex; flex-direction:column; gap:2px;
+      position:sticky; top:56px; height:calc(100vh - 56px); overflow-y:auto;
+    }
+    .nav a {
+      padding:9px 18px; font-size:13px; font-weight:500; color:var(--muted);
+      text-decoration:none; border-radius:0; transition:all .15s;
+    }
+    .nav a:hover { background:#f9fafb; color:var(--ink); }
+    .nav a.active { background:#eff6ff; color:var(--accent); font-weight:700; border-right:3px solid var(--accent); }
+    @media(max-width:640px){
+      .nav { position:fixed; top:56px; left:-160px; height:100vh; z-index:99; transition:left .25s; }
+      .nav.open { left:0; box-shadow:4px 0 16px rgba(0,0,0,.12); }
+    }
+
+    /* ── Main content ── */
+    .content { flex:1; padding:28px 24px; max-width:1200px; }
+    .page-title {
+      font-size:24px; font-weight:800; color:var(--ink); margin-bottom:4px;
+    }
+    .page-subtitle { font-size:13px; color:var(--muted); margin-bottom:24px; }
+
+    /* ── Filter bar ── */
+    .filter-bar {
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:24px;
+    }
+    .filter-bar input {
+      flex:1; min-width:200px; padding:9px 14px;
+      border:1.5px solid var(--border); border-radius:10px;
+      font-family:'Poppins',sans-serif; font-size:13px; outline:none;
+    }
+    .filter-bar input:focus { border-color:var(--accent); }
+    .filter-btn {
+      padding:8px 16px; border:1.5px solid var(--border); border-radius:10px;
+      background:white; font-family:'Poppins',sans-serif; font-size:12px;
+      font-weight:600; cursor:pointer; color:var(--muted); transition:all .15s;
+    }
+    .filter-btn.active { background:#eff6ff; color:var(--accent); border-color:var(--accent); }
+
+    /* ── ACC Card Grid ── */
+    .acc-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fill, minmax(340px, 1fr));
+      gap:20px;
+    }
+
+    .acc-card {
+      background:white; border-radius:16px; box-shadow:var(--shadow);
+      overflow:hidden; transition:transform .2s, box-shadow .2s;
+    }
+    .acc-card:hover { transform:translateY(-3px); box-shadow:0 12px 32px rgba(0,0,0,.13); }
+
+    /* Gold top bar for ACC */
+    .acc-card-banner {
+      height:6px;
+      background:linear-gradient(90deg, #b45309, #d97706, #f59e0b);
+    }
+
+    .acc-card-body { padding:20px; }
+
+    .acc-logo {
+      width:56px; height:56px; border-radius:12px; object-fit:cover;
+      background:linear-gradient(135deg, #fef9c3, #fde68a);
+      display:flex; align-items:center; justify-content:center;
+      font-size:24px; margin-bottom:14px; flex-shrink:0;
+    }
+    .acc-logo img { width:100%; height:100%; border-radius:12px; object-fit:cover; }
+
+    .acc-header { display:flex; align-items:flex-start; gap:12px; margin-bottom:14px; }
+    .acc-header-text { flex:1; }
+    .acc-name { font-size:15px; font-weight:700; color:var(--ink); margin-bottom:4px; }
+    .acc-faculty { font-size:12px; color:var(--muted); }
+
+    .acc-badge {
+      display:inline-flex; align-items:center; gap:4px;
+      font-size:10px; font-weight:700; padding:3px 9px; border-radius:999px;
+      background:var(--acc-gold-bg); color:var(--acc-gold);
+    }
+
+    .acc-campus-tag {
+      display:inline-flex; align-items:center; gap:4px;
+      font-size:10px; font-weight:600; padding:3px 9px; border-radius:999px;
+      background:#eff6ff; color:#2563eb; margin-left:6px;
+    }
+
+    .acc-description {
+      font-size:12px; color:var(--muted); line-height:1.6;
+      margin-bottom:14px; padding-bottom:14px; border-bottom:1px solid var(--border);
+    }
+
+    /* ── Members table ── */
+    .members-section { margin-top:12px; }
+    .members-title {
+      font-size:11px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.5px; color:var(--muted); margin-bottom:10px;
+    }
+    .year-row {
+      margin-bottom:10px; border-radius:10px;
+      background:#fafafa; border:1px solid var(--border); overflow:hidden;
+    }
+    .year-header {
+      display:flex; align-items:center; gap:8px;
+      padding:8px 12px; background:var(--acc-gold-bg);
+      font-size:11px; font-weight:700; color:var(--acc-gold);
+    }
+    .year-reps {
+      display:grid; grid-template-columns:1fr 1fr;
+      gap:2px; padding:8px 12px;
+    }
+    .rep-name {
+      font-size:12px; color:var(--ink); padding:3px 0;
+      display:flex; align-items:center; gap:6px;
+    }
+    .rep-name::before { content:"👤"; font-size:10px; }
+
+    /* ── Empty state ── */
+    .empty { text-align:center; padding:60px 20px; color:var(--muted); }
+    .empty-icon { font-size:48px; margin-bottom:12px; }
+    .empty-text { font-size:15px; font-weight:600; }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+      display:none; position:fixed; inset:0;
+      background:rgba(0,0,0,.45); z-index:200;
+      align-items:center; justify-content:center; padding:20px;
+    }
+    .modal-backdrop.open { display:flex; }
+    .modal {
+      background:white; border-radius:20px; width:100%; max-width:560px;
+      max-height:90vh; overflow-y:auto; box-shadow:0 24px 64px rgba(0,0,0,.2);
+    }
+    .modal-banner { height:6px; background:linear-gradient(90deg,#b45309,#f59e0b); border-radius:20px 20px 0 0; }
+    .modal-body { padding:24px; }
+    .modal-title { font-size:18px; font-weight:800; margin-bottom:4px; }
+    .modal-subtitle { font-size:12px; color:var(--muted); margin-bottom:20px; }
+    .modal-close {
+      float:right; background:none; border:none; font-size:20px;
+      cursor:pointer; color:var(--muted); margin-top:-4px;
+    }
+    .modal-close:hover { color:var(--ink); }
+
+    .modal-members { display:flex; flex-direction:column; gap:10px; }
+    .modal-year-row {
+      border-radius:12px; overflow:hidden; border:1px solid var(--border);
+    }
+    .modal-year-header {
+      padding:9px 14px; background:var(--acc-gold-bg);
+      font-size:12px; font-weight:700; color:var(--acc-gold);
+      display:flex; align-items:center; gap:8px;
+    }
+    .modal-year-reps {
+      display:grid; grid-template-columns:1fr 1fr; gap:0;
+    }
+    .modal-rep {
+      padding:9px 14px; font-size:13px; border-right:1px solid var(--border);
+      border-top:1px solid var(--border); display:flex; align-items:center; gap:6px;
+    }
+    .modal-rep:nth-child(even) { border-right:none; }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">&#9776;</button>
+  <div class="brand">Campus Life</div>
+</header>
+
+<div class="shell">
+  <nav class="nav" id="sideNav">
+    <a href="index.html">Home</a>
+    <a href="index.html">Events</a>
+    <a href="clubs.html">Clubs</a>
+    <a href="acc.html" class="active">ACC</a>
+    <a href="news.html">News</a>
+    <a href="forms.html">Forms</a>
+    <a href="event-hub.html" style="color:#7c3aed;font-weight:700;">✦ Event Hub</a>
+  </nav>
+
+  <main class="content">
+    <div class="page-title">🎭 Arts &amp; Culture Committees</div>
+    <div class="page-subtitle">Class tradition representatives across AKU faculties and schools</div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <input type="text" id="searchInput" placeholder="Search committees or members…" oninput="applyFilters()" />
+      <button class="filter-btn active" data-campus="All" onclick="setCampusFilter(this)">All Campuses</button>
+      <button class="filter-btn" data-campus="Karachi" onclick="setCampusFilter(this)">🏙️ Karachi</button>
+      <button class="filter-btn" data-campus="Nairobi" onclick="setCampusFilter(this)">🌍 Nairobi</button>
+      <button class="filter-btn" data-campus="Kampala" onclick="setCampusFilter(this)">🌿 Kampala</button>
+      <button class="filter-btn" data-campus="Dar es Salaam" onclick="setCampusFilter(this)">🌊 Dar es Salaam</button>
+    </div>
+
+    <div class="acc-grid" id="accGrid">
+      <div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading committees…</div></div>
+    </div>
+  </main>
+</div>
+
+<!-- ACC Detail Modal -->
+<div class="modal-backdrop" id="accModal">
+  <div class="modal">
+    <div class="modal-banner"></div>
+    <div class="modal-body">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title" id="modalName"></div>
+      <div class="modal-subtitle" id="modalSubtitle"></div>
+      <div id="modalDescription" style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:18px;"></div>
+      <div class="members-title">Class Representatives</div>
+      <div class="modal-members" id="modalMembers"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const sb = supabase.createClient(
+  "https://dgzuqvffnbfybngoadse.supabase.co",
+  "sb_publishable_77t5gCD7M620CzcMwESN-A_oAuqz6B8",
+  { auth: { persistSession: false, storageKey: "aku-public-session" } }
+);
+
+let allACC      = [];
+let campusFilter = "All";
+
+function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function loadACC(){
+  const { data, error } = await sb.from("acc_bodies").select("*").order("name");
+  if(error){ console.error(error); return; }
+  allACC = data || [];
+  applyFilters();
+}
+
+function setCampusFilter(btn){
+  document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  campusFilter = btn.dataset.campus;
+  applyFilters();
+}
+
+function applyFilters(){
+  const q = document.getElementById("searchInput").value.toLowerCase();
+  const filtered = allACC.filter(a => {
+    const matchCampus = campusFilter === "All" || a.campus === campusFilter;
+    const members     = (a.members || []).map(m => `${m.rep1||""} ${m.rep2||""}`).join(" ").toLowerCase();
+    const matchSearch = !q
+      || a.name.toLowerCase().includes(q)
+      || (a.faculty||"").toLowerCase().includes(q)
+      || members.includes(q);
+    return matchCampus && matchSearch;
+  });
+  renderGrid(filtered);
+}
+
+function renderGrid(list){
+  const grid = document.getElementById("accGrid");
+  if(!list.length){
+    grid.innerHTML = `<div class="empty"><div class="empty-icon">🎭</div><div class="empty-text">No committees found.</div></div>`;
+    return;
+  }
+  grid.innerHTML = list.map(a => {
+    const members    = a.members || [];
+    const totalReps  = members.reduce((n,m) => n + (m.rep1?1:0) + (m.rep2?1:0), 0);
+    const logoHtml   = a.logo_url
+      ? `<div class="acc-logo"><img src="${esc(a.logo_url)}" alt="${esc(a.name)}" /></div>`
+      : `<div class="acc-logo" style="background:linear-gradient(135deg,#fef9c3,#fde68a);">🎭</div>`;
+
+    // Show first 3 year rows on the card
+    const previewRows = members.slice(0, 3).map(m => `
+      <div class="year-row">
+        <div class="year-header">
+          🎓 ${esc(m.program || "")} ${esc(m.year || "")}
+        </div>
+        <div class="year-reps">
+          ${m.rep1 ? `<div class="rep-name">${esc(m.rep1)}</div>` : ""}
+          ${m.rep2 ? `<div class="rep-name">${esc(m.rep2)}</div>` : ""}
+        </div>
+      </div>`).join("");
+
+    const moreCount = members.length > 3 ? `<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center;">+${members.length - 3} more years — click to view all</div>` : "";
+
+    return `
+      <div class="acc-card" onclick="openModal('${a.id}')">
+        <div class="acc-card-banner"></div>
+        <div class="acc-card-body">
+          <div class="acc-header">
+            ${logoHtml}
+            <div class="acc-header-text">
+              <div class="acc-name">${esc(a.name)}</div>
+              <div class="acc-faculty">${esc(a.faculty || "")}</div>
+              <div style="margin-top:6px;">
+                <span class="acc-badge">🎭 ACC</span>
+                ${a.campus ? `<span class="acc-campus-tag">🏫 ${esc(a.campus)}</span>` : ""}
+              </div>
+            </div>
+          </div>
+          ${a.description ? `<div class="acc-description">${esc(a.description)}</div>` : ""}
+          <div class="members-section">
+            <div class="members-title">👥 ${totalReps} Representatives · ${members.length} Year Classes</div>
+            ${previewRows}
+            ${moreCount}
+          </div>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function openModal(id){
+  const a       = allACC.find(x => x.id === id);
+  if(!a) return;
+  const members = a.members || [];
+
+  document.getElementById("modalName").textContent     = a.name;
+  document.getElementById("modalSubtitle").textContent = [a.faculty, a.campus].filter(Boolean).join(" · ");
+  document.getElementById("modalDescription").textContent = a.description || "";
+
+  document.getElementById("modalMembers").innerHTML = members.map(m => `
+    <div class="modal-year-row">
+      <div class="modal-year-header">
+        🎓 ${esc(m.program || "")} Class of ${esc(m.year || "")}
+      </div>
+      <div class="modal-year-reps">
+        ${m.rep1 ? `<div class="modal-rep">👤 ${esc(m.rep1)}</div>` : ""}
+        ${m.rep2 ? `<div class="modal-rep">👤 ${esc(m.rep2)}</div>` : ""}
+      </div>
+    </div>`).join("");
+
+  document.getElementById("accModal").classList.add("open");
+}
+
+function closeModal(){
+  document.getElementById("accModal").classList.remove("open");
+}
+
+// Close modal on backdrop click
+document.getElementById("accModal").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closeModal();
+});
+
+// Mobile nav toggle
+document.getElementById("navToggle").addEventListener("click", () => {
+  document.getElementById("sideNav").classList.toggle("open");
+});
+
+// Keyboard escape
+document.addEventListener("keydown", e => { if(e.key === "Escape") closeModal(); });
+
+loadACC();
+</script>
+<script>
+if("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js")
+      .then(reg => console.log("[PWA] SW registered:", reg.scope))
+      .catch(err => console.warn("[PWA] SW failed:", err));
+  });
+}
+</script>
+</body>
+</html>
