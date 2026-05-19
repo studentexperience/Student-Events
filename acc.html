@@ -314,8 +314,8 @@ function renderGrid(list){
           🎓 ${esc(m.program || "")} ${esc(m.year || "")}
         </div>
         <div class="year-reps">
-          ${m.rep1 ? `<div class="rep-name">👨 ${esc(m.rep1)}</div>` : ""}
-          ${m.rep2 ? `<div class="rep-name">👩 ${esc(m.rep2)}</div>` : ""}
+          ${m.rep1 ? `<div class="rep-name">👤 ${esc(m.rep1)}</div>` : ""}
+          ${m.rep2 ? `<div class="rep-name">👤 ${esc(m.rep2)}</div>` : ""}
         </div>
       </div>`).join("");
 
@@ -362,8 +362,8 @@ function openModal(id){
         🎓 ${esc(m.program || "")} Class of ${esc(m.year || "")}
       </div>
       <div class="modal-year-reps">
-        ${m.rep1 ? `<div class="modal-rep">👨 ${esc(m.rep1)}</div>` : ""}
-        ${m.rep2 ? `<div class="modal-rep">👩 ${esc(m.rep2)}</div>` : ""}
+        ${m.rep1 ? `<div class="modal-rep">👤 ${esc(m.rep1)}</div>` : ""}
+        ${m.rep2 ? `<div class="modal-rep">👤 ${esc(m.rep2)}</div>` : ""}
       </div>
     </div>`).join("");
 
