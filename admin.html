@@ -1233,6 +1233,9 @@
       <button class="nav-item" data-section="section-clubs" onclick="showSection('clubs', this)">
         <span class="nav-icon">🎭</span> Clubs
       </button>
+      <button class="nav-item" data-section="section-acc" onclick="showSection('acc', this)">
+        <span class="nav-icon">🎨</span> ACC
+      </button>
       <button class="nav-item" data-section="section-events" onclick="showSection('events', this)">
         <span class="nav-icon">📅</span> Events
       </button>
@@ -1456,6 +1459,26 @@
             <tbody id="clubs-tbody">
               <tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-text">Loading clubs…</div></div></td></tr>
             </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── ACC ── -->
+      <div class="section" id="section-acc">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Arts &amp; Culture Committees</div>
+            <div class="section-subtitle">Manage ACC bodies and class representatives</div>
+          </div>
+          <button class="btn btn-primary" id="btn-add-acc" onclick="openAccModal()">+ Add ACC Body</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Name</th><th>Faculty</th><th>Campus</th>
+              <th>Representatives</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="acc-tbody"></tbody>
           </table>
         </div>
       </div>
@@ -1896,6 +1919,60 @@
 </div><!-- /admin-shell -->
 
 <!-- ══ CLUB MODAL ══ -->
+<!-- ── ACC Body Modal ── -->
+<div class="modal-backdrop" id="accModal">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-header">
+      <div class="modal-title" id="accModalTitle">Add ACC Body</div>
+      <button class="modal-close" onclick="closeModal('accModal')">✕</button>
+    </div>
+    <div class="modal-body" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <input type="hidden" id="accId" />
+      <div class="field" style="grid-column:1/-1;">
+        <label>Name *</label>
+        <input type="text" id="accName" placeholder="e.g. ACC MC - Undergraduate" />
+      </div>
+      <div class="field">
+        <label>Faculty / School</label>
+        <input type="text" id="accFaculty" placeholder="e.g. Medical College" />
+      </div>
+      <div class="field">
+        <label>Campus</label>
+        <select id="accCampus">
+          <option value="">All Campuses</option>
+          <option>Karachi</option>
+          <option>Nairobi</option>
+          <option>Kampala</option>
+          <option>Dar es Salaam</option>
+        </select>
+      </div>
+      <div class="field" style="grid-column:1/-1;">
+        <label>Description</label>
+        <textarea id="accDescription" rows="2" placeholder="Brief description of this ACC body…"></textarea>
+      </div>
+      <div class="field" style="grid-column:1/-1;">
+        <label>Logo URL</label>
+        <input type="text" id="accLogoUrl" placeholder="https://..." />
+      </div>
+
+      <!-- Members builder -->
+      <div style="grid-column:1/-1;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <label style="font-weight:600;font-size:13px;">Class Representatives</label>
+          <button class="btn btn-secondary" style="font-size:12px;padding:4px 12px;" onclick="addAccMemberRow()">+ Add Year</button>
+        </div>
+        <div id="accMembersBuilder" style="display:flex;flex-direction:column;gap:8px;">
+          <!-- rows added dynamically -->
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('accModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAccBody()">Save ACC Body</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="clubModal">
   <div class="modal">
     <div class="modal-header">
@@ -2756,6 +2833,7 @@ function showAdminPanel(){
   // ── Sidebar nav visibility ──
   const navMap = {
     "section-dashboard":      "view_dashboard",
+    "section-acc":            "manage_clubs",
     "section-clubs":          "manage_clubs",
     "section-events":         "manage_events",
     "section-news":           "manage_news",
@@ -2791,7 +2869,7 @@ function showAdminPanel(){
 
   // ── Load data based on permissions ──
   if(!isEventLead && hasPermission("view_dashboard")) loadDashboard();
-  if(hasPermission("manage_clubs"))    loadClubs();
+  if(hasPermission("manage_clubs"))    { loadClubs(); loadACC(); }
   if(hasPermission("manage_events"))   loadEvents();
   if(hasPermission("manage_news"))     loadNews();
   if(hasPermission("manage_forms"))    loadForms();
@@ -3630,6 +3708,127 @@ async function saveEvent(){
   closeModal("eventModal");
   loadEvents();
   loadDashboard();
+}
+
+/* ══ ACC BODIES ══ */
+let allAccBodies = [];
+
+async function loadACC(){
+  const { data, error } = await sb.from("acc_bodies").select("*").order("name");
+  if(error){ showToast("Failed to load ACC: " + error.message, "error"); return; }
+  allAccBodies = data || [];
+  renderAccTable(allAccBodies);
+}
+
+function renderAccTable(list){
+  const tbody = document.getElementById("acc-tbody");
+  if(!list.length){
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">🎭</div><div class="empty-state-text">No ACC bodies yet.</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(a => {
+    const totalReps = (a.members||[]).reduce((n,m) => n+(m.rep1?1:0)+(m.rep2?1:0), 0);
+    return `<tr>
+      <td style="font-weight:600;">${esc(a.name)}</td>
+      <td>${esc(a.faculty||"—")}</td>
+      <td>${a.campus ? `<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#eff6ff;color:#2563eb;">${esc(a.campus)}</span>` : "—"}</td>
+      <td style="font-size:12px;">${(a.members||[]).length} year classes · ${totalReps} reps</td>
+      <td><div class="td-actions">
+        <button class="btn btn-secondary btn-sm" onclick="openAccModal('${a.id}')">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteAccBody('${a.id}','${esc(a.name)}')">🗑️</button>
+      </div></td>
+    </tr>`;
+  }).join("");
+}
+
+function addAccMemberRow(data = {}){
+  const builder = document.getElementById("accMembersBuilder");
+  const idx     = builder.children.length;
+  const row     = document.createElement("div");
+  row.style.cssText = "display:grid;grid-template-columns:80px 1fr 1fr auto;gap:8px;align-items:center;";
+  row.innerHTML = `
+    <input type="text" placeholder="Year" value="${esc(data.year||"")}"
+      style="padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Poppins',sans-serif;font-size:12px;" />
+    <input type="text" placeholder="Program (e.g. MBBS)" value="${esc(data.program||"")}"
+      style="padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Poppins',sans-serif;font-size:12px;" />
+    <input type="text" placeholder="Rep 1 name" value="${esc(data.rep1||"")}"
+      style="padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Poppins',sans-serif;font-size:12px;" />
+    <input type="text" placeholder="Rep 2 name" value="${esc(data.rep2||"")}"
+      style="padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Poppins',sans-serif;font-size:12px;" />
+    <button onclick="this.parentElement.remove()" style="padding:6px 10px;background:#fef2f2;color:#b91c1c;border:1.5px solid #fecaca;border-radius:8px;cursor:pointer;font-size:13px;">✕</button>`;
+  builder.appendChild(row);
+}
+
+function openAccModal(id = null){
+  document.getElementById("accId").value          = id || "";
+  document.getElementById("accName").value         = "";
+  document.getElementById("accFaculty").value      = "";
+  document.getElementById("accCampus").value       = "";
+  document.getElementById("accDescription").value  = "";
+  document.getElementById("accLogoUrl").value      = "";
+  document.getElementById("accMembersBuilder").innerHTML = "";
+  document.getElementById("accModalTitle").textContent   = id ? "Edit ACC Body" : "Add ACC Body";
+
+  if(id){
+    const a = allAccBodies.find(x => x.id === id);
+    if(a){
+      document.getElementById("accName").value        = a.name || "";
+      document.getElementById("accFaculty").value     = a.faculty || "";
+      document.getElementById("accCampus").value      = a.campus || "";
+      document.getElementById("accDescription").value = a.description || "";
+      document.getElementById("accLogoUrl").value     = a.logo_url || "";
+      (a.members || []).forEach(m => addAccMemberRow(m));
+    }
+  } else {
+    // Add one empty row by default
+    addAccMemberRow();
+  }
+  document.getElementById("accModal").classList.add("open");
+}
+
+async function saveAccBody(){
+  const id   = document.getElementById("accId").value;
+  const name = document.getElementById("accName").value.trim();
+  if(!name){ showToast("Name is required", "error"); return; }
+
+  // Collect members from builder rows
+  const rows   = document.getElementById("accMembersBuilder").children;
+  const members = [];
+  for(const row of rows){
+    const inputs = row.querySelectorAll("input");
+    const year   = inputs[0]?.value.trim();
+    const program= inputs[1]?.value.trim();
+    const rep1   = inputs[2]?.value.trim();
+    const rep2   = inputs[3]?.value.trim();
+    if(year || rep1 || rep2) members.push({ year, program, rep1, rep2 });
+  }
+
+  const payload = {
+    name,
+    faculty:     document.getElementById("accFaculty").value.trim() || null,
+    campus:      document.getElementById("accCampus").value || null,
+    description: document.getElementById("accDescription").value.trim() || null,
+    logo_url:    document.getElementById("accLogoUrl").value.trim() || null,
+    members,
+    updated_at:  new Date().toISOString(),
+  };
+
+  const { error } = id
+    ? await sb.from("acc_bodies").update(payload).eq("id", id)
+    : await sb.from("acc_bodies").insert(payload);
+
+  if(error){ showToast("Save failed: " + error.message, "error"); return; }
+  showToast(id ? "ACC body updated!" : "ACC body added!");
+  closeModal("accModal");
+  loadACC();
+}
+
+async function deleteAccBody(id, name){
+  if(!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  const { error } = await sb.from("acc_bodies").delete().eq("id", id);
+  if(error){ showToast("Delete failed: " + error.message, "error"); return; }
+  showToast("ACC body deleted.");
+  loadACC();
 }
 
 /* ══ ADMINS ══ */
