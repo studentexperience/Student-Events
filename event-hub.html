@@ -1700,8 +1700,10 @@ function row(label, value){
 /* ── Proposal form ── */
 function showPendingReportWarning(proposal){
   const eventDate = formatDate(proposal.proposed_date);
+  const execStatus = proposal.execution_status || "pending";
+  const statusLabel = execStatus === "completed" ? "Event Held — awaiting closure" : "not yet closed";
   document.getElementById("pendingReportMsg").textContent =
-    `Your event "${proposal.event_name}" (${eventDate}) has passed but the post-event report has not been submitted yet. Please ask your Event Lead to mark the report as submitted.`;
+    `Your event "${proposal.event_name}" (${eventDate}) has a status of "${statusLabel}". Please ask your OSE Member to mark the event as Closed before you can submit a new proposal.`;
   document.getElementById("pendingReportModal").classList.add("open");
 }
 
@@ -1713,7 +1715,7 @@ function openProposalModal(id = null){
       if(!p.proposed_date) return false;
       const eventDate = new Date(p.proposed_date); eventDate.setHours(0,0,0,0);
       return p.status === "assigned"
-        && eventDate < today
+        && eventDate <= today
         && !["report_submitted","cancelled","postponed"].includes(p.execution_status || "");
     });
     if(pendingReport){
