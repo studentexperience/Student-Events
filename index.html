@@ -531,16 +531,12 @@
     }
     @media (max-width: 600px){
       .content{ padding:12px 10px; }
-      .cards{ grid-template-columns: repeat(2, 1fr); gap:10px; }
-      .cover-img, .cover-placeholder{ height:140px; }
-      .title{ font-size:13px; }
-      .meta{ font-size:12px; }
-      .organizer-banner{ font-size:11px; padding:7px 12px; }
-      .body{ padding:10px 12px 12px; }
-    }
-    @media (max-width: 400px){
       .cards{ grid-template-columns: 1fr; gap:12px; }
       .cover-img, .cover-placeholder{ height:160px; }
+      .title{ font-size:14px; }
+      .meta{ font-size:13px; }
+      .organizer-banner{ font-size:11.5px; padding:8px 14px; }
+      .body{ padding:12px 14px 14px; }
     }
 
     /* Notify Me button */
@@ -2285,5 +2281,15 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
+
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <a href="index.html" class="bottom-nav-item active"><span>📅</span><span>Events</span></a>
+    <a href="clubs.html" class="bottom-nav-item "><span>🎭</span><span>Clubs</span></a>
+    <a href="acc.html" class="bottom-nav-item "><span>🎨</span><span>ACC</span></a>
+    <a href="news.html" class="bottom-nav-item "><span>📰</span><span>News</span></a>
+    <a href="forms.html" class="bottom-nav-item "><span>📋</span><span>Forms</span></a>
+  </div>
+</nav>
 </body>
 </html>
