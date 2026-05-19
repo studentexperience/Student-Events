@@ -2751,6 +2751,8 @@ function showAdminPanel(){
   badge.style.background  = (badgeColors[currentRole] || badgeColors.admin).bg;
   badge.style.color       = (badgeColors[currentRole] || badgeColors.admin).color;
 
+  const isEventLead = currentRole === "event_lead";
+
   // ── Sidebar nav visibility ──
   const navMap = {
     "section-dashboard":      "view_dashboard",
@@ -2766,6 +2768,12 @@ function showAdminPanel(){
   document.querySelectorAll(".nav-item[data-section]").forEach(btn => {
     const section = btn.dataset.section;
     const perm    = navMap[section];
+
+    // Event Leads: hide dashboard and proposals (they use Event Lead Portal instead)
+    if(isEventLead && (section === "section-dashboard" || section === "section-proposals")){
+      btn.style.display = "none";
+      return;
+    }
     btn.style.display = (!perm || hasPermission(perm)) ? "" : "none";
   });
 
@@ -2782,15 +2790,16 @@ function showAdminPanel(){
   applyActionPermission("download_charts", document.querySelectorAll(".chart-download-btn"));
 
   // ── Load data based on permissions ──
-  if(hasPermission("view_dashboard"))  loadDashboard();
+  if(!isEventLead && hasPermission("view_dashboard")) loadDashboard();
   if(hasPermission("manage_clubs"))    loadClubs();
   if(hasPermission("manage_events"))   loadEvents();
   if(hasPermission("manage_news"))     loadNews();
   if(hasPermission("manage_forms"))    loadForms();
   if(hasPermission("edit_home"))       loadPages();
-  if(hasPermission("manage_proposals")){ loadClubApprovals(); loadProposals(); }
+  if(!isEventLead && hasPermission("manage_proposals")){ loadClubApprovals(); loadProposals(); }
+  if(isEventLead  && hasPermission("manage_proposals"))  loadClubApprovals(); // club approvals only
 
-  // Team Overview — show for admins and super admins ONLY (not event leads)
+  // Team Overview — admins and super admins only
   if(currentRole === "admin" || currentRole === "super_admin"){
     const navBtn = document.getElementById("teamOverviewNavBtn");
     if(navBtn) navBtn.style.display = "";
@@ -2799,12 +2808,21 @@ function showAdminPanel(){
       if(filterRow) filterRow.style.display = "block";
     }
     loadTeamOverview();
+  } else {
+    // Hide Team Overview nav from event leads
+    const navBtn = document.getElementById("teamOverviewNavBtn");
+    if(navBtn) navBtn.style.display = "none";
   }
 
   // Event Lead Portal — visible to all roles
-  // Event leads see their own events; admins/super admins see all leads' events
   document.getElementById("myEventsNavBtn").style.display = "";
   loadMyAssignedEvents();
+
+  // Event Leads land on Event Lead Portal by default
+  if(isEventLead){
+    const portalBtn = document.getElementById("myEventsNavBtn");
+    if(portalBtn) portalBtn.click();
+  }
 
   // Start notifications and realtime
   loadAdminNotifications();
@@ -4355,82 +4373,82 @@ function switchPipelineTab(tab){
 }
 
 function pipelineCard(p, today, isMine = true){
-  const execSC  = EXECUTION_STATUS[p.execution_status || "pending"];
-  const dateStr = p.proposed_date ? new Date(p.proposed_date).toLocaleDateString("en-GB",{day:"numeric",month:"short"}) : "—";
-  const daysLeft = p.proposed_date ? Math.ceil((new Date(p.proposed_date) - today) / 86400000) : null;
+  const execSC   = EXECUTION_STATUS[p.execution_status || "pending"];
+  const dateStr  = p.proposed_date ? new Date(p.proposed_date).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "—";
+  const daysLeft = p.proposed_date ? Math.round((new Date(p.proposed_date).setHours(0,0,0,0) - today.getTime()) / 86400000) : null;
   const urgency  = daysLeft !== null && daysLeft <= 1 ? "border-left:3px solid #ef4444;" :
                    daysLeft !== null && daysLeft <= 3 ? "border-left:3px solid #f59e0b;" : "";
+
+  const dayLabel = daysLeft === null ? "" :
+    daysLeft < 0  ? `<span style="color:#ef4444;font-weight:700;">(OVERDUE)</span>` :
+    daysLeft === 0 ? `<span style="color:#ef4444;font-weight:700;">(TODAY)</span>` :
+    daysLeft === 1 ? `<span style="color:#ef4444;font-weight:700;">(Tomorrow)</span>` :
+    daysLeft <= 7  ? `<span style="color:#f59e0b;font-weight:700;">(${daysLeft} days)</span>` : "";
+
   const coverImg = p.cover_image
     ? `<img class="pipeline-card-cover" src="${esc(p.cover_image)}" />`
     : `<div class="pipeline-card-cover-placeholder" style="background:linear-gradient(135deg,#667eea,#764ba2);">🎭</div>`;
 
-  const execBtnsHtml = isMine ? `<div class="pipeline-card-exec-btns">${
-    [
-      { s:"in_progress",     l:"▶️ Preparation Underway" },
-      { s:"completed",       l:"🎉 Event Held" },
-      { s:"report_submitted",l:"🔒 Close Event" },
-      { s:"postponed",       l:"⏸️ Rescheduled" },
-      { s:"cancelled",       l:"🚫 Cancelled" },
-    ].map(b => {
-      const isCurr = (p.execution_status || "pending") === b.s;
-      const sc     = EXECUTION_STATUS[b.s];
-      return `<button class="pipeline-exec-btn ${isCurr ? "active" : ""}"
-        style="${isCurr ? `background:${sc.bg};color:${sc.color};border-color:${sc.color};` : ""}"
-        onclick="updateExecutionStatus('${p.id}','${b.s}')">${b.l}</button>`;
-    }).join("")
-  }</div>` : `<div style="font-size:11px;color:var(--muted);margin-top:6px;">👤 ${esc(p.assigned_to || "—")}</div>`;
+  const execBtnsHtml = isMine ? `
+    <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e5e7eb;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:6px;">Update Status</div>
+      <div class="pipeline-card-exec-btns">${
+        [
+          { s:"in_progress",     l:"▶️ Preparation Underway" },
+          { s:"completed",       l:"🎉 Event Held" },
+          { s:"report_submitted",l:"🔒 Close Event" },
+          { s:"postponed",       l:"⏸️ Rescheduled" },
+          { s:"cancelled",       l:"🚫 Cancelled" },
+        ].map(b => {
+          const isCurr = (p.execution_status || "pending") === b.s;
+          const sc     = EXECUTION_STATUS[b.s];
+          return `<button class="pipeline-exec-btn ${isCurr ? "active" : ""}"
+            style="${isCurr ? `background:${sc.bg};color:${sc.color};border-color:${sc.color};` : ""}"
+            onclick="updateExecutionStatus('${p.id}','${b.s}')">${b.l}</button>`;
+        }).join("")}
+      </div>
+    </div>` : `<div style="font-size:11px;color:var(--muted);margin-top:6px;">👤 ${esc(p.assigned_to || "—")}</div>`;
 
-  // Show alert if admin reverted status to needs_info
   const needsInfoBanner = p.status === "needs_info" ? `
     <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:11px;color:#92400e;font-weight:600;">
-      💬 Status: Pending Information — admin has requested additional details. Please check messages.
+      💬 Pending Information — please check messages
     </div>` : "";
 
-  // Notes section — visible on both my cards and campus cards
   const notesHtml = `
     <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e5e7eb;">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:5px;">
-        📝 Lead Notes ${!isMine ? `<span style="font-weight:400;font-style:italic;">(by ${esc(p.assigned_to||"")})</span>` : ""}
-      </div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:5px;">📝 Lead Notes</div>
       ${isMine ? `
         <textarea id="note-${p.id}"
-          style="width:100%;padding:7px 10px;border:1.5px solid #e5e7eb;border-radius:8px;
-          font-family:'Poppins',sans-serif;font-size:12px;resize:vertical;min-height:68px;outline:none;
-          transition:border .15s;line-height:1.5;"
-          onfocus="this.style.borderColor='var(--accent)'"
-          onblur="this.style.borderColor='#e5e7eb'"
-          placeholder="Add notes about progress, contacts, requirements or anything that helps a colleague take over…"
-        >${esc(p.lead_notes || "")}</textarea>
+          style="width:100%;padding:7px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-family:'Poppins',sans-serif;font-size:12px;resize:vertical;min-height:60px;outline:none;"
+          onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#e5e7eb'"
+          placeholder="Add notes for handover…">${esc(p.lead_notes || "")}</textarea>
         <button onclick="saveLeadNote('${p.id}')"
-          style="margin-top:5px;padding:5px 12px;background:var(--accent);color:white;border:none;
-          border-radius:7px;font-family:'Poppins',sans-serif;font-size:11px;font-weight:700;
-          cursor:pointer;transition:opacity .15s;"
-          onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
-          💾 Save Note
-        </button>
-      ` : `
-        <div style="font-size:12px;color:${p.lead_notes ? "var(--ink)" : "var(--muted)"};
-          background:#f9fafb;border-radius:8px;padding:8px 10px;line-height:1.6;min-height:40px;">
-          ${p.lead_notes ? esc(p.lead_notes) : "No notes added yet."}
-        </div>
-      `}
+          style="margin-top:4px;padding:4px 10px;background:var(--accent);color:white;border:none;border-radius:6px;font-family:'Poppins',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">💾 Save</button>
+      ` : `<div style="font-size:12px;color:${p.lead_notes?"var(--ink)":"var(--muted)"};background:#f9fafb;border-radius:8px;padding:8px 10px;">${p.lead_notes?esc(p.lead_notes):"No notes yet."}</div>`}
     </div>`;
 
   return `
     <div class="pipeline-card" style="${urgency}">
       ${coverImg}
       <div class="pipeline-card-body">
-        <div class="pipeline-card-name">${esc(p.event_name)}</div>
-        <div class="pipeline-card-club">by ${esc(p.club_name)}</div>
-        <div class="pipeline-card-meta">
-          <span>📅 ${dateStr}${daysLeft !== null ? ` <strong style="color:${daysLeft<0?"#ef4444":daysLeft<=1?"#ef4444":daysLeft<=3?"#f59e0b":"#9ca3af"};">(${daysLeft<0?"OVERDUE":daysLeft===0?"TODAY":daysLeft===1?"Tomorrow":daysLeft+" days"})</strong>` : ""}</span>
-          ${p.proposed_venue ? `<span>📍 ${esc(p.proposed_venue)}</span>` : ""}
-          ${p.proposed_time  ? `<span>⏰ ${esc(p.proposed_time)}</span>` : ""}
-        </div>
-        <div style="margin-bottom:8px;">
-          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:${execSC.bg};color:${execSC.color};">${execSC.emoji} ${execSC.label}</span>
-        </div>
         ${needsInfoBanner}
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;">
+          <div>
+            <div class="pipeline-card-name">${esc(p.event_name)}</div>
+            <div class="pipeline-card-club">by ${esc(p.club_name)}</div>
+          </div>
+          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:${execSC.bg};color:${execSC.color};white-space:nowrap;flex-shrink:0;">${execSC.emoji} ${execSC.label}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px;font-size:11px;color:var(--muted);">
+          <span>📅 ${dateStr} ${dayLabel}</span>
+          <span>⏰ ${esc(p.proposed_time||"—")}</span>
+          <span>📍 ${esc(p.proposed_venue||"—")}</span>
+          <span>🎟️ ${esc(p.expected_attendance||"—")} expected</span>
+          <span>👥 ${esc(p.audience||"—")}</span>
+          <span>🏷️ ${esc(p.category||"—")}</span>
+        </div>
+        ${p.club_email ? `<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">📧 <a href="mailto:${esc(p.club_email)}" style="color:var(--accent);">${esc(p.club_email)}</a></div>` : ""}
+        ${p.admin_note ? `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:6px 10px;margin-bottom:8px;font-size:11px;color:#92400e;"><strong>Admin Note:</strong> ${esc(p.admin_note)}</div>` : ""}
         ${execBtnsHtml}
         ${notesHtml}
       </div>
