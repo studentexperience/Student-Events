@@ -155,7 +155,6 @@
       font-size:12px; color:var(--ink); padding:3px 0;
       display:flex; align-items:center; gap:6px;
     }
-    .rep-name::before { content:"👤"; font-size:10px; }
 
     /* ── Empty state ── */
     .empty { text-align:center; padding:60px 20px; color:var(--muted); }
@@ -315,8 +314,8 @@ function renderGrid(list){
           🎓 ${esc(m.program || "")} ${esc(m.year || "")}
         </div>
         <div class="year-reps">
-          ${m.rep1 ? `<div class="rep-name">${esc(m.rep1)}</div>` : ""}
-          ${m.rep2 ? `<div class="rep-name">${esc(m.rep2)}</div>` : ""}
+          ${m.rep1 ? `<div class="rep-name">👨 ${esc(m.rep1)}</div>` : ""}
+          ${m.rep2 ? `<div class="rep-name">👩 ${esc(m.rep2)}</div>` : ""}
         </div>
       </div>`).join("");
 
@@ -363,8 +362,8 @@ function openModal(id){
         🎓 ${esc(m.program || "")} Class of ${esc(m.year || "")}
       </div>
       <div class="modal-year-reps">
-        ${m.rep1 ? `<div class="modal-rep">👤 ${esc(m.rep1)}</div>` : ""}
-        ${m.rep2 ? `<div class="modal-rep">👤 ${esc(m.rep2)}</div>` : ""}
+        ${m.rep1 ? `<div class="modal-rep">👨 ${esc(m.rep1)}</div>` : ""}
+        ${m.rep2 ? `<div class="modal-rep">👩 ${esc(m.rep2)}</div>` : ""}
       </div>
     </div>`).join("");
 
