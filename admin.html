@@ -4884,6 +4884,11 @@ function pipelineCard(p, today, isMine = true){
         </div>
         ${p.club_email ? `<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">📧 <a href="mailto:${esc(p.club_email)}" style="color:var(--accent);">${esc(p.club_email)}</a></div>` : ""}
         ${p.admin_note ? `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:6px 10px;margin-bottom:8px;font-size:11px;color:#92400e;"><strong>Admin Note:</strong> ${esc(p.admin_note)}</div>` : ""}
+        ${p.purchase_items ? `
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 10px;margin-bottom:8px;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#15803d;margin-bottom:4px;">🛒 Purchase Items Required</div>
+          <div style="font-size:12px;color:#166534;line-height:1.5;">${esc(p.purchase_items)}</div>
+        </div>` : ""}
 
         <!-- Confirmed Venue -->
         ${["approved","assigned","in_progress","completed"].includes(p.status||"") ? `
