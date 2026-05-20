@@ -1426,6 +1426,41 @@
           </div>
         </div>
 
+        <!-- ── Club Events Pivot Table ── -->
+        <div style="margin-top:28px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div>
+              <div style="font-size:14px;font-weight:700;">📋 Events by Club & Status</div>
+              <div style="font-size:12px;color:var(--muted);">Proposal pipeline overview across all clubs</div>
+            </div>
+            <input type="text" id="pivotSearch" placeholder="🔍 Search clubs…"
+              oninput="filterPivot(this.value)"
+              style="padding:8px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:'Poppins',sans-serif;font-size:12px;outline:none;width:220px;" />
+          </div>
+          <div class="table-wrap">
+            <table id="pivotTable">
+              <thead>
+                <tr>
+                  <th>Club / Society</th>
+                  <th>📥 Received</th>
+                  <th>🔍 In Review</th>
+                  <th>💬 Pending Info</th>
+                  <th>✅ Approved</th>
+                  <th>📌 OSE Assigned</th>
+                  <th>▶️ Prep Underway</th>
+                  <th>🎉 Event Held</th>
+                  <th>🔒 Closed</th>
+                  <th>❌ Not Approved</th>
+                  <th style="font-weight:800;">Total</th>
+                </tr>
+              </thead>
+              <tbody id="pivotTbody">
+                <tr><td colspan="11" style="text-align:center;color:var(--muted);padding:20px;">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
 
       <!-- ── CLUBS ── -->
@@ -3223,6 +3258,67 @@ async function loadDashboard(){
   });
 
   renderAllCharts();
+  buildPivotTable();
+}
+
+let allPivotData = [];
+
+async function buildPivotTable(){
+  const { data } = await sb.from("event_proposals").select("club_name,status,execution_status");
+  if(!data) return;
+  allPivotData = data;
+  renderPivot(data);
+}
+
+function filterPivot(q){
+  const filtered = q
+    ? allPivotData.filter(r => (r.club_name||"").toLowerCase().includes(q.toLowerCase()))
+    : allPivotData;
+  renderPivot(filtered);
+}
+
+function renderPivot(data){
+  const tbody = document.getElementById("pivotTbody");
+  if(!tbody) return;
+
+  // Group by club
+  const clubs = {};
+  data.forEach(r => {
+    const club = r.club_name || "Unknown";
+    if(!clubs[club]) clubs[club] = { submitted:0, under_review:0, needs_info:0, approved:0, assigned:0, in_progress:0, completed:0, report_submitted:0, declined:0, total:0 };
+    const st = r.status || "submitted";
+    const ex = r.execution_status || "";
+    // Map to display buckets
+    if(st === "submitted")      clubs[club].submitted++;
+    else if(st === "under_review") clubs[club].under_review++;
+    else if(st === "needs_info") clubs[club].needs_info++;
+    else if(st === "approved")  clubs[club].approved++;
+    else if(st === "assigned" && !["in_progress","completed","report_submitted"].includes(ex)) clubs[club].assigned++;
+    else if(ex === "in_progress") clubs[club].in_progress++;
+    else if(ex === "completed")   clubs[club].completed++;
+    else if(ex === "report_submitted") clubs[club].report_submitted++;
+    else if(st === "declined")  clubs[club].declined++;
+    clubs[club].total++;
+  });
+
+  const sorted = Object.entries(clubs).sort((a,b) => b[1].total - a[1].total);
+  if(!sorted.length){ tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:20px;">No proposals yet.</td></tr>`; return; }
+
+  const cell = (n) => `<td style="text-align:center;${n>0?'font-weight:700;':'color:#d1d5db;'}">${n||'—'}</td>`;
+  tbody.innerHTML = sorted.map(([club, s]) =>
+    `<tr>
+      <td style="font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(club)}">${esc(club)}</td>
+      ${cell(s.submitted)}${cell(s.under_review)}${cell(s.needs_info)}${cell(s.approved)}
+      ${cell(s.assigned)}${cell(s.in_progress)}${cell(s.completed)}${cell(s.report_submitted)}${cell(s.declined)}
+      <td style="text-align:center;font-weight:800;color:var(--accent);">${s.total}</td>
+    </tr>`
+  ).join("") + `<tr style="background:#f9fafb;font-weight:700;">
+    <td>Total</td>
+    ${["submitted","under_review","needs_info","approved","assigned","in_progress","completed","report_submitted","declined"].map(k =>
+      `<td style="text-align:center;">${sorted.reduce((s,[,v])=>s+(v[k]||0),0)||'—'}</td>`
+    ).join("")}
+    <td style="text-align:center;font-weight:800;color:var(--accent);">${data.length}</td>
+  </tr>`;
 }
 
 /* ── Reliable chart renderer — waits for canvas to be visible ── */
@@ -4786,6 +4882,40 @@ function pipelineCard(p, today, isMine = true){
         </div>
         ${p.club_email ? `<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">📧 <a href="mailto:${esc(p.club_email)}" style="color:var(--accent);">${esc(p.club_email)}</a></div>` : ""}
         ${p.admin_note ? `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:6px 10px;margin-bottom:8px;font-size:11px;color:#92400e;"><strong>Admin Note:</strong> ${esc(p.admin_note)}</div>` : ""}
+
+        <!-- Confirmed Venue -->
+        ${["approved","assigned","in_progress","completed"].includes(p.status||"") ? `
+        <div style="margin-bottom:10px;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:4px;">📍 Confirmed Venue</div>
+          <div style="display:flex;gap:6px;">
+            <input id="venue-${p.id}" type="text"
+              value="${esc(p.confirmed_venue || "")}"
+              placeholder="Enter confirmed venue (shows TBC until set)"
+              style="flex:1;padding:7px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-family:'Poppins',sans-serif;font-size:12px;outline:none;"
+              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#e5e7eb'" />
+            <button onclick="saveConfirmedVenue('${p.id}','${p.published_event_id||""}')"
+              style="padding:6px 12px;background:var(--accent);color:white;border:none;border-radius:8px;font-family:'Poppins',sans-serif;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">
+              💾 Save
+            </button>
+          </div>
+        </div>` : ""}
+
+        <!-- Confirmed Audience -->
+        ${["approved","assigned","in_progress","completed"].includes(p.status||"") ? `
+        <div style="margin-bottom:10px;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:4px;">👥 Open To</div>
+          <div style="display:flex;gap:6px;">
+            <input id="audience-${p.id}" type="text"
+              value="${esc(p.audience || "")}"
+              placeholder="e.g. All Students, MBBS Year 1-3"
+              style="flex:1;padding:7px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-family:'Poppins',sans-serif;font-size:12px;outline:none;"
+              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#e5e7eb'" />
+            <button onclick="saveConfirmedAudience('${p.id}','${p.published_event_id||""}')"
+              style="padding:6px 12px;background:var(--accent);color:white;border:none;border-radius:8px;font-family:'Poppins',sans-serif;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">
+              💾 Save
+            </button>
+          </div>
+        </div>` : ""}
         ${buildPipelineResources(p)}
         ${execBtnsHtml}
         ${notesHtml}
@@ -5065,6 +5195,32 @@ function openReviewModal(id){
 
   document.getElementById("reviewProposalModal").classList.add("open");
   loadMessageThread(id);
+}
+
+async function saveConfirmedVenue(proposalId, publishedEventId){
+  const venue = document.getElementById(`venue-${proposalId}`)?.value.trim();
+  const { error } = await sb.from("event_proposals")
+    .update({ confirmed_venue: venue || null, updated_at: new Date().toISOString() })
+    .eq("id", proposalId);
+  if(error){ showToast("Failed: " + error.message, "error"); return; }
+  // Also update the published event venue
+  if(publishedEventId){
+    await sb.from("events").update({ venue: venue || null }).eq("id", publishedEventId);
+  }
+  showToast("📍 Venue confirmed!");
+  loadMyAssignedEvents();
+}
+
+async function saveConfirmedAudience(proposalId, publishedEventId){
+  const audience = document.getElementById(`audience-${proposalId}`)?.value.trim();
+  const { error } = await sb.from("event_proposals")
+    .update({ audience: audience || null, updated_at: new Date().toISOString() })
+    .eq("id", proposalId);
+  if(error){ showToast("Failed: " + error.message, "error"); return; }
+  if(publishedEventId){
+    await sb.from("events").update({ audience: audience || null }).eq("id", publishedEventId);
+  }
+  showToast("👥 Audience updated!");
 }
 
 /* ── Pipeline Message Thread ── */
@@ -5741,35 +5897,33 @@ async function submitResetPassword(){
   const newPw     = document.getElementById("resetNewPassword").value;
   const confirmPw = document.getElementById("resetConfirmPassword").value;
 
-  if(!newPw)            { showToast("Please enter a new password", "error"); return; }
-  if(newPw.length < 8)  { showToast("Password must be at least 8 characters", "error"); return; }
+  if(!newPw)             { showToast("Please enter a new password", "error"); return; }
+  if(newPw.length < 8)   { showToast("Password must be at least 8 characters", "error"); return; }
   if(newPw !== confirmPw){ showToast("Passwords do not match", "error"); return; }
 
-  // Use Supabase Admin API via edge function (service role)
-  // We update via the admin update-user endpoint
-  const { error } = await sb.auth.admin.updateUserById(resetTargetId, {
-    password: newPw,
+  const btn = document.querySelector("#resetPasswordModal .btn-primary");
+  btn.disabled = true; btn.textContent = "Resetting…";
+  const reset = () => { btn.disabled = false; btn.textContent = "🔑 Reset Password"; };
+
+  // Route through Edge Function which has service role key
+  const res = await fetch("https://dgzuqvffnbfybngoadse.supabase.co/functions/v1/bright-processor", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      type:         "reset_password",
+      user_id:      resetTargetId,
+      new_password: newPw,
+    })
   });
 
-  if(error){
-    // Fallback: send password reset email if admin API not available
-    if(error.message.includes("not authorized") || error.message.includes("not allowed")){
-      const { error: emailErr } = await sb.auth.resetPasswordForEmail(resetTargetEmail, {
-        redirectTo: window.location.origin + "/Student-Events/admin.html",
-      });
-      if(emailErr){ showToast("Failed: " + emailErr.message, "error"); return; }
-      showToast("📧 Password reset email sent to " + resetTargetEmail);
-      closeModal("resetPasswordModal");
-      return;
-    }
-    showToast("Failed: " + error.message, "error");
-    return;
+  const result = await res.json();
+  if(!res.ok || result.error){
+    showToast("Failed: " + (result.error || "Unknown error"), "error");
+    reset(); return;
   }
 
-  // Mark must_change_password = true so they're prompted on next login
-  await sb.from("admins").update({ must_change_password: true }).eq("id", resetTargetId);
-
-  showToast("✅ Password reset successfully. User will be prompted to change it on next login.");
+  showToast(`✅ Password reset for ${resetTargetEmail}. They must change it on next login.`);
+  reset();
   closeModal("resetPasswordModal");
 }
 
