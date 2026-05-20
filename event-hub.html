@@ -2416,34 +2416,58 @@ async function loadNotifications(){
     return;
   }
   list.innerHTML = notifs.map(n => `
-    <div class="notif-item ${n.is_read ? "" : "unread"}" onclick="goToProposal('${n.id}','${n.proposal_id||""}')">
+    <div class="notif-item ${n.is_read ? "" : "unread"}"
+      data-notif-id="${esc(n.id)}"
+      data-proposal-id="${esc(n.proposal_id || "")}"
+      style="cursor:pointer;">
       <div class="notif-item-title">${esc(n.title)}</div>
       <div class="notif-item-msg">${esc(n.message)}</div>
       <div class="notif-item-time">${timeAgo(n.created_at)}</div>
     </div>`).join("");
+
+  // Attach click handlers using event delegation
+  list.querySelectorAll(".notif-item").forEach(el => {
+    el.addEventListener("click", () => {
+      goToProposal(el.dataset.notifId, el.dataset.proposalId);
+    });
+  });
 }
 
 async function goToProposal(notifId, proposalId){
+  if(!notifId) return;
+
   // Mark as read
   await sb.from("notifications").update({ is_read: true }).eq("id", notifId);
+
   // Close notification panel
   document.getElementById("notifPanel").classList.remove("open");
-  // Scroll to proposal card if exists
-  if(proposalId){
+
+  if(!proposalId){ loadNotifications(); return; }
+
+  // Try to scroll immediately, retry after a short wait if card not rendered yet
+  const scrollToCard = () => {
     const card = document.getElementById(`card-${proposalId}`);
     if(card){
       card.scrollIntoView({ behavior:"smooth", block:"center" });
-      // Flash highlight
       card.style.transition = "box-shadow .3s";
       card.style.boxShadow  = "0 0 0 3px #7c3aed";
-      setTimeout(() => card.style.boxShadow = "", 2000);
+      setTimeout(() => { card.style.boxShadow = ""; card.style.transition = ""; }, 2000);
       // Auto-open message thread
       const threadBody = document.getElementById(`thread-body-${proposalId}`);
       if(threadBody && threadBody.style.display === "none"){
         toggleCardThread(proposalId);
       }
+      return true;
     }
+    return false;
+  };
+
+  if(!scrollToCard()){
+    // Card not rendered yet — wait for proposals to load then retry
+    await loadProposals();
+    setTimeout(scrollToCard, 300);
   }
+
   loadNotifications();
 }
 
