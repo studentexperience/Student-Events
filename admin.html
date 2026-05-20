@@ -4789,6 +4789,29 @@ function pipelineCard(p, today, isMine = true){
         ${buildPipelineResources(p)}
         ${execBtnsHtml}
         ${notesHtml}
+
+        <!-- Pipeline Message Thread -->
+        <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e5e7eb;">
+          <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:4px;"
+            onclick="togglePipelineThread('${p.id}')">
+            <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;">
+              💬 Messages
+            </span>
+            <span id="pipeline-thread-toggle-${p.id}" style="font-size:11px;color:var(--muted);">▸ Show</span>
+          </div>
+          <div id="pipeline-thread-${p.id}" style="display:none;margin-top:8px;">
+            <div id="pipeline-msgs-${p.id}" style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;margin-bottom:8px;"></div>
+            <div style="display:flex;gap:6px;">
+              <textarea id="pipeline-reply-${p.id}" rows="2" placeholder="Message to club…"
+                style="flex:1;padding:7px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-family:'Poppins',sans-serif;font-size:12px;resize:none;outline:none;"
+                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
+              <button onclick="sendPipelineMessage('${p.id}')"
+                style="padding:7px 12px;background:var(--accent);color:white;border:none;border-radius:8px;font-family:'Poppins',sans-serif;font-size:11px;font-weight:700;cursor:pointer;align-self:flex-end;">
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>`;
 }
@@ -5042,6 +5065,84 @@ function openReviewModal(id){
 
   document.getElementById("reviewProposalModal").classList.add("open");
   loadMessageThread(id);
+}
+
+/* ── Pipeline Message Thread ── */
+async function togglePipelineThread(proposalId){
+  const body   = document.getElementById(`pipeline-thread-${proposalId}`);
+  const toggle = document.getElementById(`pipeline-thread-toggle-${proposalId}`);
+  if(!body) return;
+  const isOpen = body.style.display !== "none";
+  body.style.display = isOpen ? "none" : "block";
+  toggle.textContent = isOpen ? "▸ Show" : "▾ Hide";
+  if(!isOpen) loadPipelineMessages(proposalId);
+}
+
+async function loadPipelineMessages(proposalId){
+  const container = document.getElementById(`pipeline-msgs-${proposalId}`);
+  if(!container) return;
+
+  const { data } = await sb.from("proposal_messages")
+    .select("*").eq("proposal_id", proposalId)
+    .order("created_at", { ascending: true });
+
+  const msgs = data || [];
+  if(!msgs.length){
+    container.innerHTML = `<div style="font-size:12px;color:var(--muted);text-align:center;padding:6px;">No messages yet.</div>`;
+    return;
+  }
+
+  container.innerHTML = msgs.map(m => {
+    const isMe    = m.sender_email === currentUser.email;
+    const isClub  = m.sender_type === "club";
+    const bg      = isClub ? "#f3f4f6" : isMe ? "#eff6ff" : "#f5f3ff";
+    const color   = isClub ? "#374151" : isMe ? "#1e40af" : "#7c3aed";
+    const align   = isClub ? "flex-start" : "flex-end";
+    const radius  = isClub ? "4px 10px 10px 10px" : "10px 4px 10px 10px";
+    const label   = isClub ? `🏷️ ${esc(m.sender_email.split("@")[0])}` : isMe ? "👤 You" : `👤 ${esc(m.sender_email.split("@")[0])}`;
+    const time    = new Date(m.created_at).toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+    return `<div style="display:flex;flex-direction:column;align-items:${align};gap:2px;">
+      <div style="background:${bg};color:${color};padding:7px 11px;border-radius:${radius};font-size:12px;line-height:1.5;max-width:85%;">${esc(m.message)}</div>
+      <div style="font-size:10px;color:var(--muted);">${label} · ${time}</div>
+    </div>`;
+  }).join("");
+
+  container.scrollTop = container.scrollHeight;
+}
+
+async function sendPipelineMessage(proposalId){
+  const textarea = document.getElementById(`pipeline-reply-${proposalId}`);
+  const text = textarea?.value.trim();
+  if(!text){ showToast("Type a message first", "error"); return; }
+
+  const p = (allAdminProposals || []).find(x => x.id === proposalId);
+
+  const { error } = await sb.from("proposal_messages").insert({
+    proposal_id:  proposalId,
+    sender_email: currentUser.email,
+    sender_type:  "admin",
+    message:      text,
+  });
+  if(error){ showToast("Failed: " + error.message, "error"); return; }
+
+  // Notify club + other assigned lead/admin
+  if(p){
+    const recipients = [p.club_email];
+    if(p.assigned_to && p.assigned_to !== currentUser.email) recipients.push(p.assigned_to);
+
+    await sb.from("notifications").insert(recipients.map(email => ({
+      recipient:   email,
+      type:        "proposal_message",
+      title:       "💬 New Message on Your Event",
+      message:     `Re: "${p.event_name}" — ${text.substring(0,100)}${text.length>100?"…":""}`,
+      proposal_id: proposalId,
+      is_read:     false,
+    })));
+  }
+
+  textarea.value = "";
+  showToast("Message sent!");
+  loadPipelineMessages(proposalId);
 }
 
 /* ── Resource Booking ── */
