@@ -4702,7 +4702,15 @@ async function openResourceBookingPanel(proposalId){
 }
 
 function pipelineCard(p, today, isMine = true){
-  const execSC   = EXECUTION_STATUS[p.execution_status || "pending"];
+  // When status=assigned but execution hasn't started, show "OSE Member Assigned" not "Awaiting Assignment"
+  const execKey  = p.execution_status && p.execution_status !== "pending"
+    ? p.execution_status
+    : (p.status === "assigned" ? "assigned_ready" : "pending");
+  const execSCMap = {
+    ...EXECUTION_STATUS,
+    assigned_ready: { label:"OSE Member Assigned", emoji:"📌", bg:"#f5f3ff", color:"#7c3aed" }
+  };
+  const execSC   = execSCMap[execKey] || EXECUTION_STATUS["pending"];
   const dateStr  = p.proposed_date ? new Date(p.proposed_date).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "—";
   const daysLeft = p.proposed_date ? Math.round((new Date(p.proposed_date).setHours(0,0,0,0) - today.getTime()) / 86400000) : null;
   const urgency  = daysLeft !== null && daysLeft <= 1 ? "border-left:3px solid #ef4444;" :
@@ -5877,17 +5885,22 @@ async function sendQuickReply(){
   });
   if(error){ showToast("Failed: " + error.message, "error"); return; }
 
-  // Notify club
   const p = allAdminProposals.find(x => x.id === proposalId);
   if(p){
-    await sb.from("notifications").insert({
-      recipient:   p.club_email,
-      type:        "proposal_message",
-      title:       "💬 New Message on Your Proposal",
-      message:     `Re: "${p.event_name}" — ${text.substring(0,100)}${text.length > 100 ? "…" : ""}`,
-      proposal_id: proposalId,
-      is_read:     false,
-    });
+    const notifRecipients = [p.club_email];
+    // Also notify assigned event lead if different from sender
+    if(p.assigned_to && p.assigned_to !== currentUser.email) notifRecipients.push(p.assigned_to);
+
+    await sb.from("notifications").insert(
+      notifRecipients.map(recipient => ({
+        recipient,
+        type:        "proposal_message",
+        title:       "💬 New Message on Proposal",
+        message:     `Re: "${p.event_name}" — ${text.substring(0,100)}${text.length > 100 ? "…" : ""}`,
+        proposal_id: proposalId,
+        is_read:     false,
+      }))
+    );
   }
 
   document.getElementById("quickReplyText").value = "";
@@ -5908,24 +5921,27 @@ async function sendProposalMessage(){
   });
   if(error){ showToast("Failed: " + error.message, "error"); return; }
 
-  // Notify club
   const p = allAdminProposals.find(x => x.id === proposalId);
   if(p){
-    await sb.from("notifications").insert({
-      recipient:   p.club_email,
-      type:        "proposal_message",
-      title:       "💬 Message on Your Proposal",
-      message:     `Re: "${p.event_name}" — ${text.substring(0,100)}${text.length > 100 ? "…" : ""}`,
-      proposal_id: proposalId,
-      is_read:     false,
-    });
+    const notifRecipients = [p.club_email];
+    if(p.assigned_to && p.assigned_to !== currentUser.email) notifRecipients.push(p.assigned_to);
+
+    await sb.from("notifications").insert(
+      notifRecipients.map(recipient => ({
+        recipient,
+        type:        "proposal_message",
+        title:       "💬 Message on Proposal",
+        message:     `Re: "${p.event_name}" — ${text.substring(0,100)}${text.length > 100 ? "…" : ""}`,
+        proposal_id: proposalId,
+        is_read:     false,
+      }))
+    );
   }
 
-  showToast("📨 Message sent to club!");
+  showToast("📨 Message sent!");
   document.getElementById("reviewNote").value = "";
   document.getElementById("reviewNoteField").style.display = "none";
   loadMessageThread(proposalId);
-  // Keep status as needs_info
 }
 
 /* ══ REALTIME SUBSCRIPTIONS ══ */
@@ -6144,7 +6160,11 @@ async function loadTeamOverview(){
     const cardId   = `lead-events-${lead.id}`;
 
     const eventsHtml = myEvents.length ? myEvents.map(p => {
-      const ex = EXEC[p.execution_status || "pending"];
+      const execKey2 = p.execution_status && p.execution_status !== "pending"
+        ? p.execution_status
+        : (p.status === "assigned" ? "assigned_ready" : "pending");
+      const EXEC_EXT = { ...EXEC, assigned_ready: { label:"OSE Member Assigned", emoji:"📌", bg:"#f5f3ff", color:"#7c3aed" } };
+      const ex = EXEC_EXT[execKey2] || EXEC["pending"];
       const dt = p.proposed_date ? new Date(p.proposed_date).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "—";
       const isOverdue = !DONE.includes(p.execution_status||"pending") && p.proposed_date && new Date(p.proposed_date) < today;
       return `<div class="lead-event-row">
