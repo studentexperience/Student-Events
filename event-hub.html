@@ -1678,6 +1678,9 @@ function proposalCardHTML(p){
         }).join("")}
       </div>
     </div>` : "";
+
+  return `
+    <div class="proposal-card" id="card-${p.id}">
       <div class="proposal-card-top">
         <div class="proposal-status-bar" style="background:${sc};"></div>
         <div class="proposal-body">
