@@ -1629,8 +1629,9 @@ function proposalCardHTML(p){
        </div>`
     : `<div style="margin-bottom:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9ca3af;">Phase 1 — Admin Review</div>
        <div class="proposal-timeline">${PHASE1_STEPS.map((step, i) => {
-         const done    = phase1Idx > i;
-         const current = phase1Idx === i;
+         // Mark all steps including current as done when in phase2 (everything is approved)
+         const done    = isPhase2 ? phase1Idx >= i : phase1Idx > i;
+         const current = !isPhase2 && phase1Idx === i;
          const cls     = done ? "done" : current ? "current" : "";
          return `<div class="timeline-step ${cls}">
            <div class="timeline-dot">${done ? "✓" : step.emoji}</div>
@@ -1650,8 +1651,33 @@ function proposalCardHTML(p){
          </div>`;
        }).join("")}</div>` : "";
 
-  return `
-    <div class="proposal-card" id="card-${p.id}">
+  // Resources section — only show post-approval if resources were requested
+  const supportReq = p.support_required
+    ? (typeof p.support_required === "string" ? JSON.parse(p.support_required) : p.support_required)
+    : {};
+  const supportConfirmed = p.support_confirmed
+    ? (typeof p.support_confirmed === "string" ? JSON.parse(p.support_confirmed) : p.support_confirmed)
+    : {};
+  const SUPPORT_LABELS_HUB = {
+    camera:"📷 Camera (OSEP)", sound_osep:"🔊 Sound (OSEP)", sound_lh:"🔊 Sound (incl. LH)",
+    projector:"📽️ Projector", laptop:"💻 Laptop", mep:"⚡ MEP",
+    security:"🛡️ Security Guard", housekeeping:"🧹 Housekeeping",
+    refreshments:"🍽️ Refreshments", outside_vendors:"🏪 Outside Vendors", vouchers:"🎟️ Vouchers"
+  };
+  const requestedKeys = Object.keys(supportReq).filter(k => supportReq[k]);
+  const resourcesHtml = (isPhase2 && requestedKeys.length) ? `
+    <div style="padding:10px 16px;border-top:1px solid #f3f4f6;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#9ca3af;margin-bottom:8px;">🛠️ Resource Booking Status</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">
+        ${requestedKeys.map(k => {
+          const label = SUPPORT_LABELS_HUB[k] || k;
+          const st = supportConfirmed[k] === true  ? ["#f0fdf4","#15803d","✅ Confirmed"]
+                   : supportConfirmed[k] === false ? ["#fef2f2","#b91c1c","❌ Not Available"]
+                   : ["#fef9c3","#92400e","⏳ Pending"];
+          return `<span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;background:${st[0]};color:${st[1]};">${label}: ${st[2]}</span>`;
+        }).join("")}
+      </div>
+    </div>` : "";
       <div class="proposal-card-top">
         <div class="proposal-status-bar" style="background:${sc};"></div>
         <div class="proposal-body">
@@ -1670,6 +1696,7 @@ function proposalCardHTML(p){
         ${phase1Html}
         ${phase2Html}
       </div>
+      ${resourcesHtml}
 
       <!-- Inline Message Thread -->
       <div class="card-thread" id="thread-${p.id}">
