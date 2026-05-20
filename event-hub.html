@@ -1084,6 +1084,27 @@
           <label>Event Name *</label>
           <input id="fEventName" type="text" placeholder="e.g. AKU Sports Gala 2026" />
         </div>
+        <div class="field full">
+          <label>Scale of Event *</label>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+            <label id="scale-small" onclick="selectScale('small')" style="border:2px solid #e5e7eb;border-radius:12px;padding:12px;cursor:pointer;transition:all .2s;text-transform:none;letter-spacing:0;font-weight:400;">
+              <input type="radio" name="eventScale" value="small" style="accent-color:#7c3aed;margin-bottom:6px;" />
+              <div style="font-weight:700;font-size:13px;margin-bottom:4px;">🟢 Small Event</div>
+              <div style="font-size:11px;color:#6b7280;line-height:1.5;">No purchases required. Up to 200 participants. Can be held after working days notice.</div>
+            </label>
+            <label id="scale-medium" onclick="selectScale('medium')" style="border:2px solid #e5e7eb;border-radius:12px;padding:12px;cursor:pointer;transition:all .2s;text-transform:none;letter-spacing:0;font-weight:400;">
+              <input type="radio" name="eventScale" value="medium" style="accent-color:#7c3aed;margin-bottom:6px;" />
+              <div style="font-weight:700;font-size:13px;margin-bottom:4px;">🟡 Medium Event</div>
+              <div style="font-size:11px;color:#6b7280;line-height:1.5;">Involves Purchase Department. Up to 200 participants. Minimum 14 days notice required.</div>
+            </label>
+            <label id="scale-mega" onclick="selectScale('mega')" style="border:2px solid #e5e7eb;border-radius:12px;padding:12px;cursor:pointer;transition:all .2s;text-transform:none;letter-spacing:0;font-weight:400;">
+              <input type="radio" name="eventScale" value="mega" style="accent-color:#7c3aed;margin-bottom:6px;" />
+              <div style="font-weight:700;font-size:13px;margin-bottom:4px;">🔴 Mega Event</div>
+              <div style="font-size:11px;color:#6b7280;line-height:1.5;">Involves Purchase Dept, External Participants, Pass Sale, 200+ participants. Minimum 30 days notice required.</div>
+            </label>
+          </div>
+          <div id="scaleDateNote" style="display:none;margin-top:8px;padding:8px 12px;background:#f0f9ff;border-radius:8px;font-size:12px;color:#0369a1;font-weight:600;"></div>
+        </div>
         <div class="field">
           <label>Category *</label>
           <select id="fCategory">
@@ -1209,6 +1230,16 @@
           <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:4px;"><input type="checkbox" name="support" value="refreshments" style="width:14px;height:14px;accent-color:#7c3aed;" /> 🍽️ Refreshments</label>
           <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:4px;"><input type="checkbox" name="support" value="outside_vendors" style="width:14px;height:14px;accent-color:#7c3aed;" /> 🏪 Permission for Outside Vendors</label>
           <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:4px;"><input type="checkbox" name="support" value="vouchers" style="width:14px;height:14px;accent-color:#7c3aed;" /> 🎟️ Vouchers</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:4px;">
+            <input type="checkbox" name="support" value="purchase_items" style="width:14px;height:14px;accent-color:#7c3aed;"
+              onchange="document.getElementById('purchaseItemsBox').style.display=this.checked?'block':'none'" />
+            🛒 Purchase Items
+          </label>
+          <div id="purchaseItemsBox" style="display:none;grid-column:1/-1;margin-top:4px;">
+            <textarea id="purchaseItemsDetail" rows="3" placeholder="List items to purchase e.g. Prizes, Decorations, Stationery…"
+              style="width:100%;padding:8px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:'Poppins',sans-serif;font-size:12px;resize:vertical;outline:none;"
+              onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
+          </div>
         </div>
       </div>
 
@@ -1961,6 +1992,33 @@ function row(label, value){
 }
 
 /* ── Proposal form ── */
+/* ── Event Scale ── */
+function selectScale(scale){
+  ["small","medium","mega"].forEach(s => {
+    const el = document.getElementById(`scale-${s}`);
+    if(!el) return;
+    el.style.border     = s === scale ? "2px solid #7c3aed" : "2px solid #e5e7eb";
+    el.style.background = s === scale ? "#f5f3ff" : "white";
+  });
+  const minDays = { small:1, medium:14, mega:30 };
+  const labels  = {
+    small:  "🟢 Small Event: You can propose a date from tomorrow onwards.",
+    medium: "🟡 Medium Event: Minimum 14 days from today required.",
+    mega:   "🔴 Mega Event: Minimum 30 days from today required."
+  };
+  const today = new Date(); today.setHours(0,0,0,0);
+  const minDate = new Date(today);
+  minDate.setDate(minDate.getDate() + minDays[scale]);
+  const minStr = minDate.toISOString().split("T")[0];
+  const dateInput = document.getElementById("fDate");
+  if(dateInput){
+    dateInput.min = minStr;
+    if(dateInput.value && dateInput.value < minStr) dateInput.value = "";
+  }
+  const note = document.getElementById("scaleDateNote");
+  if(note){ note.style.display = "block"; note.textContent = labels[scale]; }
+}
+
 function showPendingReportWarning(proposal){
   const eventDate = formatDate(proposal.proposed_date);
   const execStatus = proposal.execution_status || "pending";
@@ -1974,14 +2032,21 @@ function openProposalModal(id = null){
   // ── Gate: block if club has overdue events without report ──
   if(!id){
     const today = new Date(); today.setHours(0,0,0,0);
-    const pendingReport = allProposals.find(p => {
-      if(!p.proposed_date) return false;
-      const eventDate = new Date(p.proposed_date); eventDate.setHours(0,0,0,0);
-      return p.status === "assigned"
-        && eventDate <= today
-        && !["report_submitted","cancelled","postponed"].includes(p.execution_status || "");
-    });
-    if(pendingReport){ showPendingReportWarning(pendingReport); return; }
+
+    // Check if this club is exempt (ACCs or Sports category)
+    const clubName     = (currentClub?.club_name || "").toLowerCase();
+    const isExempt     = clubName.includes("acc") || clubName === "aku sports society";
+
+    if(!isExempt){
+      const pendingReport = allProposals.find(p => {
+        if(!p.proposed_date) return false;
+        const eventDate = new Date(p.proposed_date); eventDate.setHours(0,0,0,0);
+        return p.status === "assigned"
+          && eventDate <= today
+          && !["report_submitted","cancelled","postponed"].includes(p.execution_status || "");
+      });
+      if(pendingReport){ showPendingReportWarning(pendingReport); return; }
+    }
   }
 
   // Reset all fields
@@ -2005,6 +2070,15 @@ function openProposalModal(id = null){
   document.getElementById("transportNote").style.display = "none";
   document.querySelectorAll('input[name="audience"]').forEach(cb => cb.checked = false);
   document.querySelectorAll('input[name="support"]').forEach(cb => cb.checked = false);
+  document.querySelectorAll('input[name="eventScale"]').forEach(r => r.checked = false);
+  ["small","medium","mega"].forEach(s => {
+    const el = document.getElementById(`scale-${s}`);
+    if(el){ el.style.border = "2px solid #e5e7eb"; el.style.background = "white"; }
+  });
+  const scaleDateNote = document.getElementById("scaleDateNote");
+  if(scaleDateNote) scaleDateNote.style.display = "none";
+  document.getElementById("purchaseItemsBox") && (document.getElementById("purchaseItemsBox").style.display = "none");
+  document.getElementById("purchaseItemsDetail") && (document.getElementById("purchaseItemsDetail").value = "");
 
   document.getElementById("proposalModalTitle").textContent = id ? "Edit Proposal" : "New Event Proposal";
 
@@ -2225,6 +2299,10 @@ async function submitProposal(){
   const description   = document.getElementById("fDescription").value.trim();
   const attendance    = document.getElementById("fAttendance").value;
   const disclaimer    = document.getElementById("fDisclaimer").checked;
+  const eventType   = document.querySelector('input[name="eventScale"]:checked')?.value || null;
+  const purchaseItems = document.querySelector('input[name="support"][value="purchase_items"]')?.checked
+    ? (document.getElementById("purchaseItemsDetail")?.value.trim() || "")
+    : null;
   const transport     = document.getElementById("transportYes").checked;
 
   // Collect audience checkboxes
@@ -2257,6 +2335,7 @@ async function submitProposal(){
   if(!description)          { showToast("Event description is required", "error"); reset(); return; }
   if(!attendance)           { showToast("Expected attendance is required", "error"); reset(); return; }
   if(selectedAudience.length === 0) { showToast("Please select at least one target audience", "error"); reset(); return; }
+  if(!eventType)            { showToast("Please select the scale of your event", "error"); reset(); return; }
   if(!disclaimer)           { showToast("You must accept the disclaimer to submit", "error"); reset(); return; }
 
   // Handle image upload
@@ -2290,6 +2369,8 @@ async function submitProposal(){
     collaborators:        collaborators || null,
     transport_required:   transport,
     support_required:     supportObj,
+    purchase_items:       purchaseItems || null,
+    event_type:           eventType || null,
     disclaimer_accepted:  disclaimer,
     updated_at:           new Date().toISOString(),
   };
@@ -2331,11 +2412,35 @@ async function loadNotifications(){
     return;
   }
   list.innerHTML = notifs.map(n => `
-    <div class="notif-item ${n.is_read ? "" : "unread"}" onclick="markRead('${n.id}')">
+    <div class="notif-item ${n.is_read ? "" : "unread"}" onclick="goToProposal('${n.id}','${n.proposal_id||""}')">
       <div class="notif-item-title">${esc(n.title)}</div>
       <div class="notif-item-msg">${esc(n.message)}</div>
       <div class="notif-item-time">${timeAgo(n.created_at)}</div>
     </div>`).join("");
+}
+
+async function goToProposal(notifId, proposalId){
+  // Mark as read
+  await sb.from("notifications").update({ is_read: true }).eq("id", notifId);
+  // Close notification panel
+  document.getElementById("notifPanel").classList.remove("open");
+  // Scroll to proposal card if exists
+  if(proposalId){
+    const card = document.getElementById(`card-${proposalId}`);
+    if(card){
+      card.scrollIntoView({ behavior:"smooth", block:"center" });
+      // Flash highlight
+      card.style.transition = "box-shadow .3s";
+      card.style.boxShadow  = "0 0 0 3px #7c3aed";
+      setTimeout(() => card.style.boxShadow = "", 2000);
+      // Auto-open message thread
+      const threadBody = document.getElementById(`thread-body-${proposalId}`);
+      if(threadBody && threadBody.style.display === "none"){
+        toggleCardThread(proposalId);
+      }
+    }
+  }
+  loadNotifications();
 }
 
 async function markRead(id){
