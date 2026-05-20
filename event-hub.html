@@ -676,6 +676,14 @@
       text-transform: uppercase;
       letter-spacing: .4px;
     }
+    /* Checkbox labels should NOT be uppercase or bold */
+    label:has(input[type="checkbox"]),
+    label:has(input[type="radio"]) {
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      font-size: 12px;
+    }
     input, select, textarea {
       padding: 10px 14px;
       border: 2px solid var(--border);
