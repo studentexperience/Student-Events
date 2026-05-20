@@ -2142,6 +2142,14 @@
           <input id="eventVenue" type="text" placeholder="AKU Main Auditorium" />
         </div>
         <div class="field full">
+          <label>Open To (Audience)</label>
+          <input id="eventAudience" type="text" placeholder="e.g. All Students, MBBS Year 1-3" />
+        </div>
+        <div class="field full">
+          <label>Description</label>
+          <textarea id="eventDescription" rows="3" placeholder="Brief description of the event…"></textarea>
+        </div>
+        <div class="field full">
           <label>Cover Image</label>
           <div class="upload-area" onclick="document.getElementById('eventImageFile').click()">
             <input type="file" id="eventImageFile" accept="image/*" onchange="previewEventImage(this)" />
@@ -3786,10 +3794,12 @@ function openEventModal(id = null){
     document.getElementById("eventDate").value      = e.event_date || "";
     document.getElementById("eventTime").value      = e.start_time || "";
     document.getElementById("eventVenue").value     = e.venue || "";
+    document.getElementById("eventAudience").value  = e.audience || "";
+    document.getElementById("eventDescription").value = e.description || "";
     document.getElementById("eventImageUrl").value  = e.cover_image || "";
     if(e.cover_image) document.getElementById("eventImagePreviewWrap").innerHTML = `<img src="${esc(e.cover_image)}" class="upload-preview" />`;
   } else {
-    ["eventName","eventDate","eventTime","eventVenue","eventImageUrl"].forEach(i => document.getElementById(i).value = "");
+    ["eventName","eventDate","eventTime","eventVenue","eventAudience","eventDescription","eventImageUrl"].forEach(i => document.getElementById(i).value = "");
     document.getElementById("eventCategory").value  = "";
     document.getElementById("eventCampus").value    = "";
     document.getElementById("eventOrganiser").value = "";
@@ -3820,6 +3830,8 @@ async function saveEvent(){
     event_date:  document.getElementById("eventDate").value || null,
     start_time:  document.getElementById("eventTime").value || null,
     venue:       document.getElementById("eventVenue").value.trim(),
+    audience:    document.getElementById("eventAudience").value.trim() || null,
+    description: document.getElementById("eventDescription").value.trim() || null,
     cover_image: imageUrl,
     updated_at:  new Date().toISOString(),
   };
@@ -5437,6 +5449,8 @@ async function updateProposalStatus(status){
       venue:       p.proposed_venue,
       campus:      p.campus,
       cover_image: p.cover_image,
+      description: p.description  || null,
+      audience:    p.audience     || null,
     }).select().single();
     if(newEvent){
       await sb.from("event_proposals").update({ published_event_id: newEvent.id }).eq("id", id);
