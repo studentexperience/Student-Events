@@ -1790,16 +1790,27 @@ async function sendCardReply(proposalId){
   });
   if(error){ showToast("Failed: " + error.message, "error"); return; }
 
-  // Notify admins
-  const { data: admins } = await sb.from("admins").select("email").in("role",["admin","super_admin"]);
   const p = allProposals.find(x => x.id === proposalId);
-  if(admins?.length && p){
-    await sb.from("notifications").insert(admins.map(a => ({
-      recipient: a.email, type: "proposal_message",
-      title: "💬 Club Replied on Proposal",
-      message: `Re: "${p.event_name}" from ${currentClub.name} — ${text.substring(0,100)}${text.length>100?"…":""}`,
-      proposal_id: proposalId, is_read: false,
-    })));
+  if(p){
+    // Notify admins + super admins
+    const { data: admins } = await sb.from("admins").select("email").in("role",["admin","super_admin"]);
+    const recipients = (admins || []).map(a => a.email);
+
+    // Also notify assigned event lead
+    if(p.assigned_to && !recipients.includes(p.assigned_to)){
+      recipients.push(p.assigned_to);
+    }
+
+    if(recipients.length){
+      await sb.from("notifications").insert(recipients.map(email => ({
+        recipient:   email,
+        type:        "proposal_message",
+        title:       "💬 Club Replied on Proposal",
+        message:     `Re: "${p.event_name}" from ${currentClub.name} — ${text.substring(0,100)}${text.length>100?"…":""}`,
+        proposal_id: proposalId,
+        is_read:     false,
+      })));
+    }
   }
 
   textarea.value = "";
@@ -1885,15 +1896,20 @@ async function sendHubReply(proposalId){
     message:      text,
   });
   if(error){ showToast("Failed: " + error.message, "error"); return; }
-  const { data: admins } = await sb.from("admins").select("email").in("role",["admin","super_admin"]);
+
   const p = allProposals.find(x => x.id === proposalId);
-  if(admins?.length && p){
-    await sb.from("notifications").insert(admins.map(a => ({
-      recipient: a.email, type: "proposal_message",
-      title: "💬 Club Replied on Proposal",
-      message: `Re: "${p.event_name}" from ${currentClub.name} — ${text.substring(0,100)}${text.length>100?"…":""}`,
-      proposal_id: proposalId, is_read: false,
-    })));
+  if(p){
+    const { data: admins } = await sb.from("admins").select("email").in("role",["admin","super_admin"]);
+    const recipients = (admins || []).map(a => a.email);
+    if(p.assigned_to && !recipients.includes(p.assigned_to)) recipients.push(p.assigned_to);
+    if(recipients.length){
+      await sb.from("notifications").insert(recipients.map(email => ({
+        recipient: email, type: "proposal_message",
+        title: "💬 Club Replied on Proposal",
+        message: `Re: "${p.event_name}" from ${currentClub.name} — ${text.substring(0,100)}${text.length>100?"…":""}`,
+        proposal_id: proposalId, is_read: false,
+      })));
+    }
   }
   document.getElementById("hubReplyText").value = "";
   showToast("✅ Message sent!");
