@@ -2629,6 +2629,7 @@
       <button class="modal-close" onclick="closeModal('resetPasswordModal')">✕</button>
     </div>
     <div class="modal-body">
+      <input type="hidden" id="resetTargetEmailInput" />
       <div id="resetPasswordTarget" style="font-size:13px;color:var(--muted);margin-bottom:20px;padding:10px 14px;background:#f9fafb;border-radius:10px;"></div>
 
       <div class="field">
@@ -2710,6 +2711,7 @@
 /* ══ SUPABASE INIT ══ */
 const SUPABASE_URL = "https://dgzuqvffnbfybngoadse.supabase.co";
 const SUPABASE_KEY = "sb_publishable_77t5gCD7M620CzcMwESN-A_oAuqz6B8";
+const sbAnonKey    = SUPABASE_KEY;
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: {
     storageKey: "aku-admin-session",
@@ -5884,6 +5886,8 @@ let resetTargetEmail = null;
 function openResetPasswordModal(adminId, email){
   resetTargetId    = adminId;
   resetTargetEmail = email;
+  // Store email in hidden input to avoid HTML entity issues
+  document.getElementById("resetTargetEmailInput").value = email;
   document.getElementById("resetPasswordTarget").innerHTML =
     `Resetting password for: <strong>${esc(email)}</strong>`;
   document.getElementById("resetNewPassword").value     = "";
@@ -5896,7 +5900,9 @@ function openResetPasswordModal(adminId, email){
 async function submitResetPassword(){
   const newPw     = document.getElementById("resetNewPassword").value;
   const confirmPw = document.getElementById("resetConfirmPassword").value;
+  const targetEmail = (document.getElementById("resetTargetEmailInput")?.value || "").trim();
 
+  if(!targetEmail)       { showToast("No target user — please close and reopen the modal", "error"); return; }
   if(!newPw)             { showToast("Please enter a new password", "error"); return; }
   if(newPw.length < 8)   { showToast("Password must be at least 8 characters", "error"); return; }
   if(newPw !== confirmPw){ showToast("Passwords do not match", "error"); return; }
@@ -5905,26 +5911,32 @@ async function submitResetPassword(){
   btn.disabled = true; btn.textContent = "Resetting…";
   const reset = () => { btn.disabled = false; btn.textContent = "🔑 Reset Password"; };
 
-  // Route through Edge Function which has service role key
-  const res = await fetch("https://dgzuqvffnbfybngoadse.supabase.co/functions/v1/bright-processor", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      type:         "reset_password",
-      user_email:   resetTargetEmail,
-      new_password: newPw,
-    })
-  });
+  const payload = { type: "reset_password", user_email: targetEmail, new_password: newPw };
+  console.log("[PasswordReset] Sending payload:", { type: payload.type, user_email: payload.user_email, new_password: "***" });
 
-  const result = await res.json();
-  if(!res.ok || result.error){
-    showToast("Failed: " + (result.error || "Unknown error"), "error");
-    reset(); return;
+  try {
+    const res = await fetch("https://dgzuqvffnbfybngoadse.supabase.co/functions/v1/bright-processor", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${sbAnonKey}` },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await res.json();
+    console.log("[PasswordReset] Response:", res.status, result);
+
+    if(!res.ok || result.error){
+      showToast("Failed: " + (result.error || `HTTP ${res.status}`), "error");
+      reset(); return;
+    }
+
+    showToast(`✅ Password reset for ${targetEmail}. They must change it on next login.`);
+    reset();
+    closeModal("resetPasswordModal");
+  } catch(err){
+    console.error("[PasswordReset] Fetch error:", err);
+    showToast("Network error: " + err.message, "error");
+    reset();
   }
-
-  showToast(`✅ Password reset for ${resetTargetEmail}. They must change it on next login.`);
-  reset();
-  closeModal("resetPasswordModal");
 }
 
 // Password strength indicator for reset modal
