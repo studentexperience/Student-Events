@@ -1122,9 +1122,13 @@
         </div>
         <div class="field">
           <label>Collaborating Clubs</label>
-          <div id="fCollaborators" style="border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 12px;max-height:140px;overflow-y:auto;background:white;">
-            <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Select clubs (optional):</div>
-            <div id="collaboratorList" style="display:flex;flex-direction:column;gap:4px;"></div>
+          <div style="border:1.5px solid #e5e7eb;border-radius:10px;overflow:hidden;background:white;">
+            <div style="padding:8px 10px;border-bottom:1px solid #f3f4f6;background:#fafafa;">
+              <input type="text" id="collaboratorSearch" placeholder="🔍 Search clubs…"
+                oninput="filterCollaborators(this.value)"
+                style="width:100%;border:none;background:transparent;font-family:'Poppins',sans-serif;font-size:12px;outline:none;color:var(--ink);" />
+            </div>
+            <div id="collaboratorList" style="max-height:130px;overflow-y:auto;padding:6px 10px;display:flex;flex-direction:column;gap:3px;"></div>
           </div>
         </div>
       </div>
@@ -1214,20 +1218,20 @@
 
       <!-- Section 8: Disclaimer -->
       <div class="form-section-title">📋 Disclaimer *</div>
-      <div style="border:1.5px solid #e5e7eb;border-radius:10px;padding:14px;margin-bottom:16px;background:#fafafa;">
-        <p style="font-size:12px;color:#374151;line-height:1.8;margin-bottom:12px;">
+      <div style="border:1.5px solid #e9d5ff;border-radius:12px;overflow:hidden;margin-bottom:4px;">
+        <div style="background:#f5f3ff;padding:14px 16px;font-size:12px;color:#4c1d95;line-height:1.8;border-bottom:1px solid #e9d5ff;">
           We (Club/Society/Forum/Committee Convener and Co-Convener) agree and accept that we will inspect and confirm the equipment is in good condition upon receipt, handle it responsibly and use it only for approved society or committee events, return it with all accessories in the same condition as received, report any damages or malfunctions immediately, understand that misuse or unauthorized use may result in disciplinary action, and take full financial responsibility for any damage, loss, or theft as determined by the Office of Student Experience.
-        </p>
-        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
-          <input type="checkbox" id="fDisclaimer" style="width:16px;height:16px;margin-top:2px;accent-color:#7c3aed;flex-shrink:0;" />
-          <span style="font-size:13px;font-weight:600;color:#374151;">I agree to the above terms and conditions *</span>
+        </div>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px 16px;background:white;">
+          <input type="checkbox" id="fDisclaimer" style="width:18px;height:18px;accent-color:#7c3aed;flex-shrink:0;cursor:pointer;" />
+          <span style="font-size:13px;font-weight:600;color:#374151;">I agree to the above terms and conditions</span>
         </label>
       </div>
 
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('proposalModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="submitProposal()">Submit Proposal ✦</button>
+    <div class="modal-footer" style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;gap:12px;border-radius:0 0 20px 20px;">
+      <button class="btn btn-secondary" onclick="closeModal('proposalModal')" style="min-width:100px;">Cancel</button>
+      <button class="btn btn-primary" onclick="submitProposal()" style="min-width:180px;font-size:14px;padding:11px 24px;">Submit Proposal ✦</button>
     </div>
   </div>
 </div>
@@ -2004,18 +2008,48 @@ function openProposalModal(id = null){
   document.getElementById("proposalModal").classList.add("open");
 }
 
+let allCollaboratorClubs = [];
+
 async function loadCollaboratorClubs(selectedStr = ""){
   const list = document.getElementById("collaboratorList");
   if(!list) return;
   const selected = selectedStr ? selectedStr.split(",").map(s => s.trim()) : [];
   const { data } = await sb.from("clubs").select("name").order("name");
-  if(!data?.length){ list.innerHTML = '<div style="font-size:12px;color:var(--muted);">No other clubs found.</div>'; return; }
-  list.innerHTML = data
+  allCollaboratorClubs = (data || [])
     .filter(c => c.name !== currentClub?.club_name)
-    .map(c => `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:2px;">
-      <input type="checkbox" name="collaborator" value="${esc(c.name)}" ${selected.includes(c.name)?'checked':''} style="width:13px;height:13px;accent-color:#7c3aed;" />
+    .map(c => ({ name: c.name, checked: selected.includes(c.name) }));
+  renderCollaboratorList(allCollaboratorClubs);
+}
+
+function filterCollaborators(query){
+  const q = query.toLowerCase();
+  const filtered = q
+    ? allCollaboratorClubs.filter(c => c.name.toLowerCase().includes(q))
+    : allCollaboratorClubs;
+  renderCollaboratorList(filtered);
+}
+
+function renderCollaboratorList(clubs){
+  const list = document.getElementById("collaboratorList");
+  if(!list) return;
+  if(!clubs.length){
+    list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:4px 0;">No clubs found.</div>';
+    return;
+  }
+  list.innerHTML = clubs.map(c =>
+    `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px 0;">
+      <input type="checkbox" name="collaborator" value="${esc(c.name)}"
+        ${c.checked ? 'checked' : ''}
+        style="width:13px;height:13px;accent-color:#7c3aed;"
+        onchange="updateCollaboratorState('${esc(c.name)}', this.checked)" />
       ${esc(c.name)}
-    </label>`).join("");
+    </label>`
+  ).join("");
+}
+
+function updateCollaboratorState(name, checked){
+  const club = allCollaboratorClubs.find(c => c.name === name);
+  if(club) club.checked = checked;
 }
 
 function previewProposalImage(input){
@@ -2050,8 +2084,8 @@ async function submitProposal(){
   // Collect support checkboxes
   const supportObj = {};
   document.querySelectorAll('input[name="support"]:checked').forEach(cb => { supportObj[cb.value] = true; });
-  // Collect collaborators
-  const collaborators = [...document.querySelectorAll('input[name="collaborator"]:checked')].map(cb => cb.value).join(", ");
+  // Collect collaborators from state array (handles filtered view correctly)
+  const collaborators = allCollaboratorClubs.filter(c => c.checked).map(c => c.name).join(", ");
 
   const reset = () => { submitBtn.disabled = false; submitBtn.textContent = "Submit Proposal ✦"; };
 
