@@ -2534,6 +2534,15 @@
         <button class="btn btn-primary" id="sendNoteBtn" onclick="sendProposalMessage()" style="margin-top:8px;width:100%;">📨 Send Message to Club</button>
       </div>
 
+      <!-- Resource Booking Section — only shown post-approval -->
+      <div id="resourceBookingSection" style="display:none;margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px;">🛠️ Resource Booking</div>
+        <div id="resourceBookingItems" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;"></div>
+        <button class="btn btn-primary" onclick="sendResourceUpdate()" style="width:100%;background:#0891b2;border-color:#0891b2;">
+          📨 Send Resource Update to Club
+        </button>
+      </div>
+
       <!-- Message Thread -->
       <div id="messageThreadSection" style="margin-bottom:16px;">
         <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px;">💬 Message Thread</div>
@@ -4652,6 +4661,46 @@ function switchPipelineTab(tab){
   campusBtn.style.borderColor= isMyTab ? "var(--border)" : "#d97706";
 }
 
+function buildPipelineResources(p){
+  const supportReq = p.support_required
+    ? (typeof p.support_required === "string" ? JSON.parse(p.support_required) : p.support_required)
+    : {};
+  const requestedItems = Object.keys(supportReq).filter(k => supportReq[k]);
+  if(!requestedItems.length) return "";
+
+  const confirmed = p.support_confirmed
+    ? (typeof p.support_confirmed === "string" ? JSON.parse(p.support_confirmed) : p.support_confirmed)
+    : {};
+
+  const chips = requestedItems.map(k => {
+    const label = SUPPORT_LABELS[k] || k;
+    const st = confirmed[k] === true  ? ["#f0fdf4","#15803d","✅"]
+             : confirmed[k] === false ? ["#fef2f2","#b91c1c","❌"]
+             : ["#f9fafb","#6b7280","⏳"];
+    return `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;background:${st[0]};color:${st[1]};white-space:nowrap;">${st[2]} ${label}</span>`;
+  }).join("");
+
+  const allDone = requestedItems.every(k => confirmed[k] !== undefined);
+  return `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #e5e7eb;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:5px;">🛠️ Resources Requested</div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">${chips}</div>
+    <button onclick="openResourceBookingPanel('${p.id}')"
+      style="width:100%;padding:7px;font-size:11px;font-weight:700;border-radius:8px;cursor:pointer;
+      background:#f0f9ff;color:#0369a1;border:1.5px solid #bae6fd;font-family:'Poppins',sans-serif;">
+      ${allDone ? "✅ View / Update Resources" : "🛠️ Book Resources"}
+    </button>
+  </div>`;
+}
+
+async function openResourceBookingPanel(proposalId){
+  await loadProposals();
+  openReviewModal(proposalId);
+  setTimeout(() => {
+    const rs = document.getElementById("resourceBookingSection");
+    if(rs) rs.scrollIntoView({ behavior:"smooth", block:"center" });
+  }, 300);
+}
+
 function pipelineCard(p, today, isMine = true){
   const execSC   = EXECUTION_STATUS[p.execution_status || "pending"];
   const dateStr  = p.proposed_date ? new Date(p.proposed_date).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "—";
@@ -4729,6 +4778,7 @@ function pipelineCard(p, today, isMine = true){
         </div>
         ${p.club_email ? `<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">📧 <a href="mailto:${esc(p.club_email)}" style="color:var(--accent);">${esc(p.club_email)}</a></div>` : ""}
         ${p.admin_note ? `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:6px 10px;margin-bottom:8px;font-size:11px;color:#92400e;"><strong>Admin Note:</strong> ${esc(p.admin_note)}</div>` : ""}
+        ${buildPipelineResources(p)}
         ${execBtnsHtml}
         ${notesHtml}
       </div>
@@ -4908,28 +4958,160 @@ function openReviewModal(id){
       </option>`).join("");
   }
 
-  // Build details HTML
+  // Build details HTML — include all new form fields
   const sc = PROPOSAL_STATUS_CONFIG[p.status] || { label:p.status, color:"#555", bg:"#f3f4f6" };
+  const postApproval = ["approved","assigned"].includes(p.status);
+
+  // Format support requested
+  const supportLabels = {
+    camera:"📷 Camera (OSEP)", sound_osep:"🔊 Sound (OSEP)", sound_lh:"🔊 Sound (incl. LH)",
+    projector:"📽️ Projector", laptop:"💻 Laptop", mep:"⚡ MEP", security:"🛡️ Security Guard",
+    housekeeping:"🧹 Housekeeping", refreshments:"🍽️ Refreshments",
+    outside_vendors:"🏪 Outside Vendors", vouchers:"🎟️ Vouchers"
+  };
+  const supportReq = p.support_required
+    ? (typeof p.support_required === "string" ? JSON.parse(p.support_required) : p.support_required)
+    : {};
+  const requestedItems = Object.keys(supportReq).filter(k => supportReq[k]);
+  const supportHtml = requestedItems.length
+    ? requestedItems.map(k => `<span style="font-size:11px;padding:3px 9px;background:#f0fdf4;color:#15803d;border-radius:999px;font-weight:600;">${supportLabels[k]||k}</span>`).join(" ")
+    : "None";
+
   document.getElementById("reviewProposalDetails").innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;margin-bottom:4px;">
       ${detailRow("Club", esc(p.club_name))}
       ${detailRow("Email", esc(p.club_email))}
+      ${p.representative_name ? detailRow("Representative", esc(p.representative_name)) : ""}
+      ${p.designation ? detailRow("Designation", esc(p.designation)) : ""}
       ${detailRow("Campus", esc(p.campus || "—"))}
       ${detailRow("Category", esc(p.category || "—"))}
       ${detailRow("Proposed Date", p.proposed_date ? new Date(p.proposed_date).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"}) : "—")}
-      ${detailRow("Time", esc(p.proposed_time || "—"))}
+      ${detailRow("Start Time", esc(p.proposed_time || "—"))}
+      ${p.event_end_time ? detailRow("End Time", esc(p.event_end_time)) : ""}
       ${detailRow("Venue", esc(p.proposed_venue || "—"))}
-      ${detailRow("Audience", esc(p.audience || "—"))}
       ${detailRow("Expected Attendance", esc(p.expected_attendance || "—"))}
       ${detailRow("Status", `<span style="font-weight:700;color:${sc.color};">${sc.label}</span>`)}
       ${p.assigned_to ? detailRow("Assigned To", esc(p.assigned_to)) : ""}
+      ${p.audience ? `<div style="grid-column:1/-1;">${detailRow("Target Audience", esc(p.audience))}</div>` : ""}
+      ${p.collaborators ? `<div style="grid-column:1/-1;">${detailRow("Collaborators", esc(p.collaborators))}</div>` : ""}
+      ${p.transport_required ? `<div style="grid-column:1/-1;">${detailRow("Transport", '<span style="color:#c2410c;font-weight:700;">Yes — Transport Request Form required</span>')}</div>` : ""}
+      <div style="grid-column:1/-1;">${detailRow("Support Requested", supportHtml)}</div>
       ${p.description ? `<div style="grid-column:1/-1;">${detailRow("Description", `<div style="line-height:1.7;">${esc(p.description)}</div>`)}</div>` : ""}
       ${p.admin_note  ? `<div style="grid-column:1/-1;background:#fff7ed;border-radius:10px;padding:10px 14px;border:1px solid #fed7aa;"><strong>Previous Note:</strong> ${esc(p.admin_note)}</div>` : ""}
     </div>
     ${p.cover_image ? `<img src="${esc(p.cover_image)}" style="width:100%;max-height:180px;object-fit:cover;border-radius:10px;margin-top:6px;" />` : ""}
   `;
+
+  // Resource booking — only show post-approval and only if resources were requested
+  const resourceSection = document.getElementById("resourceBookingSection");
+  if(postApproval && requestedItems.length > 0){
+    resourceSection.style.display = "block";
+    const confirmed = p.support_confirmed
+      ? (typeof p.support_confirmed === "string" ? JSON.parse(p.support_confirmed) : p.support_confirmed)
+      : {};
+    document.getElementById("resourceBookingItems").innerHTML = requestedItems.map(k => {
+      const status = confirmed[k] === true ? "confirmed" : confirmed[k] === false ? "unavailable" : "pending";
+      const colors = { confirmed:"#f0fdf4:#15803d:#bbf7d0", unavailable:"#fef2f2:#b91c1c:#fecaca", pending:"#f9fafb:#374151:#e5e7eb" };
+      const [bg,col,border] = colors[status].split(":");
+      const label = supportLabels[k] || k;
+      return `<div style="border:1.5px solid ${border};border-radius:10px;padding:10px 12px;background:${bg};">
+        <div style="font-size:12px;font-weight:600;color:${col};margin-bottom:8px;">${label}</div>
+        <div style="display:flex;gap:6px;">
+          <button onclick="setResourceStatus('${k}','${p.id}',true)"
+            style="flex:1;padding:5px 0;font-size:11px;font-weight:700;border-radius:7px;cursor:pointer;border:1.5px solid ${confirmed[k]===true?'#15803d':'#e5e7eb'};background:${confirmed[k]===true?'#15803d':'white'};color:${confirmed[k]===true?'white':'#374151'};">
+            ✅ Confirmed
+          </button>
+          <button onclick="setResourceStatus('${k}','${p.id}',false)"
+            style="flex:1;padding:5px 0;font-size:11px;font-weight:700;border-radius:7px;cursor:pointer;border:1.5px solid ${confirmed[k]===false?'#b91c1c':'#e5e7eb'};background:${confirmed[k]===false?'#b91c1c':'white'};color:${confirmed[k]===false?'white':'#374151'};">
+            ❌ Unavailable
+          </button>
+        </div>
+      </div>`;
+    }).join("");
+  } else {
+    resourceSection.style.display = "none";
+  }
+
   document.getElementById("reviewProposalModal").classList.add("open");
   loadMessageThread(id);
+}
+
+/* ── Resource Booking ── */
+const SUPPORT_LABELS = {
+  camera:"📷 Camera (OSEP)", sound_osep:"🔊 Sound System (OSEP)",
+  sound_lh:"🔊 Sound System (incl. LH)", projector:"📽️ Projector",
+  laptop:"💻 Laptop", mep:"⚡ MEP (Electrician on Call)",
+  security:"🛡️ Security Guard", housekeeping:"🧹 Housekeeping",
+  refreshments:"🍽️ Refreshments", outside_vendors:"🏪 Outside Vendors",
+  vouchers:"🎟️ Vouchers"
+};
+
+async function setResourceStatus(key, proposalId, isConfirmed){
+  const p = allAdminProposals.find(x => x.id === proposalId);
+  if(!p) return;
+
+  const current = p.support_confirmed
+    ? (typeof p.support_confirmed === "string" ? JSON.parse(p.support_confirmed) : { ...p.support_confirmed })
+    : {};
+
+  // Toggle off if clicking the same state again
+  if(current[key] === isConfirmed){ delete current[key]; }
+  else { current[key] = isConfirmed; }
+
+  const { error } = await sb.from("event_proposals")
+    .update({ support_confirmed: current, updated_at: new Date().toISOString() })
+    .eq("id", proposalId);
+
+  if(error){ showToast("Failed: " + error.message, "error"); return; }
+
+  // Update local cache and re-open to refresh UI
+  p.support_confirmed = current;
+  openReviewModal(proposalId);
+}
+
+async function sendResourceUpdate(){
+  const proposalId = document.getElementById("reviewProposalId").value;
+  const p          = allAdminProposals.find(x => x.id === proposalId);
+  if(!p) return;
+
+  const supportReq  = p.support_required
+    ? (typeof p.support_required === "string" ? JSON.parse(p.support_required) : p.support_required)
+    : {};
+  const confirmed   = p.support_confirmed
+    ? (typeof p.support_confirmed === "string" ? JSON.parse(p.support_confirmed) : p.support_confirmed)
+    : {};
+  const requestedItems = Object.keys(supportReq).filter(k => supportReq[k]);
+
+  if(!requestedItems.length){ showToast("No resources were requested.", "error"); return; }
+
+  const lines = requestedItems.map(k => {
+    const label = SUPPORT_LABELS[k] || k;
+    if(confirmed[k] === true)  return `✅ ${label}: Confirmed`;
+    if(confirmed[k] === false) return `❌ ${label}: Not Available`;
+    return `⏳ ${label}: Pending confirmation`;
+  });
+
+  const message = `Resource update for "${p.event_name}":\n\n${lines.join("\n")}\n\nFor any queries, please reach out through this message thread.`;
+
+  const { error } = await sb.from("proposal_messages").insert({
+    proposal_id:  proposalId,
+    sender_email: currentUser.email,
+    sender_type:  "admin",
+    message,
+  });
+  if(error){ showToast("Failed: " + error.message, "error"); return; }
+
+  await sb.from("notifications").insert({
+    recipient:   p.club_email,
+    type:        "proposal_message",
+    title:       "🛠️ Resource Update for Your Event",
+    message:     `${lines.filter(l=>l.startsWith("✅")).length} confirmed, ${lines.filter(l=>l.startsWith("❌")).length} unavailable`,
+    proposal_id: proposalId,
+    is_read:     false,
+  });
+
+  showToast("📨 Resource update sent to club!");
+  loadMessageThread(proposalId);
 }
 
 function detailRow(label, value){
