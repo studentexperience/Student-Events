@@ -5911,7 +5911,7 @@ async function submitResetPassword(){
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       type:         "reset_password",
-      user_id:      resetTargetId,
+      user_email:   resetTargetEmail,
       new_password: newPw,
     })
   });
