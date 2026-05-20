@@ -1590,7 +1590,8 @@ document.addEventListener("DOMContentLoaded", () => {
       // Meta lines
       const dateLine  = e.date  ? `<div class="meta"><span class="meta-icon">📅</span>${escapeHtml(formatDate(e.date))}</div>` : "";
       const timeLine  = e.time  ? `<div class="meta"><span class="meta-icon">⏰</span>${escapeHtml(e.time)}</div>` : "";
-      const venueLine = e.venue ? `<div class="meta"><span class="meta-icon">📍</span>${escapeHtml(e.venue)}</div>` : "";
+      const venueLine   = `<div class="meta"><span class="meta-icon">📍</span>${escapeHtml(e.venue || "Venue TBC")}</div>`;
+      const audienceLine = e.audience ? `<div class="meta"><span class="meta-icon">👥</span>${escapeHtml(e.audience)}</div>` : "";
       const campusTag = e.campus ? `<div class="campus-tag ${campusClass(e.campus)}">🏫 ${escapeHtml(e.campus)}</div>` : "";
       const bannerHtml = e.organiser
         ? `<a class="organizer-banner" href="clubs.html?club=${encodeURIComponent(e.organiser)}" style="background:${bannerColor};" title="View ${escapeHtml(e.organiser)} on Clubs page">🎭 ${escapeHtml(e.organiser)}</a>`
@@ -1627,6 +1628,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ${dateLine}
             ${timeLine}
             ${venueLine}
+            ${audienceLine}
             <div class="chip">${escapeHtml(e.category)}</div>
             ${campusTag}
             ${interestedHtml}
@@ -1847,6 +1849,7 @@ document.addEventListener("DOMContentLoaded", () => {
       name:      (r.name       || "").trim(),
       category:  (r.category   || "").trim(),
       venue:     (r.venue      || "").trim(),
+      audience:  (r.audience   || "").trim(),
       time:      (r.start_time || "").trim(),
       campus:    (r.campus     || "").trim(),
       date:      r.event_date ? (() => { const d = new Date(r.event_date); d.setHours(0,0,0,0); return d; })() : null,
