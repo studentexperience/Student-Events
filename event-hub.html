@@ -2033,17 +2033,21 @@ function openProposalModal(id = null){
   if(!id){
     const today = new Date(); today.setHours(0,0,0,0);
 
-    // Check if this club is exempt (ACCs or Sports category)
-    const clubName     = (currentClub?.club_name || "").toLowerCase();
-    const isExempt     = clubName.includes("acc") || clubName === "aku sports society";
+    // ACCs (name contains "acc") and AKU Sports Society are exempt
+    const clubName = (currentClub?.club_name || "").toLowerCase();
+    const isExempt = clubName.includes("acc") || clubName === "aku sports society";
 
     if(!isExempt){
       const pendingReport = allProposals.find(p => {
         if(!p.proposed_date) return false;
         const eventDate = new Date(p.proposed_date); eventDate.setHours(0,0,0,0);
-        return p.status === "assigned"
-          && eventDate <= today
-          && !["report_submitted","cancelled","postponed"].includes(p.execution_status || "");
+        if(eventDate > today) return false; // future event — fine
+
+        // Closed / terminal states — allow new proposals
+        const isClosed = p.execution_status === "report_submitted"
+          || ["declined","cancelled","postponed"].includes(p.status);
+
+        return !isClosed; // date passed + not closed = block
       });
       if(pendingReport){ showPendingReportWarning(pendingReport); return; }
     }
