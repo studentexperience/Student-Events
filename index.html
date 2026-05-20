@@ -2181,7 +2181,8 @@ document.addEventListener("DOMContentLoaded", () => {
           ${evts.map((e, i) => {
             const color = colorForEvent(e, i);
             const tm    = e.time  ? `<span>⏰ ${escapeHtml(e.time)}</span>`  : "";
-            const vn    = e.venue ? `<span>📍 ${escapeHtml(e.venue)}</span>` : "";
+            const vn    = `<span>📍 ${escapeHtml(e.venue || "Venue TBC")}</span>`;
+            const au    = e.audience ? `<span>👥 ${escapeHtml(e.audience)}</span>` : "";
             const og    = e.organiser ? `<span>🎭 ${escapeHtml(e.organiser)}</span>` : "";
             const cm    = e.campus ? `<span>🏫 ${escapeHtml(e.campus)}</span>` : "";
             const clubHref = e.organiser ? `href="clubs.html?club=${encodeURIComponent(e.organiser)}"` : "";
@@ -2191,7 +2192,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="cal-detail-color" style="background:${color};"></div>
                 <div class="cal-detail-body">
                   <div class="cal-detail-name">${e.organiser ? `<a ${clubHref} style="color:inherit;text-decoration:none;" onclick="event.stopPropagation()">${escapeHtml(e.name)}</a>` : escapeHtml(e.name)}</div>
-                  <div class="cal-detail-meta">${tm}${vn}${og}${cm}</div>
+                  <div class="cal-detail-meta">${tm}${vn}${au}${og}${cm}</div>
                   <div class="cal-detail-actions">${icsBtn}</div>
                 </div>
               </div>`;
@@ -2229,7 +2230,8 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("calMobileEvents").innerHTML = evts.map((e, i) => {
       const color  = colorForEvent(e, i);
       const tm     = e.time  ? `<span>⏰ ${escapeHtml(e.time)}</span>`  : "";
-      const vn     = e.venue ? `<span>📍 ${escapeHtml(e.venue)}</span>` : "";
+      const vn     = `<span>📍 ${escapeHtml(e.venue || "Venue TBC")}</span>`;
+      const au     = e.audience ? `<span>👥 ${escapeHtml(e.audience)}</span>` : "";
       const og     = e.organiser ? `<span>🎭 ${escapeHtml(e.organiser)}</span>` : "";
       const icsBtn = e.id ? `<button class="add-to-cal-btn" onclick="downloadICS('${e.id}')">📆 Add to Calendar</button>` : "";
       const clubLink = e.organiser
@@ -2240,7 +2242,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="cal-mobile-color" style="background:${color};"></div>
           <div style="flex:1;min-width:0;">
             <div class="cal-mobile-name">${escapeHtml(e.name)}</div>
-            <div class="cal-mobile-meta">${tm}${vn}${og}</div>
+            <div class="cal-mobile-meta">${tm}${vn}${au}${og}</div>
             <div class="cal-mobile-actions">${icsBtn}${clubLink}</div>
           </div>
         </div>`;
