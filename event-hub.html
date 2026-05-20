@@ -651,6 +651,17 @@
     .modal-close:hover { background: var(--accent); color: white; }
     .modal-body { padding: 24px 28px; }
 
+    .form-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: #7c3aed;
+      margin: 20px 0 8px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #f5f3ff;
+    }
+
     .form-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -1026,13 +1037,40 @@
 </div>
 
 <div class="modal-backdrop" id="proposalModal">
-  <div class="modal">
+  <div class="modal" style="max-width:680px;">
     <div class="modal-header">
       <div class="modal-title" id="proposalModalTitle">New Event Proposal</div>
       <button class="modal-close" onclick="closeModal('proposalModal')">✕</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="proposalId" />
+
+      <!-- Section 1: Club & Representative -->
+      <div class="form-section-title">👤 Club & Representative</div>
+      <div class="form-grid">
+        <div class="field full">
+          <label>Club Name *</label>
+          <input id="fClubName" type="text" readonly style="background:#f9fafb;cursor:not-allowed;" />
+        </div>
+        <div class="field">
+          <label>Representative Name *</label>
+          <input id="fRepName" type="text" placeholder="Your full name" />
+        </div>
+        <div class="field">
+          <label>Designation *</label>
+          <select id="fDesignation">
+            <option value="">Select…</option>
+            <option>Convenor</option>
+            <option>Co-Convenor</option>
+            <option>General Secretary</option>
+            <option>Treasurer</option>
+            <option>Core Team Member</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Section 2: Event Details -->
+      <div class="form-section-title">📅 Event Details</div>
       <div class="form-grid">
         <div class="field full">
           <label>Event Name *</label>
@@ -1067,27 +1105,99 @@
           <input id="fDate" type="date" />
         </div>
         <div class="field">
-          <label>Proposed Time</label>
+          <label>Event Start Time *</label>
           <input id="fTime" type="time" />
         </div>
+        <div class="field">
+          <label>Event End Time *</label>
+          <input id="fEndTime" type="time" />
+        </div>
         <div class="field full">
-          <label>Proposed Venue</label>
+          <label>Proposed Venue *</label>
           <input id="fVenue" type="text" placeholder="e.g. Medical College Auditorium" />
         </div>
         <div class="field">
-          <label>Expected Audience</label>
-          <input id="fAudience" type="text" placeholder="e.g. All students, MBBS Year 2" />
-        </div>
-        <div class="field">
-          <label>Expected Attendance</label>
+          <label>Expected Attendance *</label>
           <input id="fAttendance" type="number" placeholder="e.g. 150" min="1" />
         </div>
-        <div class="field full">
-          <label>Event Description</label>
-          <textarea id="fDescription" placeholder="Briefly describe the event, its purpose and any special requirements…"></textarea>
+        <div class="field">
+          <label>Collaborating Clubs</label>
+          <div id="fCollaborators" style="border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 12px;max-height:140px;overflow-y:auto;background:white;">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Select clubs (optional):</div>
+            <div id="collaboratorList" style="display:flex;flex-direction:column;gap:4px;"></div>
+          </div>
         </div>
+      </div>
+
+      <!-- Section 3: Target Audience -->
+      <div class="form-section-title">👥 Target Audience *</div>
+      <div style="border:1.5px solid #e5e7eb;border-radius:10px;padding:12px 14px;margin-bottom:16px;background:white;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;" id="audienceCheckboxes">
+          ${['All Students','ASDH','BScN','Post RN','MBBS','BS-FAS','B. Ed','MScN','MPhil Education','MHPE','MHPM','MS Epi and Bio','MBE','MSPH','MPhil BBS','MSHM','PhD Health Sciences','PhD Nursing','PhD Education'].map(a =>
+            `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px;">
+              <input type="checkbox" name="audience" value="${a}" style="width:14px;height:14px;accent-color:#7c3aed;" />
+              ${a}
+            </label>`
+          ).join('')}
+        </div>
+      </div>
+
+      <!-- Section 4: Description -->
+      <div class="form-section-title">📝 Event Description</div>
+      <div class="form-grid">
         <div class="field full">
-          <label>Cover Image <span style="font-weight:400;text-transform:none;color:var(--muted);">(optional)</span></label>
+          <label>Description *</label>
+          <textarea id="fDescription" rows="4" placeholder="Describe the event, its purpose, objectives and any special details…"></textarea>
+        </div>
+      </div>
+
+      <!-- Section 5: Transport -->
+      <div class="form-section-title">🚌 Transport</div>
+      <div style="border:1.5px solid #e5e7eb;border-radius:10px;padding:12px 14px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+            <input type="radio" name="transport" value="yes" id="transportYes" style="accent-color:#7c3aed;" onchange="document.getElementById('transportNote').style.display='block'" />
+            Yes
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+            <input type="radio" name="transport" value="no" id="transportNo" checked style="accent-color:#7c3aed;" onchange="document.getElementById('transportNote').style.display='none'" />
+            No
+          </label>
+        </div>
+        <div id="transportNote" style="display:none;font-size:12px;color:#7c3aed;background:#f5f3ff;border-radius:8px;padding:8px 10px;">
+          📋 Please also fill out the <strong>Transport Request Form</strong> available in the <a href="forms.html" target="_blank" style="color:#7c3aed;font-weight:700;">Forms section</a>.
+        </div>
+      </div>
+
+      <!-- Section 6: Support Required -->
+      <div class="form-section-title">🛠️ Support Required</div>
+      <div style="border:1.5px solid #e5e7eb;border-radius:10px;padding:12px 14px;margin-bottom:16px;background:white;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;">
+          ${[
+            ['camera','📷 Camera (OSEP)'],
+            ['sound_osep','🔊 Sound System (OSEP)'],
+            ['sound_lh','🔊 Sound System (incl. LH)'],
+            ['projector','📽️ Projector'],
+            ['laptop','💻 Laptop'],
+            ['mep','⚡ MEP (Electrician on Call)'],
+            ['security','🛡️ Security Guard'],
+            ['housekeeping','🧹 Housekeeping'],
+            ['refreshments','🍽️ Refreshments'],
+            ['outside_vendors','🏪 Permission for Outside Vendors'],
+            ['vouchers','🎟️ Vouchers'],
+          ].map(([val, label]) =>
+            `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:4px;">
+              <input type="checkbox" name="support" value="${val}" style="width:14px;height:14px;accent-color:#7c3aed;" />
+              ${label}
+            </label>`
+          ).join('')}
+        </div>
+      </div>
+
+      <!-- Section 7: Cover Image -->
+      <div class="form-section-title">🖼️ Cover Image <span style="font-weight:400;font-size:12px;color:var(--muted);">(optional)</span></div>
+      <div class="form-grid">
+        <div class="field full">
           <div class="upload-area" onclick="document.getElementById('fImageFile').click()">
             <input type="file" id="fImageFile" accept="image/*" onchange="previewProposalImage(this)" />
             <div id="fImagePreview">📸 Click to upload cover image</div>
@@ -1095,10 +1205,23 @@
           <input type="text" id="fImageUrl" placeholder="Or paste image URL" style="margin-top:8px;" />
         </div>
       </div>
-      <div class="form-actions">
-        <button class="btn btn-secondary" onclick="closeModal('proposalModal')">Cancel</button>
-        <button class="btn btn-primary" onclick="submitProposal()">Submit Proposal ✦</button>
+
+      <!-- Section 8: Disclaimer -->
+      <div class="form-section-title">📋 Disclaimer *</div>
+      <div style="border:1.5px solid #e5e7eb;border-radius:10px;padding:14px;margin-bottom:16px;background:#fafafa;">
+        <p style="font-size:12px;color:#374151;line-height:1.8;margin-bottom:12px;">
+          We (Club/Society/Forum/Committee Convener and Co-Convener) agree and accept that we will inspect and confirm the equipment is in good condition upon receipt, handle it responsibly and use it only for approved society or committee events, return it with all accessories in the same condition as received, report any damages or malfunctions immediately, understand that misuse or unauthorized use may result in disciplinary action, and take full financial responsibility for any damage, loss, or theft as determined by the Office of Student Experience.
+        </p>
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
+          <input type="checkbox" id="fDisclaimer" style="width:16px;height:16px;margin-top:2px;accent-color:#7c3aed;flex-shrink:0;" />
+          <span style="font-size:13px;font-weight:600;color:#374151;">I agree to the above terms and conditions *</span>
+        </label>
       </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('proposalModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitProposal()">Submit Proposal ✦</button>
     </div>
   </div>
 </div>
@@ -1785,7 +1908,7 @@ function showPendingReportWarning(proposal){
 
 function openProposalModal(id = null){
   // ── Gate: block if club has overdue events without report ──
-  if(!id){ // only gate new proposals, not edits
+  if(!id){
     const today = new Date(); today.setHours(0,0,0,0);
     const pendingReport = allProposals.find(p => {
       if(!p.proposed_date) return false;
@@ -1794,64 +1917,99 @@ function openProposalModal(id = null){
         && eventDate <= today
         && !["report_submitted","cancelled","postponed"].includes(p.execution_status || "");
     });
-    if(pendingReport){
-      // Show blocking modal instead
-      showPendingReportWarning(pendingReport);
-      return;
-    }
+    if(pendingReport){ showPendingReportWarning(pendingReport); return; }
   }
-  document.getElementById("proposalModalTitle").textContent = id ? "Edit Proposal" : "New Event Proposal";
-  document.getElementById("proposalId").value = id || "";
-  document.getElementById("fImagePreview").innerHTML = "📸 Click to upload cover image";
-  document.getElementById("fImageFile").value = "";
 
-  if(id){
-    const p = allProposals.find(x => x.id === id);
-    if(!p) return;
-    document.getElementById("fEventName").value   = p.event_name      || "";
-    document.getElementById("fCategory").value    = p.category        || "";
-    document.getElementById("fCampus").value      = p.campus          || "";
-    document.getElementById("fDate").value        = p.proposed_date   || "";
-    document.getElementById("fTime").value        = p.proposed_time   || "";
-    document.getElementById("fVenue").value       = p.proposed_venue  || "";
-    document.getElementById("fAudience").value    = p.audience        || "";
-    document.getElementById("fAttendance").value  = p.expected_attendance || "";
-    document.getElementById("fDescription").value = p.description     || "";
-    document.getElementById("fImageUrl").value    = p.cover_image     || "";
-    if(p.cover_image) document.getElementById("fImagePreview").innerHTML = `<img src="${esc(p.cover_image)}" class="upload-preview" />`;
-  } else {
-    ["fEventName","fVenue","fAudience","fAttendance","fDescription","fImageUrl"].forEach(i => document.getElementById(i).value = "");
-    document.getElementById("fCategory").value = "";
-    document.getElementById("fDate").value     = "";
-    document.getElementById("fTime").value     = "";
-  }
+  // Reset all fields
+  document.getElementById("proposalId").value     = "";
+  document.getElementById("fClubName").value      = currentClub?.club_name || "";
+  document.getElementById("fRepName").value       = "";
+  document.getElementById("fDesignation").value   = "";
+  document.getElementById("fEventName").value     = "";
+  document.getElementById("fCategory").value      = "";
+  document.getElementById("fDate").value          = "";
+  document.getElementById("fTime").value          = "";
+  document.getElementById("fEndTime").value       = "";
+  document.getElementById("fVenue").value         = "";
+  document.getElementById("fAttendance").value    = "";
+  document.getElementById("fDescription").value   = "";
+  document.getElementById("fImageUrl").value      = "";
+  document.getElementById("fImagePreview").innerHTML = "📸 Click to upload cover image";
+  document.getElementById("fImageFile").value     = "";
+  document.getElementById("fDisclaimer").checked  = false;
+  document.getElementById("transportNo").checked  = true;
+  document.getElementById("transportNote").style.display = "none";
+  document.querySelectorAll('input[name="audience"]').forEach(cb => cb.checked = false);
+  document.querySelectorAll('input[name="support"]').forEach(cb => cb.checked = false);
+
+  document.getElementById("proposalModalTitle").textContent = id ? "Edit Proposal" : "New Event Proposal";
 
   // Lock campus to club's own campus
-  const campusSel = document.getElementById("fCampus");
+  const campusSel  = document.getElementById("fCampus");
   const clubCampus = currentClub?.campus;
   if(clubCampus && clubCampus !== "All"){
     campusSel.innerHTML = `<option value="${esc(clubCampus)}">${esc(clubCampus)}</option>`;
-    campusSel.value    = clubCampus;
-    campusSel.disabled = true;
-    campusSel.style.background = "#f5f3ff";
-    campusSel.style.color      = "#7c3aed";
-    campusSel.style.fontWeight = "600";
+    campusSel.value     = clubCampus;
+    campusSel.disabled  = true;
+    campusSel.style.cssText = "background:#f5f3ff;color:#7c3aed;font-weight:600;";
   } else {
-    // Multi-campus or All — let them choose
-    campusSel.innerHTML = `
-      <option value="">Select…</option>
-      <option>Karachi</option>
-      <option>Nairobi</option>
-      <option>Kampala</option>
-      <option>Dar es Salaam</option>`;
-    campusSel.disabled = false;
-    campusSel.style.background = "";
-    campusSel.style.color      = "";
-    campusSel.style.fontWeight = "";
-    if(id) campusSel.value = allProposals.find(x => x.id === id)?.campus || "";
+    campusSel.innerHTML = `<option value="">Select…</option><option>Karachi</option><option>Nairobi</option><option>Kampala</option><option>Dar es Salaam</option>`;
+    campusSel.disabled  = false;
+    campusSel.style.cssText = "";
+  }
+
+  // Load collaborator clubs
+  loadCollaboratorClubs(id ? (allProposals.find(x=>x.id===id)?.collaborators||"") : "");
+
+  // Populate if editing
+  if(id){
+    const p = allProposals.find(x => x.id === id);
+    if(p){
+      document.getElementById("proposalId").value     = p.id;
+      document.getElementById("fRepName").value       = p.representative_name || "";
+      document.getElementById("fDesignation").value   = p.designation         || "";
+      document.getElementById("fEventName").value     = p.event_name          || "";
+      document.getElementById("fCategory").value      = p.category            || "";
+      document.getElementById("fDate").value          = p.proposed_date       || "";
+      document.getElementById("fTime").value          = p.proposed_time       || "";
+      document.getElementById("fEndTime").value       = p.event_end_time      || "";
+      document.getElementById("fVenue").value         = p.proposed_venue      || "";
+      document.getElementById("fAttendance").value    = p.expected_attendance || "";
+      document.getElementById("fDescription").value   = p.description         || "";
+      document.getElementById("fImageUrl").value      = p.cover_image         || "";
+      document.getElementById("fDisclaimer").checked  = p.disclaimer_accepted || false;
+      if(p.campus && campusSel.disabled === false) campusSel.value = p.campus;
+      if(p.transport_required){
+        document.getElementById("transportYes").checked = true;
+        document.getElementById("transportNote").style.display = "block";
+      }
+      if(p.cover_image) document.getElementById("fImagePreview").innerHTML = `<img src="${esc(p.cover_image)}" class="upload-preview" />`;
+      if(p.audience){
+        const sel = p.audience.split(",").map(s => s.trim());
+        document.querySelectorAll('input[name="audience"]').forEach(cb => { cb.checked = sel.includes(cb.value); });
+      }
+      if(p.support_required){
+        const sup = typeof p.support_required === "string" ? JSON.parse(p.support_required) : (p.support_required || {});
+        document.querySelectorAll('input[name="support"]').forEach(cb => { cb.checked = !!sup[cb.value]; });
+      }
+    }
   }
 
   document.getElementById("proposalModal").classList.add("open");
+}
+
+async function loadCollaboratorClubs(selectedStr = ""){
+  const list = document.getElementById("collaboratorList");
+  if(!list) return;
+  const selected = selectedStr ? selectedStr.split(",").map(s => s.trim()) : [];
+  const { data } = await sb.from("clubs").select("name").order("name");
+  if(!data?.length){ list.innerHTML = '<div style="font-size:12px;color:var(--muted);">No other clubs found.</div>'; return; }
+  list.innerHTML = data
+    .filter(c => c.name !== currentClub?.club_name)
+    .map(c => `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:2px;">
+      <input type="checkbox" name="collaborator" value="${esc(c.name)}" ${selected.includes(c.name)?'checked':''} style="width:13px;height:13px;accent-color:#7c3aed;" />
+      ${esc(c.name)}
+    </label>`).join("");
 }
 
 function previewProposalImage(input){
@@ -1862,20 +2020,49 @@ function previewProposalImage(input){
 
 async function submitProposal(){
   const submitBtn = document.querySelector("#proposalModal .btn-primary");
-  if(submitBtn.disabled) return; // prevent double click
+  if(submitBtn.disabled) return;
   submitBtn.disabled = true;
   submitBtn.textContent = "Submitting…";
 
-  const id        = document.getElementById("proposalId").value;
-  const eventName = document.getElementById("fEventName").value.trim();
-  const category  = document.getElementById("fCategory").value;
-  const campus    = document.getElementById("fCampus").value;
-  const date      = document.getElementById("fDate").value;
+  const id            = document.getElementById("proposalId").value;
+  const repName       = document.getElementById("fRepName").value.trim();
+  const designation   = document.getElementById("fDesignation").value;
+  const eventName     = document.getElementById("fEventName").value.trim();
+  const category      = document.getElementById("fCategory").value;
+  const campus        = document.getElementById("fCampus").value;
+  const date          = document.getElementById("fDate").value;
+  const startTime     = document.getElementById("fTime").value;
+  const endTime       = document.getElementById("fEndTime").value;
+  const venue         = document.getElementById("fVenue").value.trim();
+  const description   = document.getElementById("fDescription").value.trim();
+  const attendance    = document.getElementById("fAttendance").value;
+  const disclaimer    = document.getElementById("fDisclaimer").checked;
+  const transport     = document.getElementById("transportYes").checked;
 
-  if(!eventName){ showToast("Event name is required", "error"); submitBtn.disabled = false; submitBtn.textContent = "Submit Proposal ✦"; return; }
-  if(!category)  { showToast("Please select a category", "error"); submitBtn.disabled = false; submitBtn.textContent = "Submit Proposal ✦"; return; }
-  if(!campus)    { showToast("Please select a campus", "error"); submitBtn.disabled = false; submitBtn.textContent = "Submit Proposal ✦"; return; }
-  if(!date)      { showToast("Proposed date is required", "error"); submitBtn.disabled = false; submitBtn.textContent = "Submit Proposal ✦"; return; }
+  // Collect audience checkboxes
+  const selectedAudience = [...document.querySelectorAll('input[name="audience"]:checked')].map(cb => cb.value);
+  // Collect support checkboxes
+  const supportObj = {};
+  document.querySelectorAll('input[name="support"]:checked').forEach(cb => { supportObj[cb.value] = true; });
+  // Collect collaborators
+  const collaborators = [...document.querySelectorAll('input[name="collaborator"]:checked')].map(cb => cb.value).join(", ");
+
+  const reset = () => { submitBtn.disabled = false; submitBtn.textContent = "Submit Proposal ✦"; };
+
+  // Validation
+  if(!repName)              { showToast("Representative name is required", "error"); reset(); return; }
+  if(!designation)          { showToast("Please select your designation", "error"); reset(); return; }
+  if(!eventName)            { showToast("Event name is required", "error"); reset(); return; }
+  if(!category)             { showToast("Please select a category", "error"); reset(); return; }
+  if(!campus)               { showToast("Please select a campus", "error"); reset(); return; }
+  if(!date)                 { showToast("Proposed date is required", "error"); reset(); return; }
+  if(!startTime)            { showToast("Event start time is required", "error"); reset(); return; }
+  if(!endTime)              { showToast("Event end time is required", "error"); reset(); return; }
+  if(!venue)                { showToast("Proposed venue is required", "error"); reset(); return; }
+  if(!description)          { showToast("Event description is required", "error"); reset(); return; }
+  if(!attendance)           { showToast("Expected attendance is required", "error"); reset(); return; }
+  if(selectedAudience.length === 0) { showToast("Please select at least one target audience", "error"); reset(); return; }
+  if(!disclaimer)           { showToast("You must accept the disclaimer to submit", "error"); reset(); return; }
 
   // Handle image upload
   let imageUrl = document.getElementById("fImageUrl").value.trim();
@@ -1883,43 +2070,48 @@ async function submitProposal(){
   if(fileInput.files[0]){
     const file = fileInput.files[0];
     const path = `${Date.now()}_${file.name.replace(/\s/g,"_")}`;
-    const { data: upData, error: upErr } = await sb.storage
-      .from("proposal-images").upload(path, file, { upsert: true });
-    if(upErr){ showToast("Image upload failed: " + upErr.message, "error"); return; }
+    const { data: upData, error: upErr } = await sb.storage.from("proposal-images").upload(path, file, { upsert: true });
+    if(upErr){ showToast("Image upload failed: " + upErr.message, "error"); reset(); return; }
     const { data: urlData } = sb.storage.from("proposal-images").getPublicUrl(path);
     imageUrl = urlData.publicUrl;
   }
 
   const payload = {
-    club_email:          currentClub.email,
-    club_name:           currentClub.club_name,
-    event_name:          eventName,
+    club_email:           currentClub.email,
+    club_name:            currentClub.club_name,
+    representative_name:  repName,
+    designation,
+    event_name:           eventName,
     category,
     campus,
-    proposed_date:       date || null,
-    proposed_time:       document.getElementById("fTime").value || null,
-    proposed_venue:      document.getElementById("fVenue").value.trim() || null,
-    audience:            document.getElementById("fAudience").value.trim() || null,
-    expected_attendance: parseInt(document.getElementById("fAttendance").value) || null,
-    description:         document.getElementById("fDescription").value.trim() || null,
-    cover_image:         imageUrl || null,
-    updated_at:          new Date().toISOString(),
+    proposed_date:        date || null,
+    proposed_time:        startTime || null,
+    event_end_time:       endTime || null,
+    proposed_venue:       venue || null,
+    audience:             selectedAudience.join(", ") || null,
+    expected_attendance:  parseInt(attendance) || null,
+    description:          description || null,
+    cover_image:          imageUrl || null,
+    collaborators:        collaborators || null,
+    transport_required:   transport,
+    support_required:     supportObj,
+    disclaimer_accepted:  disclaimer,
+    updated_at:           new Date().toISOString(),
   };
 
   let error;
   if(id){
     ({ error } = await sb.from("event_proposals").update(payload).eq("id", id));
   } else {
-    payload.status = "submitted";
+    payload.status       = "submitted";
     payload.submitted_at = new Date().toISOString();
     ({ error } = await sb.from("event_proposals").insert(payload));
   }
 
-  if(error){ showToast("Failed to submit: " + error.message, "error"); submitBtn.disabled = false; submitBtn.textContent = "Submit Proposal ✦"; return; }
+  if(error){ showToast("Failed to submit: " + error.message, "error"); reset(); return; }
 
   showToast(id ? "Proposal updated! ✨" : "Proposal submitted! 🎉 OSE team will review it soon.");
-  submitBtn.disabled = false;
-  submitBtn.textContent = "Submit Proposal ✦";
+  reset();
   closeModal("proposalModal");
   loadProposals();
 }
