@@ -1133,12 +1133,25 @@
       <div class="form-section-title">👥 Target Audience *</div>
       <div style="border:1.5px solid #e5e7eb;border-radius:10px;padding:12px 14px;margin-bottom:16px;background:white;">
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;" id="audienceCheckboxes">
-          ${['All Students','ASDH','BScN','Post RN','MBBS','BS-FAS','B. Ed','MScN','MPhil Education','MHPE','MHPM','MS Epi and Bio','MBE','MSPH','MPhil BBS','MSHM','PhD Health Sciences','PhD Nursing','PhD Education'].map(a =>
-            `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px;">
-              <input type="checkbox" name="audience" value="${a}" style="width:14px;height:14px;accent-color:#7c3aed;" />
-              ${a}
-            </label>`
-          ).join('')}
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px;"><input type="checkbox" name="audience" value="All Students" style="width:14px;height:14px;accent-color:#7c3aed;" /> All Students</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px;"><input type="checkbox" name="audience" value="ASDH" style="width:14px;height:14px;accent-color:#7c3aed;" /> ASDH</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px;"><input type="checkbox" name="audience" value="BScN" style="width:14px;height:14px;accent-color:#7c3aed;" /> BScN</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px;"><input type="checkbox" name="audience" value="Post RN" style="width:14px;height:14px;accent-color:#7c3aed;" /> Post RN</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px;"><input type="checkbox" name="audience" value="MBBS" style="width:14px;height:14px;accent-color:#7c3aed;" /> MBBS</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px;"><input type="checkbox" name="audience" value="BS-FAS" style="width:14px;height:14px;accent-color:#7c3aed;" /> BS-FAS</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px;"><input type="checkbox" name="audience" value="B. Ed" style="width:14px;height:14px;accent-color:#7c3aed;" /> B. Ed</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px;"><input type="checkbox" name="audience" value="MScN" style="width:14px;height:14px;accent-color:#7c3aed;" /> MScN</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px;"><input type="checkbox" name="audience" value="MPhil Education" style="width:14px;height:14px;accent-color:#7c3aed;" /> MPhil Education</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px;"><input type="checkbox" name="audience" value="MHPE" style="width:14px;height:14px;accent-color:#7c3aed;" /> MHPE</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px;"><input type="checkbox" name="audience" value="MHPM" style="width:14px;height:14px;accent-color:#7c3aed;" /> MHPM</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px;"><input type="checkbox" name="audience" value="MS Epi and Bio" style="width:14px;height:14px;accent-color:#7c3aed;" /> MS Epi and Bio</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px;"><input type="checkbox" name="audience" value="MBE" style="width:14px;height:14px;accent-color:#7c3aed;" /> MBE</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px;"><input type="checkbox" name="audience" value="MSPH" style="width:14px;height:14px;accent-color:#7c3aed;" /> MSPH</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px;"><input type="checkbox" name="audience" value="MPhil BBS" style="width:14px;height:14px;accent-color:#7c3aed;" /> MPhil BBS</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px;"><input type="checkbox" name="audience" value="MSHM" style="width:14px;height:14px;accent-color:#7c3aed;" /> MSHM</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px;"><input type="checkbox" name="audience" value="PhD Health Sciences" style="width:14px;height:14px;accent-color:#7c3aed;" /> PhD Health Sciences</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px;"><input type="checkbox" name="audience" value="PhD Nursing" style="width:14px;height:14px;accent-color:#7c3aed;" /> PhD Nursing</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px;"><input type="checkbox" name="audience" value="PhD Education" style="width:14px;height:14px;accent-color:#7c3aed;" /> PhD Education</label>
         </div>
       </div>
 
@@ -1173,24 +1186,17 @@
       <div class="form-section-title">🛠️ Support Required</div>
       <div style="border:1.5px solid #e5e7eb;border-radius:10px;padding:12px 14px;margin-bottom:16px;background:white;">
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;">
-          ${[
-            ['camera','📷 Camera (OSEP)'],
-            ['sound_osep','🔊 Sound System (OSEP)'],
-            ['sound_lh','🔊 Sound System (incl. LH)'],
-            ['projector','📽️ Projector'],
-            ['laptop','💻 Laptop'],
-            ['mep','⚡ MEP (Electrician on Call)'],
-            ['security','🛡️ Security Guard'],
-            ['housekeeping','🧹 Housekeeping'],
-            ['refreshments','🍽️ Refreshments'],
-            ['outside_vendors','🏪 Permission for Outside Vendors'],
-            ['vouchers','🎟️ Vouchers'],
-          ].map(([val, label]) =>
-            `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:4px;">
-              <input type="checkbox" name="support" value="${val}" style="width:14px;height:14px;accent-color:#7c3aed;" />
-              ${label}
-            </label>`
-          ).join('')}
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:4px;"><input type="checkbox" name="support" value="camera" style="width:14px;height:14px;accent-color:#7c3aed;" /> 📷 Camera (OSEP)</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:4px;"><input type="checkbox" name="support" value="sound_osep" style="width:14px;height:14px;accent-color:#7c3aed;" /> 🔊 Sound System (OSEP)</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:4px;"><input type="checkbox" name="support" value="sound_lh" style="width:14px;height:14px;accent-color:#7c3aed;" /> 🔊 Sound System (incl. LH)</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:4px;"><input type="checkbox" name="support" value="projector" style="width:14px;height:14px;accent-color:#7c3aed;" /> 📽️ Projector</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:4px;"><input type="checkbox" name="support" value="laptop" style="width:14px;height:14px;accent-color:#7c3aed;" /> 💻 Laptop</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:4px;"><input type="checkbox" name="support" value="mep" style="width:14px;height:14px;accent-color:#7c3aed;" /> ⚡ MEP (Electrician on Call)</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:4px;"><input type="checkbox" name="support" value="security" style="width:14px;height:14px;accent-color:#7c3aed;" /> 🛡️ Security Guard</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:4px;"><input type="checkbox" name="support" value="housekeeping" style="width:14px;height:14px;accent-color:#7c3aed;" /> 🧹 Housekeeping</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:4px;"><input type="checkbox" name="support" value="refreshments" style="width:14px;height:14px;accent-color:#7c3aed;" /> 🍽️ Refreshments</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:4px;"><input type="checkbox" name="support" value="outside_vendors" style="width:14px;height:14px;accent-color:#7c3aed;" /> 🏪 Permission for Outside Vendors</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:4px;"><input type="checkbox" name="support" value="vouchers" style="width:14px;height:14px;accent-color:#7c3aed;" /> 🎟️ Vouchers</label>
         </div>
       </div>
 
