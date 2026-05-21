@@ -6138,12 +6138,15 @@ function handleCSVUpload(input){
         })).filter(r => r.name);
       } else {
         rows = res.data.map(r => ({
-          name:       (r["Event Name"]           || "").trim(),
-          organiser:  (r["Organiser"]            || "").trim(),
-          category:   (r["Category of the Event"]|| "").trim(),
-          venue:      (r["Venue"]                || "").trim(),
-          start_time: (r["Start Time"]           || "").trim(),
-          event_date: excelToDate(r["Date of the Event"]),
+          name:          (r["Event Name"]            || "").trim(),
+          organiser:     (r["Organiser"]             || "").trim(),
+          category:      (r["Category of the Event"] || "").trim(),
+          venue:         (r["Venue"]                 || "").trim(),
+          start_time:    (r["Start Time"]            || "").trim(),
+          event_date:    excelToDate(r["Date of the Event"]),
+          audience:      (r["Audience"]              || "").trim() || null,
+          description:   (r["Description"]           || "").trim() || null,
+          assigned_lead: (r["Event Lead Email"]      || "").trim() || null,
         })).filter(r => r.name);
       }
 
@@ -6153,9 +6156,11 @@ function handleCSVUpload(input){
       rows = [...seen.values()];
 
       const table = csvImportTarget === "clubs" ? "clubs" : "events";
-      // Upsert in batches of 50
       const chunkSize = 50;
       let failed = false;
+
+      // For events: extract assigned_lead before upserting (not a column in events table... wait, it is)
+      // assigned_lead IS in events table — include it in upsert
       for(let i = 0; i < rows.length; i += chunkSize){
         const chunk = rows.slice(i, i + chunkSize);
         const { error } = await sb.from(table).upsert(chunk, { onConflict: "name" });
@@ -6164,11 +6169,81 @@ function handleCSVUpload(input){
       }
       if(failed) return;
 
-      statusEl.innerHTML = `✅ Successfully imported ${rows.length} ${csvImportTarget}!`;
+      // Auto-create proposals for events with an assigned lead
+      if(csvImportTarget === "events"){
+        const eventsWithLead = rows.filter(r => r.assigned_lead);
+        if(eventsWithLead.length){
+          statusEl.innerHTML = `⏳ Syncing ${eventsWithLead.length} events to lead portal…`;
+
+          // Fetch inserted event IDs
+          const names = eventsWithLead.map(r => r.name);
+          const { data: insertedEvents } = await sb.from("events")
+            .select("id,name,organiser,category,campus,event_date,start_time,venue,audience,description,cover_image,assigned_lead")
+            .in("name", names);
+
+          const eventMap = {};
+          (insertedEvents||[]).forEach(e => eventMap[e.name] = e);
+
+          let synced = 0;
+          for(const r of eventsWithLead){
+            const ev = eventMap[r.name];
+            if(!ev) continue;
+
+            const club = allClubs.find(c => c.name === ev.organiser);
+            const now  = new Date().toISOString();
+
+            // Check if proposal already exists
+            const { data: existing } = await sb.from("event_proposals")
+              .select("id").eq("published_event_id", ev.id).maybeSingle();
+
+            const proposalPayload = {
+              event_name:          ev.name,
+              club_name:           ev.organiser || ev.name,
+              club_email:          club?.email   || null,
+              category:            ev.category   || null,
+              campus:              ev.campus     || null,
+              proposed_date:       ev.event_date || null,
+              proposed_time:       ev.start_time || null,
+              proposed_venue:      ev.venue      || null,
+              confirmed_venue:     ev.venue      || null,
+              audience:            ev.audience   || null,
+              description:         ev.description|| null,
+              cover_image:         ev.cover_image|| null,
+              status:              "assigned",
+              execution_status:    "pending",
+              assigned_to:         r.assigned_lead,
+              assigned_at:         now,
+              approved_at:         now,
+              published_event_id:  ev.id,
+              updated_at:          now,
+              representative_name: "CSV Import",
+              disclaimer_accepted: true,
+              submitted_at:        now,
+            };
+
+            if(existing){
+              await sb.from("event_proposals")
+                .update({ assigned_to: r.assigned_lead, updated_at: now })
+                .eq("id", existing.id);
+            } else {
+              await sb.from("event_proposals").insert(proposalPayload);
+            }
+            synced++;
+          }
+          statusEl.innerHTML = `✅ Imported ${rows.length} events · ${synced} synced to lead portal!`;
+          loadMyAssignedEvents();
+        } else {
+          statusEl.innerHTML = `✅ Successfully imported ${rows.length} events!`;
+        }
+      } else {
+        statusEl.innerHTML = `✅ Successfully imported ${rows.length} ${csvImportTarget}!`;
+      }
+
       if(csvImportTarget === "clubs") { loadClubs(); }
       else { loadEvents(); }
       loadDashboard();
-      setTimeout(() => closeModal("csvModal"), 2000);
+      buildPivotTable();
+      setTimeout(() => closeModal("csvModal"), 2500);
     },
     error: () => { statusEl.innerHTML = "❌ Failed to parse CSV file."; }
   });
