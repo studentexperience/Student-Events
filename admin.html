@@ -3054,9 +3054,11 @@ function showSection(name, btn){
   document.getElementById(`section-${name}`).classList.add("active");
   btn.classList.add("active");
 
-  // Re-render charts when dashboard becomes visible
+  // Re-render charts when dashboard becomes visible — delay lets CSS paint first
   if(name === "dashboard" && dashEventData.length > 0){
-    renderAllCharts();
+    // Destroy all first so they re-render fresh
+    ["chartByCampus","chartByMonth","chartCampusByMonth","chartByCategory"].forEach(id => destroyChart(id));
+    setTimeout(() => renderAllCharts(), 200);
   }
 }
 
@@ -3454,10 +3456,12 @@ function safeRender(fn, label){
 }
 
 function renderAllCharts(){
-  waitForVisible("chartByCampus",      () => safeRender(renderCampusChart,      "Campus"));
-  waitForVisible("chartByMonth",       () => safeRender(renderMonthChart,        "Month"));
-  waitForVisible("chartCampusByMonth", () => safeRender(renderCampusMonthChart,  "CampusMonth"));
-  waitForVisible("chartByCategory",    () => safeRender(renderCategoryChart,     "Category"));
+  // Stagger renders to give CSS grid time to calculate dimensions
+  // Each chart gets a slightly longer delay to ensure canvas is sized
+  setTimeout(() => safeRender(renderCampusChart,     "Campus"),     100);
+  setTimeout(() => safeRender(renderMonthChart,       "Month"),      250);
+  setTimeout(() => safeRender(renderCampusMonthChart, "CampusMonth"),400);
+  setTimeout(() => safeRender(renderCategoryChart,    "Category"),   550);
 }
 
 /* ── Chart 1: Events by Campus ── */
