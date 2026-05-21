@@ -1451,11 +1451,12 @@
                   <th>🎉 Event Held</th>
                   <th>🔒 Closed</th>
                   <th>❌ Not Approved</th>
+                  <th>📅 Published</th>
                   <th style="font-weight:800;">Total</th>
                 </tr>
               </thead>
               <tbody id="pivotTbody">
-                <tr><td colspan="11" style="text-align:center;color:var(--muted);padding:20px;">Loading…</td></tr>
+                <tr><td colspan="12" style="text-align:center;color:var(--muted);padding:20px;">Loading…</td></tr>
               </tbody>
             </table>
           </div>
@@ -3280,10 +3281,21 @@ async function loadDashboard(){
 let allPivotData = [];
 
 async function buildPivotTable(){
-  const { data } = await sb.from("event_proposals").select("club_name,status,execution_status");
-  if(!data) return;
-  allPivotData = data;
-  renderPivot(data);
+  const [{ data: eventsData }, { data: proposalsData }] = await Promise.all([
+    sb.from("events").select("id,organiser,name,event_date,campus"),
+    sb.from("event_proposals").select("published_event_id,status,execution_status"),
+  ]);
+  if(!eventsData) return;
+
+  const proposalMap = {};
+  (proposalsData||[]).forEach(p => { if(p.published_event_id) proposalMap[p.published_event_id] = p; });
+
+  allPivotData = eventsData.map(e => ({
+    club_name:        e.organiser || "Unassigned",
+    status:           proposalMap[e.id]?.status           || "published",
+    execution_status: proposalMap[e.id]?.execution_status || null,
+  }));
+  renderPivot(allPivotData);
 }
 
 function filterPivot(q){
@@ -3297,40 +3309,40 @@ function renderPivot(data){
   const tbody = document.getElementById("pivotTbody");
   if(!tbody) return;
 
-  // Group by club
   const clubs = {};
   data.forEach(r => {
     const club = r.club_name || "Unknown";
-    if(!clubs[club]) clubs[club] = { submitted:0, under_review:0, needs_info:0, approved:0, assigned:0, in_progress:0, completed:0, report_submitted:0, declined:0, total:0 };
-    const st = r.status || "submitted";
+    if(!clubs[club]) clubs[club] = { submitted:0, under_review:0, needs_info:0, approved:0, assigned:0, in_progress:0, completed:0, report_submitted:0, declined:0, published:0, total:0 };
+    const st = r.status || "published";
     const ex = r.execution_status || "";
-    // Map to display buckets
-    if(st === "submitted")      clubs[club].submitted++;
+    if(st === "submitted")         clubs[club].submitted++;
     else if(st === "under_review") clubs[club].under_review++;
-    else if(st === "needs_info") clubs[club].needs_info++;
-    else if(st === "approved")  clubs[club].approved++;
-    else if(st === "assigned" && !["in_progress","completed","report_submitted"].includes(ex)) clubs[club].assigned++;
-    else if(ex === "in_progress") clubs[club].in_progress++;
-    else if(ex === "completed")   clubs[club].completed++;
-    else if(ex === "report_submitted") clubs[club].report_submitted++;
-    else if(st === "declined")  clubs[club].declined++;
+    else if(st === "needs_info")   clubs[club].needs_info++;
+    else if(st === "approved" && !ex) clubs[club].approved++;
+    else if(["assigned","approved"].includes(st) && ex === "in_progress")      clubs[club].in_progress++;
+    else if(["assigned","approved"].includes(st) && ex === "completed")        clubs[club].completed++;
+    else if(["assigned","approved"].includes(st) && ex === "report_submitted") clubs[club].report_submitted++;
+    else if(st === "assigned")     clubs[club].assigned++;
+    else if(st === "declined")     clubs[club].declined++;
+    else if(st === "published")    clubs[club].published++;
     clubs[club].total++;
   });
 
   const sorted = Object.entries(clubs).sort((a,b) => b[1].total - a[1].total);
-  if(!sorted.length){ tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:20px;">No proposals yet.</td></tr>`; return; }
+  if(!sorted.length){ tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;color:var(--muted);padding:20px;">No events yet.</td></tr>`; return; }
 
   const cell = (n) => `<td style="text-align:center;${n>0?'font-weight:700;':'color:#d1d5db;'}">${n||'—'}</td>`;
   tbody.innerHTML = sorted.map(([club, s]) =>
     `<tr>
       <td style="font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(club)}">${esc(club)}</td>
       ${cell(s.submitted)}${cell(s.under_review)}${cell(s.needs_info)}${cell(s.approved)}
-      ${cell(s.assigned)}${cell(s.in_progress)}${cell(s.completed)}${cell(s.report_submitted)}${cell(s.declined)}
+      ${cell(s.assigned)}${cell(s.in_progress)}${cell(s.completed)}${cell(s.report_submitted)}
+      ${cell(s.declined)}${cell(s.published)}
       <td style="text-align:center;font-weight:800;color:var(--accent);">${s.total}</td>
     </tr>`
   ).join("") + `<tr style="background:#f9fafb;font-weight:700;">
     <td>Total</td>
-    ${["submitted","under_review","needs_info","approved","assigned","in_progress","completed","report_submitted","declined"].map(k =>
+    ${["submitted","under_review","needs_info","approved","assigned","in_progress","completed","report_submitted","declined","published"].map(k =>
       `<td style="text-align:center;">${sorted.reduce((s,[,v])=>s+(v[k]||0),0)||'—'}</td>`
     ).join("")}
     <td style="text-align:center;font-weight:800;color:var(--accent);">${data.length}</td>
