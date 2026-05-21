@@ -2146,6 +2146,12 @@
           <input id="eventAudience" type="text" placeholder="e.g. All Students, MBBS Year 1-3" />
         </div>
         <div class="field full">
+          <label>Assign to Event Lead</label>
+          <select id="eventAssignLead">
+            <option value="">— Unassigned —</option>
+          </select>
+        </div>
+        <div class="field full">
           <label>Description</label>
           <textarea id="eventDescription" rows="3" placeholder="Brief description of the event…"></textarea>
         </div>
@@ -3333,14 +3339,16 @@ function renderPivot(data){
 
 /* ── Reliable chart renderer — waits for canvas to be visible ── */
 function waitForVisible(canvasId, renderFn, attempts = 0){
+  // Always re-query — destroyChart replaces the element so old references are stale
   const canvas = document.getElementById(canvasId);
   if(!canvas) return;
-  const { width, height } = canvas.getBoundingClientRect();
-  if(width > 0 && height > 0){
+  const rect = canvas.getBoundingClientRect();
+  if(rect.width > 0 && rect.height > 0){
     renderFn();
-  } else if(attempts < 20){
-    // Retry every 100ms up to 2 seconds
-    setTimeout(() => waitForVisible(canvasId, renderFn, attempts + 1), 100);
+  } else if(attempts < 30){
+    setTimeout(() => waitForVisible(canvasId, renderFn, attempts + 1), 150);
+  } else {
+    console.warn(`[Chart] ${canvasId} never became visible after ${attempts} attempts`);
   }
 }
 
@@ -3779,7 +3787,7 @@ function renderEvents(list){
   }).join("");
 }
 
-function openEventModal(id = null){
+async function openEventModal(id = null){
   document.getElementById("eventModalTitle").textContent = id ? "Edit Event" : "Add Event";
   document.getElementById("eventId").value = id || "";
   document.getElementById("eventImagePreviewWrap").innerHTML = "📸 Click to upload cover image";
@@ -3793,19 +3801,26 @@ function openEventModal(id = null){
     document.getElementById("eventCategory").value  = e.category || "";
     document.getElementById("eventDate").value      = e.event_date || "";
     document.getElementById("eventTime").value      = e.start_time || "";
-    document.getElementById("eventVenue").value     = e.venue || "";
-    document.getElementById("eventAudience").value  = e.audience || "";
+    document.getElementById("eventVenue").value       = e.venue || "";
+    document.getElementById("eventAudience").value    = e.audience || "";
     document.getElementById("eventDescription").value = e.description || "";
-    document.getElementById("eventImageUrl").value  = e.cover_image || "";
+    document.getElementById("eventImageUrl").value    = e.cover_image || "";
     if(e.cover_image) document.getElementById("eventImagePreviewWrap").innerHTML = `<img src="${esc(e.cover_image)}" class="upload-preview" />`;
   } else {
     ["eventName","eventDate","eventTime","eventVenue","eventAudience","eventDescription","eventImageUrl"].forEach(i => document.getElementById(i).value = "");
-    document.getElementById("eventCategory").value  = "";
-    document.getElementById("eventCampus").value    = "";
-    document.getElementById("eventOrganiser").value = "";
   }
+  // Populate lead dropdown
+  await populateLeadDropdown("eventAssignLead", id ? (allEvents.find(x=>x.id===id)?.assigned_lead||"") : "");
   document.getElementById("eventModal").classList.add("open");
   lockCampusSelect("eventCampus");
+}
+
+async function populateLeadDropdown(selectId, currentValue = ""){
+  const sel = document.getElementById(selectId);
+  if(!sel) return;
+  const { data } = await sb.from("admins").select("email,role").eq("role","event_lead").order("email");
+  sel.innerHTML = `<option value="">— Unassigned —</option>`
+    + (data||[]).map(l => `<option value="${esc(l.email)}" ${l.email===currentValue?"selected":""}>${esc(l.email)}</option>`).join("");
 }
 
 async function saveEvent(){
@@ -3822,17 +3837,20 @@ async function saveEvent(){
     if(!imageUrl) return;
   }
 
+  const assignLead = document.getElementById("eventAssignLead")?.value || "";
+
   const payload = {
     name,
     organiser:   document.getElementById("eventOrganiser").value,
-    campus:      document.getElementById("eventCampus").value || null,
+    campus,
     category:    document.getElementById("eventCategory").value,
     event_date:  document.getElementById("eventDate").value || null,
     start_time:  document.getElementById("eventTime").value || null,
-    venue:       document.getElementById("eventVenue").value.trim(),
+    venue:       document.getElementById("eventVenue").value.trim() || null,
     audience:    document.getElementById("eventAudience").value.trim() || null,
     description: document.getElementById("eventDescription").value.trim() || null,
-    cover_image: imageUrl,
+    cover_image: imageUrl || null,
+    assigned_lead: assignLead || null,
     updated_at:  new Date().toISOString(),
   };
 
@@ -3846,6 +3864,45 @@ async function saveEvent(){
   }
 
   if(error){ showToast("Save failed: " + error.message, "error"); return; }
+
+  const eventId = id || insertedId;
+
+  // Sync to event_proposals so it appears in Event Lead portal
+  if(assignLead && eventId){
+    const proposalPayload = {
+      event_name:          name,
+      club_name:           payload.organiser || "Admin",
+      club_email:          payload.organiser ? (payload.organiser.toLowerCase().replace(/\s+/g,".") + "@aku.edu") : "admin@aku.edu",
+      category:            payload.category  || null,
+      campus:              campus            || null,
+      proposed_date:       payload.event_date || null,
+      proposed_time:       payload.start_time || null,
+      proposed_venue:      payload.venue      || null,
+      audience:            payload.audience   || null,
+      description:         payload.description|| null,
+      cover_image:         payload.cover_image|| null,
+      status:              "assigned",
+      execution_status:    "pending",
+      assigned_to:         assignLead,
+      assigned_at:         new Date().toISOString(),
+      published_event_id:  eventId,
+      submitted_at:        new Date().toISOString(),
+      updated_at:          new Date().toISOString(),
+    };
+
+    // Check if a proposal already exists for this event
+    const { data: existing } = await sb.from("event_proposals")
+      .select("id").eq("published_event_id", eventId).single();
+
+    if(existing){
+      await sb.from("event_proposals")
+        .update({ assigned_to: assignLead, updated_at: new Date().toISOString() })
+        .eq("id", existing.id);
+    } else {
+      await sb.from("event_proposals").insert(proposalPayload);
+    }
+  }
+
   showToast(id ? "Event updated!" : "Event added!");
 
   // 🔔 Notify all push subscribers about new event
@@ -6433,7 +6490,13 @@ async function loadTeamOverview(){
   };
 
   document.getElementById("teamLeadCards").innerHTML = filteredLeads.map(lead => {
-    const myEvents = allProposals.filter(p => p.assigned_to === lead.email);
+    const myEvents = allProposals
+      .filter(p => p.assigned_to === lead.email)
+      .sort((a,b) => {
+        const da = a.proposed_date || "9999";
+        const db = b.proposed_date || "9999";
+        return da.localeCompare(db); // closest date first
+      });
     const prep     = myEvents.filter(p => (p.execution_status||"pending") === "in_progress").length;
     const held     = myEvents.filter(p => (p.execution_status||"pending") === "completed").length;
     const closed   = myEvents.filter(p => (p.execution_status||"pending") === "report_submitted").length;
