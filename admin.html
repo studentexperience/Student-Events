@@ -6794,7 +6794,7 @@ async function loadTeamOverview(){
       : (Array.isArray(adminCampus) ? adminCampus : [adminCampus]);
 
   // Fetch all event leads matching campus
-  let leadsQuery = sb.from("admins").select("*").eq("role","event_lead");
+  let leadsQuery = sb.from("admins").select("*").in("role",["event_lead","admin","super_admin"]);
   const { data: leads } = await leadsQuery;
   const filteredLeads = (leads || []).filter(l => {
     const lc = l.permissions?.campus || ["All"];
@@ -6829,7 +6829,7 @@ async function loadTeamOverview(){
 
   // ── Summary stat cards — matches execution status buttons ──
   document.getElementById("teamStatCards").innerHTML = [
-    { num:filteredLeads.length,          label:"Event Leads",          color:"#7c3aed", icon:"👥" },
+    { num:filteredLeads.length,          label:"Team Members",         color:"#7c3aed", icon:"👥" },
     { num:allProposals.length,           label:"Total Assigned",        color:"#2563eb", icon:"📌" },
     { num:count("in_progress"),          label:"Preparation Underway",  color:"#2563eb", icon:"▶️" },
     { num:count("completed"),            label:"Event Held",            color:"#15803d", icon:"🎉" },
