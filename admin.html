@@ -4549,15 +4549,18 @@ async function doDelete(type, id){
   }
 
   let error;
-  if(type === "club")  ({ error } = await sb.from("clubs").delete().eq("id", id));
-  if(type === "event") ({ error } = await sb.from("events").delete().eq("id", id));
-  if(type === "admin") ({ error } = await sb.from("admins").delete().eq("id", id));
-  if(type === "news")  ({ error } = await sb.from("news").delete().eq("id", id));
-  if(type === "form")  ({ error } = await sb.from("forms").delete().eq("id", id));
+  if(type === "event"){
+    // Also delete the linked proposal so it disappears from lead portal and club portal
+    await sb.from("event_proposals").delete().eq("published_event_id", id);
+    ({ error } = await sb.from("events").delete().eq("id", id));
+  } else if(type === "club")  ({ error } = await sb.from("clubs").delete().eq("id", id));
+  else if(type === "admin") ({ error } = await sb.from("admins").delete().eq("id", id));
+  else if(type === "news")  ({ error } = await sb.from("news").delete().eq("id", id));
+  else if(type === "form")  ({ error } = await sb.from("forms").delete().eq("id", id));
   if(error){ showToast("Delete failed: " + error.message, "error"); return; }
   showToast("Deleted successfully.");
   if(type === "club")  { loadClubs();  loadDashboard(); }
-  if(type === "event") { loadEvents(); loadDashboard(); }
+  if(type === "event") { loadEvents(); loadDashboard(); loadMyAssignedEvents(); buildPivotTable(); }
   if(type === "admin") { loadAdmins(); loadDashboard(); }
   if(type === "news")  { loadNews(); }
   if(type === "form")  { loadForms(); }
