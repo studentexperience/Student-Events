@@ -3789,7 +3789,8 @@ function renderEvents(list){
       <td title="${esc(e.venue||'')}">${esc(e.venue || "—")}</td>
       <td><div class="td-actions">
         ${canEdit ? `<button class="btn btn-secondary btn-sm" onclick="openEventModal('${e.id}')">✏️ Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="confirmDelete('event','${e.id}','${safeStr(e.name)}')">🗑️ Delete</button>`
+        <button class="btn btn-secondary btn-sm" onclick="resyncEventToPortal('${e.id}')" style="background:#f0fdf4;color:#15803d;border-color:#bbf7d0;" title="Push to Event Lead portal">🔄 Resync</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDelete('event','${e.id}','${safeStr(e.name)}')">🗑️</button>`
         : `<span style="font-size:11px;color:var(--muted);">No access</span>`}
       </div></td>
     </tr>`;
@@ -3822,6 +3823,54 @@ async function openEventModal(id = null){
   await populateLeadDropdown("eventAssignLead", id ? (allEvents.find(x=>x.id===id)?.assigned_lead||"") : "");
   document.getElementById("eventModal").classList.add("open");
   lockCampusSelect("eventCampus");
+}
+
+async function resyncEventToPortal(eventId){
+  const e = allEvents.find(x => x.id === eventId);
+  if(!e){ showToast("Event not found", "error"); return; }
+
+  // Check if a proposal already exists
+  const { data: existing } = await sb.from("event_proposals")
+    .select("id,assigned_to").eq("published_event_id", eventId).maybeSingle();
+
+  if(!existing){
+    showToast("No lead assigned — open Edit and assign an Event Lead first.", "error");
+    return;
+  }
+
+  const assignLead = existing.assigned_to;
+  if(!assignLead){
+    showToast("No lead assigned — open Edit and assign an Event Lead first.", "error");
+    return;
+  }
+
+  const club = allClubs.find(c => c.name === e.organiser);
+  const now  = new Date().toISOString();
+
+  const { error } = await sb.from("event_proposals").update({
+    event_name:      e.name,
+    club_name:       e.organiser || e.name,
+    club_email:      club?.email || "manual@admin.aku.edu",
+    category:        e.category  || null,
+    campus:          e.campus    || null,
+    proposed_date:   e.event_date|| null,
+    proposed_time:   e.start_time|| null,
+    proposed_venue:  e.venue     || null,
+    confirmed_venue: e.venue     || null,
+    audience:        e.audience  || null,
+    description:     e.description||null,
+    cover_image:     e.cover_image||null,
+    status:          "assigned",
+    execution_status: existing.execution_status || "pending",
+    updated_at:      now,
+  }).eq("id", existing.id);
+
+  if(error){
+    showToast("Resync failed: " + error.message, "error");
+    return;
+  }
+  showToast(`✅ "${e.name}" resynced to ${assignLead}'s portal!`);
+  loadMyAssignedEvents();
 }
 
 async function populateLeadDropdown(selectId, currentValue = ""){
@@ -3927,12 +3976,21 @@ async function saveEvent(){
       const { error: upErr } = await sb.from("event_proposals")
         .update({ assigned_to: assignLead, updated_at: now })
         .eq("id", existing.id);
-      if(upErr) console.error("[Proposal] Update error:", upErr);
+      if(upErr){
+        console.error("[Proposal] Update error:", upErr);
+        showToast("⚠️ Event saved but portal sync failed: " + upErr.message, "error");
+      } else {
+        showToast(`✅ Event saved & assigned to ${assignLead}!`);
+      }
     } else {
       const { error: insErr } = await sb.from("event_proposals").insert(proposalPayload);
-      if(insErr) console.error("[Proposal] Insert error:", insErr);
+      if(insErr){
+        console.error("[Proposal] Insert error:", insErr);
+        showToast("⚠️ Event saved but portal sync failed: " + insErr.message + " — Check Supabase RLS policy.", "error");
+      } else {
+        showToast(`✅ Event saved & assigned to ${assignLead}!`);
+      }
     }
-    showToast(`✅ Event saved & assigned to ${assignLead}!`);
   } else {
     showToast(id ? "Event updated!" : "Event added!");
   }
@@ -4843,6 +4901,14 @@ async function loadMyAssignedEvents(){
   set("campusLaneUpcoming",  campus.upcoming.length  ? campus.upcoming.map(p  => safeCard(p, todayMs, false)).join("") : emptyLane("No upcoming campus events."));
   set("campusLaneThisWeek",  campus.thisWeek.length  ? campus.thisWeek.map(p  => safeCard(p, todayMs, false)).join("") : emptyLane("Nothing this week."));
   set("campusLaneCompleted", campus.completed.length ? campus.completed.map(p => safeCard(p, todayMs, false)).join("") : emptyLane("No completed events."));
+
+  // If thisWeek is empty but upcoming has events, scroll to upcoming lane to make it visible
+  if(my.thisWeek.length === 0 && my.upcoming.length > 0){
+    setTimeout(() => {
+      const upcomingLane = document.getElementById("laneUpcoming");
+      if(upcomingLane) upcomingLane.scrollIntoView({ behavior:"smooth", block:"start" });
+    }, 400);
+  }
 }
 
 
@@ -6334,24 +6400,26 @@ async function sendProposalMessage(){
 /* ══ REALTIME SUBSCRIPTIONS ══ */
 function startRealtimeSubscriptions(){
   // Refresh proposals table whenever any proposal changes
-  sb.channel("admin-proposals")
+  // Remove any existing channels first to prevent duplicate subscription errors
+  try { sb.removeAllChannels(); } catch(e){}
+
+  sb.channel("admin-proposals-" + Date.now())
     .on("postgres_changes", {
-      event: "UPDATE",
+      event: "*",
       schema: "public",
       table: "event_proposals"
-    }, payload => {
-      // Refresh the proposals list
+    }, () => {
       loadProposals();
-      // Refresh pipeline if event lead portal is visible
       const pipelineSection = document.getElementById("section-my-events");
       if(pipelineSection && pipelineSection.style.display !== "none"){
         loadMyAssignedEvents();
       }
     })
-    .subscribe();
+    .subscribe((status) => {
+      if(status === "SUBSCRIPTION_ERROR") console.warn("[Realtime] Proposals subscription error");
+    });
 
-  // Refresh notifications when new messages arrive
-  sb.channel("admin-messages")
+  sb.channel("admin-messages-" + Date.now())
     .on("postgres_changes", {
       event: "INSERT",
       schema: "public",
