@@ -4677,11 +4677,15 @@ const EXEC_DONE = ["completed","report_submitted","cancelled","postponed"];
 
 function getPipelineLane(p, todayMs){
   const exec = p.execution_status || "pending";
-  if(EXEC_DONE.includes(exec))   return "completed";
-  if(!p.proposed_date)           return "upcoming";
+  // Terminal / done states
+  if(EXEC_DONE.includes(exec)) return "completed";
+  // No date → show in upcoming
+  if(!p.proposed_date) return "upcoming";
   const d    = new Date(p.proposed_date + "T00:00:00");
   const diff = Math.round((d.getTime() - todayMs.getTime()) / 86400000);
-  return diff > 7 ? "upcoming" : "thisWeek";
+  // Past events that aren't closed go to thisWeek so they're visible
+  if(diff < 0)    return "thisWeek";
+  return diff <= 7 ? "thisWeek" : "upcoming";
 }
 
 function buildPipelineLanes(list, todayMs){
@@ -4825,14 +4829,20 @@ async function loadMyAssignedEvents(){
     </div>`).join("");
 
   // Render lanes
+  console.log("[Pipeline] Lanes - thisWeek:", my.thisWeek.length, "upcoming:", my.upcoming.length, "completed:", my.completed.length);
   const set = (id, html) => { const el = document.getElementById(id); if(el) el.innerHTML = html; };
 
-  set("laneUpcoming",        my.upcoming.length  ? my.upcoming.map(p  => pipelineCard(p, todayMs, !isAdminView)).join("")  : emptyLane("No upcoming events."));
-  set("laneThisWeek",        my.thisWeek.length  ? my.thisWeek.map(p  => pipelineCard(p, todayMs, !isAdminView)).join("")  : emptyLane("Nothing urgent this week! 🎉"));
-  set("laneCompleted",       my.completed.length ? my.completed.map(p => pipelineCard(p, todayMs, !isAdminView)).join("")  : emptyLane("No completed events yet."));
-  set("campusLaneUpcoming",  campus.upcoming.length  ? campus.upcoming.map(p  => pipelineCard(p, todayMs, false)).join("") : emptyLane("No upcoming campus events."));
-  set("campusLaneThisWeek",  campus.thisWeek.length  ? campus.thisWeek.map(p  => pipelineCard(p, todayMs, false)).join("") : emptyLane("Nothing this week."));
-  set("campusLaneCompleted", campus.completed.length ? campus.completed.map(p => pipelineCard(p, todayMs, false)).join("") : emptyLane("No completed events."));
+  function safeCard(p, todayMs, isMine){
+    try { return pipelineCard(p, todayMs, isMine); }
+    catch(e){ console.error("[PipelineCard] Error for", p.event_name, e); return ""; }
+  }
+
+  set("laneUpcoming",  my.upcoming.length  ? my.upcoming.map(p  => safeCard(p, todayMs, !isAdminView)).join("") : emptyLane("No upcoming events."));
+  set("laneThisWeek",  my.thisWeek.length  ? my.thisWeek.map(p  => safeCard(p, todayMs, !isAdminView)).join("") : emptyLane("Nothing urgent this week! 🎉"));
+  set("laneCompleted", my.completed.length ? my.completed.map(p => safeCard(p, todayMs, !isAdminView)).join("") : emptyLane("No completed events yet."));
+  set("campusLaneUpcoming",  campus.upcoming.length  ? campus.upcoming.map(p  => safeCard(p, todayMs, false)).join("") : emptyLane("No upcoming campus events."));
+  set("campusLaneThisWeek",  campus.thisWeek.length  ? campus.thisWeek.map(p  => safeCard(p, todayMs, false)).join("") : emptyLane("Nothing this week."));
+  set("campusLaneCompleted", campus.completed.length ? campus.completed.map(p => safeCard(p, todayMs, false)).join("") : emptyLane("No completed events."));
 }
 
 
