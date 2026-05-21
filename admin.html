@@ -4855,7 +4855,7 @@ const EXECUTION_STATUS = {
   pending:          { label:"Awaiting Assignment",  emoji:"⏳", bg:"#f3f4f6", color:"#374151" },
   in_progress:      { label:"Preparation Underway", emoji:"▶️", bg:"#eff6ff", color:"#2563eb" },
   completed:        { label:"Event Held",           emoji:"🎉", bg:"#f0fdf4", color:"#15803d" },
-  report_submitted: { label:"Closed",               emoji:"🔒", bg:"#f5f3ff", color:"#7c3aed" },
+  report_submitted: { label:"Event Closed",         emoji:"🔒", bg:"#f5f3ff", color:"#7c3aed" },
   postponed:        { label:"Rescheduled",          emoji:"⏸️", bg:"#fff7ed", color:"#c2410c" },
   cancelled:        { label:"Cancelled",            emoji:"🚫", bg:"#fef2f2", color:"#b91c1c" },
 };
@@ -5004,7 +5004,7 @@ async function loadMyAssignedEvents(){
     { num: myList.filter(p=>  (p.execution_status||"pending") === "completed").length,
       label:"Event Held",          color:"#15803d", icon:"🎉" },
     { num: myList.filter(p=>  (p.execution_status||"pending") === "report_submitted").length,
-      label:"Closed",              color:"#7c3aed", icon:"🔒" },
+      label:"Event Closed",        color:"#7c3aed", icon:"🔒" },
     { num: myList.filter(p=>  (p.execution_status||"pending") === "postponed").length,
       label:"Rescheduled",         color:"#c2410c", icon:"⏸️" },
     { num: myList.filter(p=>  (p.execution_status||"pending") === "cancelled").length,
@@ -5141,7 +5141,7 @@ function pipelineCard(p, today, isMine = true){
         [
           { s:"in_progress",     l:"▶️ Preparation Underway" },
           { s:"completed",       l:"🎉 Event Held" },
-          { s:"report_submitted",l:"🔒 Close Event" },
+          { s:"report_submitted",l:"🔒 Event Closed" },
           { s:"postponed",       l:"⏸️ Rescheduled" },
           { s:"cancelled",       l:"🚫 Cancelled" },
         ].map(b => {
@@ -6839,7 +6839,7 @@ async function loadTeamOverview(){
     { num:allProposals.length,           label:"Total Assigned",        color:"#2563eb", icon:"📌" },
     { num:count("in_progress"),          label:"Preparation Underway",  color:"#2563eb", icon:"▶️" },
     { num:count("completed"),            label:"Event Held",            color:"#15803d", icon:"🎉" },
-    { num:count("report_submitted"),     label:"Closed",                color:"#7c3aed", icon:"🔒" },
+    { num:count("report_submitted"),     label:"Event Closed",          color:"#7c3aed", icon:"🔒" },
     { num:count("postponed"),            label:"Rescheduled",           color:"#c2410c", icon:"⏸️" },
     { num:count("cancelled"),            label:"Cancelled",             color:"#b91c1c", icon:"🚫" },
     { num:totalOverdue,                  label:"Overdue (No Report)",   color:"#dc2626", icon:"⚠️" },
@@ -6854,7 +6854,7 @@ async function loadTeamOverview(){
     pending:          { label:"Awaiting Assignment",  color:"#374151", bg:"#f3f4f6" },
     in_progress:      { label:"Preparation Underway", color:"#2563eb", bg:"#eff6ff" },
     completed:        { label:"Event Held",           color:"#15803d", bg:"#f0fdf4" },
-    report_submitted: { label:"Closed",               color:"#7c3aed", bg:"#f5f3ff" },
+    report_submitted: { label:"Event Closed",         color:"#7c3aed", bg:"#f5f3ff" },
     postponed:        { label:"Rescheduled",          color:"#c2410c", bg:"#fff7ed" },
     cancelled:        { label:"Cancelled",            color:"#b91c1c", bg:"#fef2f2" },
   };
