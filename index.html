@@ -1693,7 +1693,7 @@ document.addEventListener("DOMContentLoaded", () => {
         : `<img class="cover-img" src="${getActivityImage(e.category, i)}" alt="${escapeHtml(e.name)}" loading="lazy" onerror="this.src='https://picsum.photos/seed/${i + 10}/800/420'" />`;
 
       eventsEl.insertAdjacentHTML("beforeend", `
-        <article class="card" style="background:${base};cursor:pointer;" onclick="openEventModal('${e.id}')">
+        <article class="card" style="background:${base};cursor:pointer;" onclick="window._openEventModal('${e.id}')">
           ${coverHtml}
           <div class="body">
             <div class="title">${escapeHtml(e.name)}</div>
@@ -1722,6 +1722,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ── Event Detail Modal ── */
   function openEventModal(eventId){
+    window._openEventModal(eventId);
+  }
+  function closeEventModal(){
+    window._closeEventModal();
+  }
+
+  // Define implementations on window so onclick attrs can reach them
+  window._openEventModal = function(eventId){
     const e = allEvents.find(x => x.id === eventId);
     if(!e) return;
 
@@ -1775,14 +1783,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     modal.classList.add("open");
     document.body.style.overflow = "hidden";
-  }
+  };
 
-  function closeEventModal(){
+  window._closeEventModal = function(){
     document.getElementById("eventDetailModal").classList.remove("open");
     document.body.style.overflow = "";
-  }
+  };
 
-  document.addEventListener("keydown", e => { if(e.key === "Escape") closeEventModal(); });
+  document.addEventListener("keydown", e => { if(e.key === "Escape") window._closeEventModal?.(); });
   // Track which events this device has marked interested (localStorage)
   function getInterestedSet(){
     try { return new Set(JSON.parse(localStorage.getItem("interestedEvents") || "[]")); }
@@ -2427,11 +2435,11 @@ if("serviceWorker" in navigator){
 </script>
 
 <!-- ── Event Detail Modal ── -->
-<div class="event-modal-backdrop" id="eventDetailModal" onclick="if(event.target===this)closeEventModal()">
+<div class="event-modal-backdrop" id="eventDetailModal" onclick="if(event.target===this)window._closeEventModal()">
   <div class="event-modal" id="eventModalInner">
     <div style="position:relative;">
       <img id="eventModalCover" class="event-modal-cover" src="" alt="" />
-      <button class="event-modal-close" onclick="closeEventModal()">✕</button>
+      <button class="event-modal-close" onclick="window._closeEventModal()">✕</button>
     </div>
     <div class="event-modal-body">
       <div class="event-modal-title" id="eventModalName"></div>
