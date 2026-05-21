@@ -3646,12 +3646,21 @@ async function loadClubs(){
   allClubs = data || [];
   renderClubs(filterByCampus(allClubs));
 
-  // Populate organiser dropdown — only clubs from accessible campuses
+  // Also load ACCs for organiser dropdown
+  const { data: accs } = await sb.from("acc_bodies").select("name,campus").order("name");
+
+  // Populate organiser dropdown — clubs + ACCs from accessible campuses
   const accessible = filterByCampus(allClubs);
+  const accessibleACCs = (accs||[]).filter(a => !a.campus || canAccessCampus(a.campus));
   const sel = document.getElementById("eventOrganiser");
   const current = sel.value;
-  sel.innerHTML = `<option value="">Select club…</option>` +
-    accessible.map(c => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join("");
+  sel.innerHTML = `<option value="">Select organiser…</option>`
+    + `<optgroup label="🎭 Clubs & Societies">`
+    + accessible.map(c => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join("")
+    + `</optgroup>`
+    + (accessibleACCs.length ? `<optgroup label="🎨 Arts & Culture Committees">`
+    + accessibleACCs.map(a => `<option value="${esc(a.name)}">${esc(a.name)}</option>`).join("")
+    + `</optgroup>` : "");
   if(current) sel.value = current;
 }
 
@@ -3869,15 +3878,21 @@ async function saveEvent(){
 
   // Sync to event_proposals so it appears in Event Lead portal
   if(assignLead && eventId){
+    // Look up the club email from clubs/accs table
+    const club = allClubs.find(c => c.name === payload.organiser);
+    const { data: accData } = await sb.from("acc_bodies").select("name").eq("name", payload.organiser||"").single();
+    const clubEmail = club?.email || (accData ? payload.organiser.toLowerCase().replace(/\s+/g,"-")+"@aku.edu" : "manual@aku.edu");
+
     const proposalPayload = {
       event_name:          name,
-      club_name:           payload.organiser || "Admin",
-      club_email:          payload.organiser ? (payload.organiser.toLowerCase().replace(/\s+/g,".") + "@aku.edu") : "admin@aku.edu",
-      category:            payload.category  || null,
-      campus:              campus            || null,
+      club_name:           payload.organiser || name,
+      club_email:          clubEmail,
+      category:            payload.category   || null,
+      campus:              campus             || null,
       proposed_date:       payload.event_date || null,
       proposed_time:       payload.start_time || null,
       proposed_venue:      payload.venue      || null,
+      confirmed_venue:     payload.venue      || null,
       audience:            payload.audience   || null,
       description:         payload.description|| null,
       cover_image:         payload.cover_image|| null,
@@ -3885,14 +3900,17 @@ async function saveEvent(){
       execution_status:    "pending",
       assigned_to:         assignLead,
       assigned_at:         new Date().toISOString(),
+      approved_at:         new Date().toISOString(),
       published_event_id:  eventId,
       submitted_at:        new Date().toISOString(),
       updated_at:          new Date().toISOString(),
+      representative_name: "Admin",
+      disclaimer_accepted: true,
     };
 
-    // Check if a proposal already exists for this event
+    // Check if proposal already exists for this event
     const { data: existing } = await sb.from("event_proposals")
-      .select("id").eq("published_event_id", eventId).single();
+      .select("id").eq("published_event_id", eventId).maybeSingle();
 
     if(existing){
       await sb.from("event_proposals")
@@ -3901,9 +3919,10 @@ async function saveEvent(){
     } else {
       await sb.from("event_proposals").insert(proposalPayload);
     }
+    showToast(`Event saved & assigned to ${assignLead}!`);
+  } else {
+    showToast(id ? "Event updated!" : "Event added!");
   }
-
-  showToast(id ? "Event updated!" : "Event added!");
 
   // 🔔 Notify all push subscribers about new event
   if(!id){
