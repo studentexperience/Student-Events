@@ -6151,7 +6151,7 @@ function handleCSVUpload(input){
           organiser:     (r["Organiser"]             || "").trim(),
           category:      (r["Category of the Event"] || "").trim(),
           venue:         (r["Venue"]                 || "").trim(),
-          start_time:    (r["Start Time"]            || "").trim(),
+          start_time:    normalizeTime(r["Start Time"]   || ""),
           event_date:    excelToDate(r["Date of the Event"]),
           audience:      (r["Audience"]              || "").trim() || null,
           description:   (r["Description"]           || "").trim() || null,
@@ -6258,11 +6258,63 @@ function handleCSVUpload(input){
   });
 }
 
+function normalizeTime(v){
+  if(!v) return null;
+  v = v.trim();
+  // Already HH:MM 24hr
+  if(/^\d{2}:\d{2}$/.test(v)) return v;
+  // H:MM AM/PM or HH:MM AM/PM
+  const m = v.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if(m){
+    let h = parseInt(m[1]);
+    const mins = m[2];
+    const period = m[3].toUpperCase();
+    if(period === "PM" && h !== 12) h += 12;
+    if(period === "AM" && h === 12) h = 0;
+    return `${String(h).padStart(2,"0")}:${mins}`;
+  }
+  return v;
+}
+
 function excelToDate(v){
   if(!v) return null;
-  if(isNaN(v)) return v; // already a date string
-  const d = new Date((Number(v) - 25569) * 86400000);
-  return d.toISOString().split("T")[0];
+  v = String(v).trim();
+
+  // Excel serial number
+  if(!isNaN(v) && v.length < 6){
+    const d = new Date((Number(v) - 25569) * 86400000);
+    return d.toISOString().split("T")[0];
+  }
+
+  // Already YYYY-MM-DD
+  if(/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+
+  // YYYY/MM/DD (your format)
+  if(/^\d{4}\/\d{2}\/\d{2}$/.test(v)) return v.replace(/\//g, "-");
+  const ymd = v.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+  if(ymd) return `${ymd[1]}-${ymd[2].padStart(2,"0")}-${ymd[3].padStart(2,"0")}`;
+
+  // M/D/YYYY or MM/DD/YYYY (US format)
+  const us = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(us){
+    const month = us[1].padStart(2,"0");
+    const day   = us[2].padStart(2,"0");
+    return `${us[3]}-${month}-${day}`;
+  }
+
+  // D/M/YYYY or DD/MM/YYYY (UK format) — try parsing
+  const uk = v.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if(uk){
+    const day   = uk[1].padStart(2,"0");
+    const month = uk[2].padStart(2,"0");
+    return `${uk[3]}-${month}-${day}`;
+  }
+
+  // Let JS try to parse anything else
+  const d = new Date(v);
+  if(!isNaN(d.getTime())) return d.toISOString().split("T")[0];
+
+  return null;
 }
 
 /* ══ RESET PASSWORD (Super Admin) ══ */
