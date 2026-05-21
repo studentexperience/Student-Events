@@ -3308,6 +3308,7 @@ async function buildPivotTable(){
 
   allPivotData = eventsData.map(e => ({
     club_name:        e.organiser || "Unassigned",
+    campus:           e.campus    || "",
     status:           proposalMap[e.id]?.status           || "published",
     execution_status: proposalMap[e.id]?.execution_status || null,
   }));
