@@ -3831,45 +3831,66 @@ async function resyncEventToPortal(eventId){
 
   // Check if a proposal already exists
   const { data: existing } = await sb.from("event_proposals")
-    .select("id,assigned_to").eq("published_event_id", eventId).maybeSingle();
+    .select("id,assigned_to,execution_status")
+    .eq("published_event_id", eventId).maybeSingle();
 
-  if(!existing){
-    showToast("No lead assigned — open Edit and assign an Event Lead first.", "error");
-    return;
-  }
-
-  const assignLead = existing.assigned_to;
+  // Get assigned lead — from existing proposal or from event.assigned_lead
+  const assignLead = existing?.assigned_to || e.assigned_lead || null;
   if(!assignLead){
-    showToast("No lead assigned — open Edit and assign an Event Lead first.", "error");
+    showToast("No lead assigned — open ✏️ Edit and assign an Event Lead first.", "error");
     return;
   }
 
   const club = allClubs.find(c => c.name === e.organiser);
-  const now  = new Date().toISOString();
+  // Use a safe club_email — prefer real email, fallback to admin sentinel
+  const clubEmail = club?.email || null;
+  const now = new Date().toISOString();
 
-  const { error } = await sb.from("event_proposals").update({
-    event_name:      e.name,
-    club_name:       e.organiser || e.name,
-    club_email:      club?.email || "manual@admin.aku.edu",
-    category:        e.category  || null,
-    campus:          e.campus    || null,
-    proposed_date:   e.event_date|| null,
-    proposed_time:   e.start_time|| null,
-    proposed_venue:  e.venue     || null,
-    confirmed_venue: e.venue     || null,
-    audience:        e.audience  || null,
-    description:     e.description||null,
-    cover_image:     e.cover_image||null,
-    status:          "assigned",
-    execution_status: existing.execution_status || "pending",
-    updated_at:      now,
-  }).eq("id", existing.id);
+  const payload = {
+    event_name:       e.name,
+    club_name:        e.organiser || e.name,
+    club_email:       clubEmail,
+    category:         e.category   || null,
+    campus:           e.campus     || null,
+    proposed_date:    e.event_date || null,
+    proposed_time:    e.start_time || null,
+    proposed_venue:   e.venue      || null,
+    confirmed_venue:  e.venue      || null,
+    audience:         e.audience   || null,
+    description:      e.description|| null,
+    cover_image:      e.cover_image|| null,
+    status:           "assigned",
+    execution_status: existing?.execution_status || "pending",
+    assigned_to:      assignLead,
+    assigned_at:      existing ? undefined : now,
+    approved_at:      existing ? undefined : now,
+    published_event_id: eventId,
+    updated_at:       now,
+    representative_name: "Admin",
+    disclaimer_accepted: true,
+  };
+  // Remove undefined keys
+  Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
+
+  let error;
+  if(existing){
+    ({ error } = await sb.from("event_proposals").update(payload).eq("id", existing.id));
+  } else {
+    payload.submitted_at = now;
+    ({ error } = await sb.from("event_proposals").insert(payload));
+    if(!error){
+      // Link the event back to this new proposal
+      const { data: newProp } = await sb.from("event_proposals")
+        .select("id").eq("published_event_id", eventId).maybeSingle();
+      if(newProp) await sb.from("events").update({ assigned_lead: assignLead }).eq("id", eventId);
+    }
+  }
 
   if(error){
     showToast("Resync failed: " + error.message, "error");
     return;
   }
-  showToast(`✅ "${e.name}" resynced to ${assignLead}'s portal!`);
+  showToast(`✅ "${e.name}" synced to ${assignLead}'s portal!`);
   loadMyAssignedEvents();
 }
 
@@ -3939,8 +3960,8 @@ async function saveEvent(){
   // Sync to event_proposals so it appears in Event Lead portal
   if(assignLead && eventId){
     // Look up the club's actual email
-    const club    = allClubs.find(c => c.name === payload.organiser);
-    const clubEmail = club?.email || (payload.organiser || "manual") + "@admin.aku.edu";
+    const club      = allClubs.find(c => c.name === payload.organiser);
+    const clubEmail = club?.email || null; // null if no club found — avoids FK violation
 
     const now = new Date().toISOString();
     const proposalPayload = {
