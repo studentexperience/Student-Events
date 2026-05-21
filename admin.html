@@ -3827,9 +3827,20 @@ async function openEventModal(id = null){
 async function populateLeadDropdown(selectId, currentValue = ""){
   const sel = document.getElementById(selectId);
   if(!sel) return;
-  const { data } = await sb.from("admins").select("email,role").eq("role","event_lead").order("email");
+  const { data } = await sb.from("admins")
+    .select("email,role")
+    .in("role",["event_lead","admin","super_admin"])
+    .order("role").order("email");
+  const grouped = { event_lead:[], admin:[], super_admin:[] };
+  (data||[]).forEach(l => (grouped[l.role]||[]).push(l.email));
+  const opts = (role, label) => grouped[role].length
+    ? `<optgroup label="${label}">`
+      + grouped[role].map(e => `<option value="${esc(e)}" ${e===currentValue?"selected":""}>${esc(e)}</option>`).join("")
+      + `</optgroup>` : "";
   sel.innerHTML = `<option value="">— Unassigned —</option>`
-    + (data||[]).map(l => `<option value="${esc(l.email)}" ${l.email===currentValue?"selected":""}>${esc(l.email)}</option>`).join("");
+    + opts("event_lead","🎯 Event Leads")
+    + opts("admin","⚙️ Admins")
+    + opts("super_admin","👑 Super Admins");
 }
 
 async function saveEvent(){
@@ -3878,11 +3889,11 @@ async function saveEvent(){
 
   // Sync to event_proposals so it appears in Event Lead portal
   if(assignLead && eventId){
-    // Look up the club email from clubs/accs table
-    const club = allClubs.find(c => c.name === payload.organiser);
-    const { data: accData } = await sb.from("acc_bodies").select("name").eq("name", payload.organiser||"").single();
-    const clubEmail = club?.email || (accData ? payload.organiser.toLowerCase().replace(/\s+/g,"-")+"@aku.edu" : "manual@aku.edu");
+    // Look up the club's actual email
+    const club    = allClubs.find(c => c.name === payload.organiser);
+    const clubEmail = club?.email || (payload.organiser || "manual") + "@admin.aku.edu";
 
+    const now = new Date().toISOString();
     const proposalPayload = {
       event_name:          name,
       club_name:           payload.organiser || name,
@@ -3899,11 +3910,11 @@ async function saveEvent(){
       status:              "assigned",
       execution_status:    "pending",
       assigned_to:         assignLead,
-      assigned_at:         new Date().toISOString(),
-      approved_at:         new Date().toISOString(),
+      assigned_at:         now,
+      approved_at:         now,
       published_event_id:  eventId,
-      submitted_at:        new Date().toISOString(),
-      updated_at:          new Date().toISOString(),
+      submitted_at:        now,
+      updated_at:          now,
       representative_name: "Admin",
       disclaimer_accepted: true,
     };
@@ -3913,13 +3924,15 @@ async function saveEvent(){
       .select("id").eq("published_event_id", eventId).maybeSingle();
 
     if(existing){
-      await sb.from("event_proposals")
-        .update({ assigned_to: assignLead, updated_at: new Date().toISOString() })
+      const { error: upErr } = await sb.from("event_proposals")
+        .update({ assigned_to: assignLead, updated_at: now })
         .eq("id", existing.id);
+      if(upErr) console.error("[Proposal] Update error:", upErr);
     } else {
-      await sb.from("event_proposals").insert(proposalPayload);
+      const { error: insErr } = await sb.from("event_proposals").insert(proposalPayload);
+      if(insErr) console.error("[Proposal] Insert error:", insErr);
     }
-    showToast(`Event saved & assigned to ${assignLead}!`);
+    showToast(`✅ Event saved & assigned to ${assignLead}!`);
   } else {
     showToast(id ? "Event updated!" : "Event added!");
   }
@@ -4705,8 +4718,7 @@ async function loadMyAssignedEvents(){
       ? currentPermissions.campus : [currentPermissions.campus || "All"];
     const showAll      = currentRole === "super_admin" || adminCampus.includes("All");
 
-    let q = sb.from("event_proposals").select("*").not("assigned_to", "is", null)
-      .not("status", "in", '("cancelled","declined")');
+    let q = sb.from("event_proposals").select("*").not("assigned_to", "is", null);
     if(campusFilter)    q = q.eq("campus", campusFilter);
     else if(!showAll)   q = q.in("campus", adminCampus);
     const { data: allAssigned } = await q.order("proposed_date", { ascending: true });
@@ -4715,7 +4727,6 @@ async function loadMyAssignedEvents(){
     // Event Lead: own events + campus others
     const { data: myEvents, error: myErr } = await sb.from("event_proposals")
       .select("*").eq("assigned_to", myEmail)
-      .not("status", "in", '("cancelled","declined")')
       .order("proposed_date", { ascending: true });
     if(myErr){ showToast("Error: " + myErr.message, "error"); return; }
 
