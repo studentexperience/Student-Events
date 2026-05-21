@@ -4913,6 +4913,7 @@ async function loadMyAssignedEvents(){
     // Event Lead: own events + campus others
     const { data: myEvents, error: myErr } = await sb.from("event_proposals")
       .select("*").eq("assigned_to", myEmail)
+      .not("status","in",'("declined")')
       .order("proposed_date", { ascending: true });
     if(myErr){
       console.error("[Pipeline] Query error for", myEmail, myErr);
