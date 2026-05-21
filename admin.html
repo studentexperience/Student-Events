@@ -1428,14 +1428,30 @@
 
         <!-- ── Club Events Pivot Table ── -->
         <div style="margin-top:28px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
             <div>
               <div style="font-size:14px;font-weight:700;">📋 Events by Club & Status</div>
-              <div style="font-size:12px;color:var(--muted);">Proposal pipeline overview across all clubs</div>
+              <div style="font-size:12px;color:var(--muted);">All events across all clubs and societies</div>
             </div>
-            <input type="text" id="pivotSearch" placeholder="🔍 Search clubs…"
-              oninput="filterPivot(this.value)"
-              style="padding:8px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:'Poppins',sans-serif;font-size:12px;outline:none;width:220px;" />
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <input type="text" id="pivotSearch" placeholder="🔍 Search clubs…"
+                oninput="applyPivotFilters()"
+                style="padding:8px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:'Poppins',sans-serif;font-size:12px;outline:none;width:180px;" />
+              <select id="pivotCampus" onchange="applyPivotFilters()"
+                style="padding:8px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:'Poppins',sans-serif;font-size:12px;outline:none;background:white;">
+                <option value="">All Campuses</option>
+                <option>Karachi</option>
+                <option>Nairobi</option>
+                <option>Kampala</option>
+                <option>Dar es Salaam</option>
+              </select>
+              <button onclick="downloadPivotExcel()"
+                style="padding:8px 16px;background:#15803d;color:white;border:none;border-radius:10px;
+                font-family:'Poppins',sans-serif;font-size:12px;font-weight:700;cursor:pointer;
+                display:flex;align-items:center;gap:6px;white-space:nowrap;">
+                📊 Download Excel
+              </button>
+            </div>
           </div>
           <div class="table-wrap">
             <table id="pivotTable">
@@ -3299,10 +3315,77 @@ async function buildPivotTable(){
 }
 
 function filterPivot(q){
-  const filtered = q
-    ? allPivotData.filter(r => (r.club_name||"").toLowerCase().includes(q.toLowerCase()))
-    : allPivotData;
+  applyPivotFilters();
+}
+
+function applyPivotFilters(){
+  const q      = (document.getElementById("pivotSearch")?.value  || "").toLowerCase();
+  const campus = (document.getElementById("pivotCampus")?.value  || "");
+  let filtered = allPivotData;
+  if(q)      filtered = filtered.filter(r => (r.club_name||"").toLowerCase().includes(q));
+  if(campus) filtered = filtered.filter(r => r.campus === campus);
   renderPivot(filtered);
+}
+
+function downloadPivotExcel(){
+  const q      = (document.getElementById("pivotSearch")?.value  || "").toLowerCase();
+  const campus = (document.getElementById("pivotCampus")?.value  || "");
+  let filtered = allPivotData;
+  if(q)      filtered = filtered.filter(r => (r.club_name||"").toLowerCase().includes(q));
+  if(campus) filtered = filtered.filter(r => r.campus === campus);
+
+  // Build club summary same as renderPivot
+  const clubs = {};
+  const KEYS  = ["submitted","under_review","needs_info","approved","assigned","in_progress","completed","report_submitted","declined","published"];
+  filtered.forEach(r => {
+    const club = r.club_name || "Unknown";
+    if(!clubs[club]) { clubs[club] = { campus: r.campus||"" }; KEYS.forEach(k => clubs[club][k]=0); clubs[club].total=0; }
+    const st = r.status || "published";
+    const ex = r.execution_status || "";
+    if(st==="submitted")         clubs[club].submitted++;
+    else if(st==="under_review") clubs[club].under_review++;
+    else if(st==="needs_info")   clubs[club].needs_info++;
+    else if(st==="approved"&&!ex) clubs[club].approved++;
+    else if(["assigned","approved"].includes(st)&&ex==="in_progress")      clubs[club].in_progress++;
+    else if(["assigned","approved"].includes(st)&&ex==="completed")        clubs[club].completed++;
+    else if(["assigned","approved"].includes(st)&&ex==="report_submitted") clubs[club].report_submitted++;
+    else if(st==="assigned")     clubs[club].assigned++;
+    else if(st==="declined")     clubs[club].declined++;
+    else if(st==="published")    clubs[club].published++;
+    clubs[club].total++;
+  });
+
+  const headers = ["Club / Society","Campus","Received","In Review","Pending Info","Approved","OSE Assigned","Prep Underway","Event Held","Closed","Not Approved","Published","Total"];
+  const rows    = Object.entries(clubs)
+    .sort((a,b) => b[1].total - a[1].total)
+    .map(([name, s]) => [
+      name, s.campus,
+      s.submitted, s.under_review, s.needs_info, s.approved,
+      s.assigned, s.in_progress, s.completed, s.report_submitted,
+      s.declined, s.published, s.total
+    ]);
+
+  // Totals row
+  rows.push([
+    "TOTAL", campus || "All Campuses",
+    ...KEYS.map(k => Object.values(clubs).reduce((sum,v) => sum+(v[k]||0),0)),
+    filtered.length
+  ]);
+
+  // Build CSV (Excel-compatible)
+  const csvContent = [headers, ...rows]
+    .map(row => row.map(cell => `"${String(cell??'').replace(/"/g,'""')}"`).join(","))
+    .join("\n");
+
+  const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  const campusLabel = campus ? `_${campus}` : "";
+  a.download = `campus_life_events${campusLabel}_${new Date().toISOString().split("T")[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast("📊 Excel file downloaded!");
 }
 
 function renderPivot(data){
