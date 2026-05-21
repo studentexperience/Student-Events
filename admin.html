@@ -4728,7 +4728,11 @@ async function loadMyAssignedEvents(){
     const { data: myEvents, error: myErr } = await sb.from("event_proposals")
       .select("*").eq("assigned_to", myEmail)
       .order("proposed_date", { ascending: true });
-    if(myErr){ showToast("Error: " + myErr.message, "error"); return; }
+    if(myErr){
+      console.error("[Pipeline] Query error for", myEmail, myErr);
+      showToast("Error loading events: " + myErr.message, "error"); return;
+    }
+    console.log("[Pipeline] Found", myEvents?.length, "events for", myEmail);
 
     let cq = sb.from("event_proposals").select("*")
       .eq("status","assigned").neq("assigned_to", myEmail)
