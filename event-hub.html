@@ -1480,43 +1480,51 @@ async function handleSignup(){
   btn.disabled = true; btn.textContent = "Checking…";
   hideMsg();
 
-  // Step 1 — Check if email is pre-registered in the backend by admin
+  // Check if already submitted
   const { data: existing } = await sb.from("club_accounts")
-    .select("*").eq("email", email).single();
-
-  // Email not in backend — automatically declined
-  if(!existing){
-    showMsg("❌ Your club email is not registered in our system. Please contact the OSE team to get your club added first.", "error");
-    btn.disabled = false; btn.textContent = "Submit Access Request";
-    return;
-  }
+    .select("*").eq("email", email).maybeSingle();
 
   // Already approved
-  if(existing.status === "approved"){
+  if(existing?.status === "approved"){
     showMsg("✅ Your club already has an approved account. Please sign in.", "success");
     btn.disabled = false; btn.textContent = "Submit Access Request";
     return;
   }
 
   // Already pending
-  if(existing.status === "pending"){
-    showMsg("⏳ Your access request is already pending approval. Please wait for the OSE team to review it.", "error");
+  if(existing?.status === "pending"){
+    showMsg("⏳ Your access request is already pending approval. Please wait for the OSE team to review it.", "info");
     btn.disabled = false; btn.textContent = "Submit Access Request";
     return;
   }
 
-  // Step 2 — Email matches backend, update to pending and create auth account
   btn.textContent = "Submitting…";
 
-  const { error: updateErr } = await sb.from("club_accounts").update({
-    club_name:  clubName,
-    campus,
-    status:     "pending",
-    authorized: false,
-  }).eq("email", email);
+  // Insert or update club_accounts with pending status
+  let dbErr;
+  if(existing){
+    // Re-applying after being declined — update existing row
+    const { error } = await sb.from("club_accounts").update({
+      club_name:  clubName,
+      campus,
+      status:     "pending",
+      authorized: false,
+    }).eq("email", email);
+    dbErr = error;
+  } else {
+    // Brand new request — insert
+    const { error } = await sb.from("club_accounts").insert({
+      email,
+      club_name:  clubName,
+      campus,
+      status:     "pending",
+      authorized: false,
+    });
+    dbErr = error;
+  }
 
-  if(updateErr){
-    showMsg("❌ " + updateErr.message, "error");
+  if(dbErr){
+    showMsg("❌ " + dbErr.message, "error");
     btn.disabled = false; btn.textContent = "Submit Access Request";
     return;
   }
