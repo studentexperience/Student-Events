@@ -4480,7 +4480,7 @@ async function savePermissions(){
 
 async function addAdmin(){
   if(currentRole !== "super_admin"){ showToast("Only Super Admins can add new admins.", "error"); return; }
-  const email    = document.getElementById("newAdminEmail").value.trim();
+  const email    = document.getElementById("newAdminEmail").value.trim().toLowerCase();
   const role     = document.getElementById("newAdminRole").value;
   const campus   = document.getElementById("newAdminCampus").value;
   const password = document.getElementById("newAdminPassword").value;
@@ -4489,35 +4489,49 @@ async function addAdmin(){
   if(!password){ showToast("Set a temporary password", "error"); return; }
   if(password.length < 8){ showToast("Password must be at least 8 characters", "error"); return; }
 
-  // Step 1 — Insert into admins table first (needed for signup trigger)
+  const btn = document.querySelector("#addAdminForm .btn-primary");
+  if(btn){ btn.disabled = true; btn.textContent = "Creating…"; }
+  const resetBtn = () => { if(btn){ btn.disabled = false; btn.textContent = "Add Admin"; } };
+
+  // Step 1 — Create Auth account via Edge Function (bypasses email confirmation)
+  const res = await fetch("https://dgzuqvffnbfybngoadse.supabase.co/functions/v1/bright-processor", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPABASE_KEY}` },
+    body: JSON.stringify({ type: "create_user", user_email: email, new_password: password }),
+  });
+  const result = await res.json();
+
+  if(!res.ok || result.error){
+    // If user already exists in Auth, that's fine — continue to add to admins table
+    if(!result.error?.toLowerCase().includes("already")){
+      showToast("Auth error: " + (result.error || `HTTP ${res.status}`), "error");
+      resetBtn(); return;
+    }
+  }
+
+  // Step 2 — Insert into admins table
   const defaultPerms = { ...ROLE_DEFAULTS[role] || ROLE_DEFAULTS.admin, campus: [campus] };
   const { error: insertErr } = await sb.from("admins").insert({
     email, role, campus,
     permissions: defaultPerms,
     must_change_password: true,
   });
-  if(insertErr){ showToast("Failed: " + insertErr.message, "error"); return; }
-
-  // Step 2 — Create auth account with temporary password
-  const { error: signupErr } = await sb.auth.signUp({ email, password });
-  if(signupErr && !signupErr.message.toLowerCase().includes("already")){
-    // Rollback admins insert if auth fails
-    await sb.from("admins").delete().eq("email", email);
-    showToast("Auth account failed: " + signupErr.message, "error");
-    return;
+  if(insertErr){
+    showToast("Failed to add to admins table: " + insertErr.message, "error");
+    resetBtn(); return;
   }
 
   const roleLabel = role === "super_admin" ? "Super Admin" : role === "event_lead" ? "Event Lead" : "Admin";
-  showToast(`✅ ${roleLabel} added! Share the temporary password with them securely.`);
+  showToast(`✅ ${roleLabel} added! Share the temporary password securely.`);
+  resetBtn();
 
-  // Show a copy-friendly summary
   document.getElementById("addAdminNote").innerHTML = `
     <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px;margin-top:8px;">
-      <div style="font-weight:700;color:#15803d;margin-bottom:6px;">✅ Account created successfully!</div>
+      <div style="font-weight:700;color:#15803d;margin-bottom:6px;">✅ Account created!</div>
       <div style="font-size:12px;color:#374151;line-height:1.8;">
         <strong>Email:</strong> ${esc(email)}<br>
         <strong>Role:</strong> ${roleLabel}<br>
-        <strong>Temp Password:</strong> <code style="background:#e5e7eb;padding:1px 6px;border-radius:4px;">${esc(password)}</code><br>
+        <strong>Temp Password:</strong> <code style="background:#e5e7eb;padding:2px 8px;border-radius:4px;">${esc(password)}</code><br>
         <strong>Note:</strong> They will be asked to change their password on first login.
       </div>
     </div>`;
