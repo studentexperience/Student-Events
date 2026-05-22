@@ -5422,7 +5422,7 @@ function renderProposalsTable(list){
   }).join("");
 }
 
-function openReviewModal(id){
+async function openReviewModal(id){
   const p = allAdminProposals.find(x => x.id === id);
   if(!p) return;
   document.getElementById("reviewProposalId").value          = id;
@@ -5440,14 +5440,24 @@ function openReviewModal(id){
   document.getElementById("assignSection").style.display =
     (canAssign && p.status === "approved") ? "block" : "none";
 
-  // Populate event leads dropdown
+  // Populate event leads dropdown — fetch fresh every time
   if(canAssign){
-    const leads = (allAdmins || []).filter(a => ["admin","super_admin","event_lead"].includes(a.role));
+    const { data: leadsData } = await sb.from("admins")
+      .select("email,role")
+      .in("role",["event_lead","admin","super_admin"])
+      .order("role").order("email");
+    const leads = leadsData || [];
+    const grouped = { event_lead:[], admin:[], super_admin:[] };
+    leads.forEach(l => (grouped[l.role]||[]).push(l));
+    const opts = (role, label) => grouped[role].length
+      ? `<optgroup label="${label}">`
+        + grouped[role].map(l => `<option value="${esc(l.email)}" ${p.assigned_to===l.email?"selected":""}>${esc(l.email)}</option>`).join("")
+        + `</optgroup>` : "";
     document.getElementById("assignLeadSelect").innerHTML =
-      `<option value="">Select event lead…</option>` +
-      leads.map(l => `<option value="${esc(l.email)}" ${p.assigned_to === l.email ? "selected":""}>
-        ${esc(l.email)} (${l.role === "event_lead" ? "Event Lead" : l.role === "super_admin" ? "Super Admin" : "Admin"})
-      </option>`).join("");
+      `<option value="">Select event lead…</option>`
+      + opts("event_lead","🎯 Event Leads")
+      + opts("admin","⚙️ Admins")
+      + opts("super_admin","👑 Super Admins");
   }
 
   // Build details HTML — include all new form fields
@@ -5992,6 +6002,22 @@ function renderClubTable(tbodyId, list, type, cols){
 }
 
 async function approveClub(id, clubName, email){
+  // Step 1 — get the stored password hash from club_accounts
+  const club = allClubAccounts.find(c => c.id === id);
+  const tempPw = club?.password_hash || generateTempPassword();
+
+  // Step 2 — Create auth account via Edge Function
+  const res = await fetch("https://dgzuqvffnbfybngoadse.supabase.co/functions/v1/bright-processor", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPABASE_KEY}` },
+    body: JSON.stringify({ type: "create_user", user_email: email, new_password: tempPw }),
+  });
+  const result = await res.json();
+  if(!res.ok && result.error && !result.error.toLowerCase().includes("already")){
+    showToast("Auth error: " + result.error, "error"); return;
+  }
+
+  // Step 3 — Mark as approved
   const { error } = await sb.from("club_accounts").update({
     status:      "approved",
     authorized:  true,
@@ -5999,20 +6025,23 @@ async function approveClub(id, clubName, email){
     reviewed_at: new Date().toISOString(),
     rejection_reason: null,
   }).eq("id", id);
-
   if(error){ showToast("Failed: " + error.message, "error"); return; }
 
-  // Notify the club
+  // Step 4 — Notify the club
   await sb.from("notifications").insert({
     recipient: email,
     type:      "club_approved",
     title:     "🎉 Club Access Approved!",
-    message:   `${clubName} has been approved! You can now sign in to Event Hub and submit event proposals.`,
+    message:   `${clubName} has been approved! You can now sign in to Event Hub using your email and the password you set during registration.`,
     is_read:   false,
   });
 
-  showToast(`✅ ${clubName} approved!`);
+  showToast(`✅ ${clubName} approved! Auth account created.`);
   loadClubApprovals();
+}
+
+function generateTempPassword(){
+  return Math.random().toString(36).slice(-8) + "Aku@2026";
 }
 
 function openRejectClub(id, name){
