@@ -1855,19 +1855,17 @@ async function sendCardReply(proposalId){
 
 /* ── Realtime: auto-refresh cards when status changes ── */
 function subscribeToProposalUpdates(){
-  sb.channel("hub-proposal-updates")
+  try { sb.removeAllChannels(); } catch(e){}
+
+  // Proposal status changes
+  sb.channel("hub-proposals-" + Date.now())
     .on("postgres_changes", {
-      event: "UPDATE",
-      schema: "public",
-      table: "event_proposals",
+      event: "UPDATE", schema: "public", table: "event_proposals",
       filter: `club_email=eq.${currentClub.email}`
     }, async payload => {
-      // Reload all proposals to get fresh data
       await loadProposals();
-
-      // Show toast for status changes
       const statusLabels = {
-        needs_info:   "💬 Your proposal status: Pending Information — please check messages",
+        needs_info:   "💬 Your proposal needs more information — please check messages",
         approved:     "🎉 Your event has been Approved!",
         declined:     "❌ Your proposal was Not Approved",
         assigned:     "📌 An OSE Member has been assigned to your event",
@@ -1875,10 +1873,38 @@ function subscribeToProposalUpdates(){
         cancelled:    "🚫 Your event was Cancelled",
         under_review: "🔍 Your proposal is now In Review",
       };
-      const msg = statusLabels[payload.new.status];
-      if(msg) showToast(msg, ["approved","assigned"].includes(payload.new.status) ? "success" : "error");
-    })
-    .subscribe();
+      const msg = statusLabels[payload.new?.status];
+      if(msg) showToast(msg, ["approved","assigned"].includes(payload.new?.status) ? "success" : "error");
+    }).subscribe();
+
+  // New messages — auto-show on card thread
+  sb.channel("hub-messages-" + Date.now())
+    .on("postgres_changes", {
+      event: "INSERT", schema: "public", table: "proposal_messages"
+    }, async payload => {
+      const pid = payload.new?.proposal_id;
+      if(!pid) return;
+      // Only refresh if this message is for one of our proposals
+      const myProposal = allProposals.find(p => p.id === pid);
+      if(!myProposal) return;
+      // Refresh thread if it's open
+      const threadBody = document.getElementById(`thread-body-${pid}`);
+      if(threadBody && threadBody.style.display !== "none"){
+        await loadCardMessages(pid);
+      }
+      // Always refresh notification count
+      loadNotifications();
+    }).subscribe();
+
+  // Real-time notifications — bell updates instantly
+  sb.channel("hub-notifs-" + Date.now())
+    .on("postgres_changes", {
+      event: "INSERT", schema: "public", table: "notifications",
+      filter: `recipient=eq.${currentClub.email}`
+    }, () => {
+      loadNotifications();
+      showToast("🔔 You have a new notification!", "success");
+    }).subscribe();
 }
 
 /* ── Load unread badges on initial load ── */
@@ -1997,6 +2023,18 @@ function row(label, value){
 
 /* ── Proposal form ── */
 /* ── Event Scale ── */
+function addWorkingDays(startDate, days){
+  let count = 0;
+  const d = new Date(startDate);
+  d.setHours(0,0,0,0);
+  while(count < days){
+    d.setDate(d.getDate() + 1);
+    const day = d.getDay();
+    if(day !== 0 && day !== 6) count++; // skip weekends
+  }
+  return d;
+}
+
 function selectScale(scale){
   ["small","medium","mega"].forEach(s => {
     const el = document.getElementById(`scale-${s}`);
@@ -2004,16 +2042,15 @@ function selectScale(scale){
     el.style.border     = s === scale ? "2px solid #7c3aed" : "2px solid #e5e7eb";
     el.style.background = s === scale ? "#f5f3ff" : "white";
   });
-  const minDays = { small:1, medium:14, mega:30 };
-  const labels  = {
-    small:  "🟢 Small Event: You can propose a date from tomorrow onwards.",
-    medium: "🟡 Medium Event: Minimum 14 days from today required.",
-    mega:   "🔴 Mega Event: Minimum 30 days from today required."
+  const minWorkingDays = { small:7, medium:14, mega:30 };
+  const labels = {
+    small:  "🟢 Small Event: Minimum 7 working days (Mon–Fri) from today.",
+    medium: "🟡 Medium Event: Minimum 14 working days (Mon–Fri) from today.",
+    mega:   "🔴 Mega Event: Minimum 30 working days (Mon–Fri) from today."
   };
   const today = new Date(); today.setHours(0,0,0,0);
-  const minDate = new Date(today);
-  minDate.setDate(minDate.getDate() + minDays[scale]);
-  const minStr = minDate.toISOString().split("T")[0];
+  const minDate = addWorkingDays(today, minWorkingDays[scale]);
+  const minStr  = minDate.toISOString().split("T")[0];
   const dateInput = document.getElementById("fDate");
   if(dateInput){
     dateInput.min = minStr;
