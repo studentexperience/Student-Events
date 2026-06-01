@@ -1,4 +1,4 @@
-const CACHE_NAME = "aku-campus-life-v2";
+const CACHE_NAME = "aku-campus-life-v4";
 
 // Only cache public pages — never admin or event-hub
 const STATIC_ASSETS = [
@@ -6,6 +6,8 @@ const STATIC_ASSETS = [
   "/Student-Events/clubs.html",
   "/Student-Events/news.html",
   "/Student-Events/forms.html",
+  "/Student-Events/resources.html",
+  "/Student-Events/emergency-contacts.html",
   "/Student-Events/manifest.json",
   "/Student-Events/offline.html",
 ];
