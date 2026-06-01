@@ -5148,7 +5148,8 @@ function pipelineCard(p, today, isMine = true){
     ? `<img class="pipeline-card-cover" src="${esc(p.cover_image)}" />`
     : `<div class="pipeline-card-cover-placeholder" style="background:linear-gradient(135deg,#667eea,#764ba2);">🎭</div>`;
 
-  const execBtnsHtml = isMine ? `
+  const canUpdateStatus = isMine || currentRole === "admin" || currentRole === "super_admin";
+  const execBtnsHtml = canUpdateStatus ? `
     <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e5e7eb;">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:6px;">Update Status</div>
       <div class="pipeline-card-exec-btns">${
@@ -5544,11 +5545,29 @@ async function saveConfirmedVenue(proposalId, publishedEventId){
     .update({ confirmed_venue: venue || null, updated_at: new Date().toISOString() })
     .eq("id", proposalId);
   if(error){ showToast("Failed: " + error.message, "error"); return; }
-  // Also update the published event venue
   if(publishedEventId){
     await sb.from("events").update({ venue: venue || null }).eq("id", publishedEventId);
   }
-  showToast("📍 Venue confirmed!");
+  // Notify club of venue confirmation
+  const p = allAdminProposals.find(x => x.id === proposalId);
+  if(p?.club_email){
+    await sb.from("notifications").insert({
+      recipient:   p.club_email,
+      type:        "venue_confirmed",
+      title:       "📍 Event Venue Confirmed",
+      message:     `The venue for "${p.event_name}" has been confirmed: ${venue || "TBC"}`,
+      proposal_id: proposalId,
+      is_read:     false,
+    });
+    // Also add to message thread so club sees it inline
+    await sb.from("proposal_messages").insert({
+      proposal_id:  proposalId,
+      sender_email: currentUser.email,
+      sender_type:  "admin",
+      message:      `📍 Venue confirmed: ${venue || "TBC"}`,
+    });
+  }
+  showToast("📍 Venue saved & club notified!");
   loadMyAssignedEvents();
 }
 
@@ -5697,7 +5716,7 @@ async function sendResourceUpdate(){
     return `⏳ ${label}: Pending confirmation`;
   });
 
-  const message = `Resource update for "${p.event_name}":\n\n${lines.join("\n")}\n\nFor any queries, please reach out through this message thread.`;
+  const message = `🛠️ Resource update for "${p.event_name}":\n\n${lines.join("\n")}\n\nFor any queries please reply in this thread.`;
 
   const { error } = await sb.from("proposal_messages").insert({
     proposal_id:  proposalId,
@@ -6701,33 +6720,31 @@ async function sendProposalMessage(){
 /* ══ REALTIME SUBSCRIPTIONS ══ */
 function startRealtimeSubscriptions(){
   // Refresh proposals table whenever any proposal changes
-  // Remove any existing channels first to prevent duplicate subscription errors
   try { sb.removeAllChannels(); } catch(e){}
 
   sb.channel("admin-proposals-" + Date.now())
-    .on("postgres_changes", {
-      event: "*",
-      schema: "public",
-      table: "event_proposals"
-    }, () => {
+    .on("postgres_changes", { event:"*", schema:"public", table:"event_proposals" }, () => {
       loadProposals();
       const pipelineSection = document.getElementById("section-my-events");
-      if(pipelineSection && pipelineSection.style.display !== "none"){
-        loadMyAssignedEvents();
-      }
-    })
-    .subscribe((status) => {
-      if(status === "SUBSCRIPTION_ERROR") console.warn("[Realtime] Proposals subscription error");
-    });
+      if(pipelineSection && pipelineSection.classList.contains("active")) loadMyAssignedEvents();
+    }).subscribe();
 
   sb.channel("admin-messages-" + Date.now())
-    .on("postgres_changes", {
-      event: "INSERT",
-      schema: "public",
-      table: "proposal_messages"
-    }, () => {
+    .on("postgres_changes", { event:"INSERT", schema:"public", table:"proposal_messages" }, () => {
       loadAdminNotifications();
-    })
+      // Refresh any open inline threads
+      document.querySelectorAll("[id^='pipeline-msgs-']").forEach(el => {
+        const pid = el.id.replace("pipeline-msgs-","");
+        if(el.closest("[style*='block']") || el.children.length) loadPipelineMessages(pid);
+      });
+    }).subscribe();
+
+  // Real-time notifications — auto-update bell without refresh
+  sb.channel("admin-notifs-" + Date.now())
+    .on("postgres_changes", {
+      event:"INSERT", schema:"public", table:"notifications",
+      filter: `recipient=eq.${currentUser.email}`
+    }, () => loadAdminNotifications())
     .subscribe();
 }
 
@@ -6754,11 +6771,41 @@ async function loadAdminNotifications(){
   }
 
   list.innerHTML = notifs.map(n => `
-    <div class="notif-item ${n.is_read ? "" : "unread"}" onclick="markAdminNotifRead('${n.id}')">
+    <div class="notif-item ${n.is_read ? "" : "unread"}" style="cursor:pointer;"
+      data-notif-id="${esc(n.id)}" data-proposal-id="${esc(n.proposal_id||"")}">
       <div class="notif-item-title">${esc(n.title)}</div>
       <div class="notif-item-msg">${esc(n.message)}</div>
       <div class="notif-item-time">${timeAgoAdmin(n.created_at)}</div>
     </div>`).join("");
+
+  // Attach click handlers via event delegation
+  list.querySelectorAll(".notif-item").forEach(el => {
+    el.addEventListener("click", () => goToAdminProposal(el.dataset.notifId, el.dataset.proposalId));
+  });
+}
+
+async function goToAdminProposal(notifId, proposalId){
+  await sb.from("notifications").update({ is_read: true }).eq("id", notifId);
+  document.getElementById("adminNotifPanel").classList.remove("open");
+
+  if(!proposalId){ loadAdminNotifications(); return; }
+
+  // Navigate to proposals section and open review modal
+  const proposalsNav = document.querySelector('[data-section="section-proposals"]');
+  if(proposalsNav) showSection("proposals", proposalsNav);
+
+  // Wait for proposals to load then open modal
+  const tryOpen = async (attempts = 0) => {
+    const p = (allAdminProposals || []).find(x => x.id === proposalId);
+    if(p){
+      openReviewModal(proposalId);
+    } else if(attempts < 10){
+      await loadProposals();
+      setTimeout(() => tryOpen(attempts + 1), 300);
+    }
+  };
+  await tryOpen();
+  loadAdminNotifications();
 }
 
 function timeAgoAdmin(str){
