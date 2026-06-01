@@ -1251,6 +1251,12 @@
       <button class="nav-item" data-section="section-forms" onclick="showSection('forms', this)">
         <span class="nav-icon">📋</span> Forms
       </button>
+      <button class="nav-item" data-section="section-resources" onclick="showSection('resources', this)">
+        <span class="nav-icon">🔗</span> Resources
+      </button>
+      <button class="nav-item" data-section="section-emergency" onclick="showSection('emergency', this)">
+        <span class="nav-icon">🚨</span> Emergency Contacts
+      </button>
       <button class="nav-item" data-section="section-home" onclick="showSection('home', this)">
         <span class="nav-icon">🏠</span> Home Page
       </button>
@@ -1690,6 +1696,46 @@
             <tbody id="forms-tbody">
               <tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-text">Loading…</div></div></td></tr>
             </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── IMPORTANT RESOURCES ── -->
+      <div class="section" id="section-resources">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Important Resources</div>
+            <div class="section-subtitle">Manage links and resources shown on the Resources page</div>
+          </div>
+          <button class="btn btn-primary" onclick="openResourceModal()">+ Add Resource</button>
+        </div>
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <input class="table-search" placeholder="🔍 Search resources…" oninput="filterTable('resources-table', this.value)" />
+          </div>
+          <table id="resources-table">
+            <thead><tr><th>Icon</th><th>Title</th><th>Category</th><th>Campus</th><th>URL</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="resources-list"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── EMERGENCY CONTACTS ── -->
+      <div class="section" id="section-emergency">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Emergency Contacts</div>
+            <div class="section-subtitle">Manage emergency contacts shown by campus</div>
+          </div>
+          <button class="btn btn-primary" onclick="openEmergencyModal()">+ Add Contact</button>
+        </div>
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <input class="table-search" placeholder="🔍 Search contacts…" oninput="filterTable('emergency-table', this.value)" />
+          </div>
+          <table id="emergency-table">
+            <thead><tr><th>Name</th><th>Role</th><th>Department</th><th>Category</th><th>Phone</th><th>Campus</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="emergency-list"><tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px;">Loading…</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -2360,6 +2406,93 @@
         <button class="btn btn-secondary" onclick="closeModal('formModal')">Cancel</button>
         <button class="btn btn-primary" onclick="saveForm()">Save Form</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RESOURCE MODAL ══ -->
+<div class="modal-backdrop" id="resourceModal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <div class="modal-title" id="resourceModalTitle">Add Resource</div>
+      <button class="modal-close" onclick="closeModal('resourceModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="resourceId" />
+      <div class="form-grid">
+        <div class="field full"><label>Title *</label><input id="resTitle" type="text" placeholder="e.g. Transport Request Form" /></div>
+        <div class="field full"><label>Description</label><textarea id="resDescription" rows="2" placeholder="Brief description of this resource…"></textarea></div>
+        <div class="field full"><label>URL</label><input id="resUrl" type="url" placeholder="https://…" /></div>
+        <div class="field"><label>Category</label>
+          <select id="resCategory">
+            <option value="">Select…</option>
+            <option>Forms</option><option>Portals</option><option>Health & Wellness</option>
+            <option>Academic</option><option>Student Affairs</option>
+            <option>Finance</option><option>IT & Technology</option><option>Policies</option>
+          </select>
+        </div>
+        <div class="field"><label>Campus</label>
+          <select id="resCampus">
+            <option value="">All Campuses</option>
+            <option>Karachi</option><option>Nairobi</option><option>Kampala</option><option>Dar es Salaam</option>
+          </select>
+        </div>
+        <div class="field"><label>Icon (emoji)</label><input id="resIcon" type="text" placeholder="e.g. 📋" /></div>
+        <div class="field"><label>Display Order</label><input id="resOrder" type="number" value="0" min="0" /></div>
+        <div class="field"><label>Status</label>
+          <select id="resActive">
+            <option value="true">Active</option>
+            <option value="false">Inactive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('resourceModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveResource()">Save Resource</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EMERGENCY CONTACT MODAL ══ -->
+<div class="modal-backdrop" id="emergencyModal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <div class="modal-title" id="emergencyModalTitle">Add Emergency Contact</div>
+      <button class="modal-close" onclick="closeModal('emergencyModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="emergencyId" />
+      <div class="form-grid">
+        <div class="field full"><label>Name *</label><input id="emgName" type="text" placeholder="e.g. Dr. Sarah Ahmed" /></div>
+        <div class="field"><label>Role</label><input id="emgRole" type="text" placeholder="e.g. Head of Security" /></div>
+        <div class="field"><label>Department</label><input id="emgDept" type="text" placeholder="e.g. Campus Security" /></div>
+        <div class="field"><label>Category</label>
+          <select id="emgCategory">
+            <option value="">Select…</option>
+            <option>Medical</option><option>Security</option><option>Counselling</option>
+            <option>Admin</option><option>IT Support</option><option>Facilities</option><option>Student Affairs</option>
+          </select>
+        </div>
+        <div class="field"><label>Phone</label><input id="emgPhone" type="tel" placeholder="e.g. 021-111-911-911" /></div>
+        <div class="field"><label>Email</label><input id="emgEmail" type="email" placeholder="contact@aku.edu" /></div>
+        <div class="field"><label>Campus</label>
+          <select id="emgCampus">
+            <option value="">All Campuses</option>
+            <option>Karachi</option><option>Nairobi</option><option>Kampala</option><option>Dar es Salaam</option>
+          </select>
+        </div>
+        <div class="field"><label>Display Order</label><input id="emgOrder" type="number" value="0" min="0" /></div>
+        <div class="field"><label>Status</label>
+          <select id="emgActive">
+            <option value="true">Active</option><option value="false">Inactive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('emergencyModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEmergencyContact()">Save Contact</button>
     </div>
   </div>
 </div>
@@ -3060,12 +3193,12 @@ function showSection(name, btn){
   document.getElementById(`section-${name}`).classList.add("active");
   btn.classList.add("active");
 
-  // Re-render charts when dashboard becomes visible — delay lets CSS paint first
   if(name === "dashboard" && dashEventData.length > 0){
-    // Destroy all first so they re-render fresh
     ["chartByCampus","chartByMonth","chartCampusByMonth","chartByCategory"].forEach(id => destroyChart(id));
     setTimeout(() => renderAllCharts(), 200);
   }
+  if(name === "resources") loadResources();
+  if(name === "emergency") loadEmergencyContacts();
 }
 
 /* ══ TOAST ══ */
@@ -4573,17 +4706,21 @@ async function doDelete(type, id){
     // Also delete the linked proposal so it disappears from lead portal and club portal
     await sb.from("event_proposals").delete().eq("published_event_id", id);
     ({ error } = await sb.from("events").delete().eq("id", id));
-  } else if(type === "club")  ({ error } = await sb.from("clubs").delete().eq("id", id));
+  } else if(type === "club")      ({ error } = await sb.from("clubs").delete().eq("id", id));
+  else if(type === "resource")   ({ error } = await sb.from("resources").delete().eq("id", id));
+  else if(type === "emergency")  ({ error } = await sb.from("emergency_contacts").delete().eq("id", id));
   else if(type === "admin") ({ error } = await sb.from("admins").delete().eq("id", id));
   else if(type === "news")  ({ error } = await sb.from("news").delete().eq("id", id));
   else if(type === "form")  ({ error } = await sb.from("forms").delete().eq("id", id));
   if(error){ showToast("Delete failed: " + error.message, "error"); return; }
   showToast("Deleted successfully.");
-  if(type === "club")  { loadClubs();  loadDashboard(); }
-  if(type === "event") { loadEvents(); loadDashboard(); loadMyAssignedEvents(); buildPivotTable(); }
-  if(type === "admin") { loadAdmins(); loadDashboard(); }
-  if(type === "news")  { loadNews(); }
-  if(type === "form")  { loadForms(); }
+  if(type === "club")      { loadClubs();  loadDashboard(); }
+  if(type === "event")     { loadEvents(); loadDashboard(); loadMyAssignedEvents(); buildPivotTable(); }
+  if(type === "admin")     { loadAdmins(); loadDashboard(); }
+  if(type === "news")      { loadNews(); }
+  if(type === "form")      { loadForms(); }
+  if(type === "resource")  { loadResources(); }
+  if(type === "emergency") { loadEmergencyContacts(); }
 }
 
 function closeConfirm(){
@@ -4735,6 +4872,135 @@ function insertNewsLink(){
 
 /* ══ FORMS ══ */
 let allForms = [];
+
+/* ── Resources ── */
+async function loadResources(){
+  const { data } = await sb.from("resources").select("*").order("display_order").order("title");
+  const tbody = document.getElementById("resources-list");
+  if(!tbody) return;
+  if(!data?.length){ tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">No resources yet.</td></tr>`; return; }
+  tbody.innerHTML = data.map(r => `<tr>
+    <td>${r.icon||"🔗"}</td>
+    <td style="font-weight:600;">${esc(r.title)}</td>
+    <td>${esc(r.category||"—")}</td>
+    <td>${esc(r.campus||"All")}</td>
+    <td>${r.url?`<a href="${esc(r.url)}" target="_blank" style="color:var(--accent);">Link ↗</a>`:"—"}</td>
+    <td><span style="padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;background:${r.is_active?"#f0fdf4":"#f9fafb"};color:${r.is_active?"#15803d":"#6b7280"};">${r.is_active?"Active":"Inactive"}</span></td>
+    <td><div class="td-actions">
+      <button class="btn btn-secondary btn-sm" onclick="openResourceModal('${r.id}')">✏️ Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmDelete('resource','${r.id}','${esc(r.title)}')">🗑️</button>
+    </div></td></tr>`).join("");
+}
+
+function openResourceModal(id = null){
+  document.getElementById("resourceId").value = "";
+  ["resTitle","resDescription","resUrl","resIcon"].forEach(i => document.getElementById(i).value = "");
+  document.getElementById("resCategory").value = "";
+  document.getElementById("resCampus").value = "";
+  document.getElementById("resOrder").value = "0";
+  document.getElementById("resActive").value = "true";
+  document.getElementById("resourceModalTitle").textContent = id ? "Edit Resource" : "Add Resource";
+  if(id){
+    sb.from("resources").select("*").eq("id",id).single().then(({data:r}) => {
+      if(!r) return;
+      document.getElementById("resourceId").value      = r.id;
+      document.getElementById("resTitle").value        = r.title       || "";
+      document.getElementById("resDescription").value  = r.description || "";
+      document.getElementById("resUrl").value          = r.url         || "";
+      document.getElementById("resCategory").value     = r.category    || "";
+      document.getElementById("resCampus").value       = r.campus      || "";
+      document.getElementById("resIcon").value         = r.icon        || "";
+      document.getElementById("resOrder").value        = r.display_order || 0;
+      document.getElementById("resActive").value       = String(r.is_active !== false);
+    });
+  }
+  document.getElementById("resourceModal").classList.add("open");
+}
+
+async function saveResource(){
+  const id = document.getElementById("resourceId").value;
+  const title = document.getElementById("resTitle").value.trim();
+  if(!title){ showToast("Title is required","error"); return; }
+  const payload = {
+    title, description: document.getElementById("resDescription").value.trim()||null,
+    url: document.getElementById("resUrl").value.trim()||null,
+    category: document.getElementById("resCategory").value||null,
+    campus: document.getElementById("resCampus").value||null,
+    icon: document.getElementById("resIcon").value.trim()||null,
+    display_order: parseInt(document.getElementById("resOrder").value)||0,
+    is_active: document.getElementById("resActive").value === "true",
+  };
+  const {error} = id ? await sb.from("resources").update(payload).eq("id",id)
+                     : await sb.from("resources").insert(payload);
+  if(error){ showToast("Failed: "+error.message,"error"); return; }
+  showToast(id ? "Resource updated!" : "Resource added!");
+  closeModal("resourceModal"); loadResources();
+}
+
+/* ── Emergency Contacts ── */
+async function loadEmergencyContacts(){
+  const { data } = await sb.from("emergency_contacts").select("*").order("display_order").order("name");
+  const tbody = document.getElementById("emergency-list");
+  if(!tbody) return;
+  if(!data?.length){ tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px;">No contacts yet.</td></tr>`; return; }
+  tbody.innerHTML = data.map(c => `<tr>
+    <td style="font-weight:600;">${esc(c.name)}</td>
+    <td>${esc(c.role||"—")}</td><td>${esc(c.department||"—")}</td>
+    <td>${esc(c.category||"—")}</td>
+    <td>${c.phone?`<a href="tel:${esc(c.phone)}" style="color:var(--accent);">${esc(c.phone)}</a>`:"—"}</td>
+    <td>${esc(c.campus||"All")}</td>
+    <td><span style="padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;background:${c.is_active?"#f0fdf4":"#f9fafb"};color:${c.is_active?"#15803d":"#6b7280"};">${c.is_active?"Active":"Inactive"}</span></td>
+    <td><div class="td-actions">
+      <button class="btn btn-secondary btn-sm" onclick="openEmergencyModal('${c.id}')">✏️ Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmDelete('emergency','${c.id}','${esc(c.name)}')">🗑️</button>
+    </div></td></tr>`).join("");
+}
+
+function openEmergencyModal(id = null){
+  document.getElementById("emergencyId").value = "";
+  ["emgName","emgRole","emgDept","emgPhone","emgEmail"].forEach(i => document.getElementById(i).value = "");
+  ["emgCategory","emgCampus"].forEach(i => document.getElementById(i).value = "");
+  document.getElementById("emgOrder").value = "0";
+  document.getElementById("emgActive").value = "true";
+  document.getElementById("emergencyModalTitle").textContent = id ? "Edit Contact" : "Add Emergency Contact";
+  if(id){
+    sb.from("emergency_contacts").select("*").eq("id",id).single().then(({data:c}) => {
+      if(!c) return;
+      document.getElementById("emergencyId").value   = c.id;
+      document.getElementById("emgName").value       = c.name        || "";
+      document.getElementById("emgRole").value       = c.role        || "";
+      document.getElementById("emgDept").value       = c.department  || "";
+      document.getElementById("emgCategory").value   = c.category    || "";
+      document.getElementById("emgPhone").value      = c.phone       || "";
+      document.getElementById("emgEmail").value      = c.email       || "";
+      document.getElementById("emgCampus").value     = c.campus      || "";
+      document.getElementById("emgOrder").value      = c.display_order || 0;
+      document.getElementById("emgActive").value     = String(c.is_active !== false);
+    });
+  }
+  document.getElementById("emergencyModal").classList.add("open");
+}
+
+async function saveEmergencyContact(){
+  const id = document.getElementById("emergencyId").value;
+  const name = document.getElementById("emgName").value.trim();
+  if(!name){ showToast("Name is required","error"); return; }
+  const payload = {
+    name, role: document.getElementById("emgRole").value.trim()||null,
+    department: document.getElementById("emgDept").value.trim()||null,
+    category: document.getElementById("emgCategory").value||null,
+    phone: document.getElementById("emgPhone").value.trim()||null,
+    email: document.getElementById("emgEmail").value.trim()||null,
+    campus: document.getElementById("emgCampus").value||null,
+    display_order: parseInt(document.getElementById("emgOrder").value)||0,
+    is_active: document.getElementById("emgActive").value === "true",
+  };
+  const {error} = id ? await sb.from("emergency_contacts").update(payload).eq("id",id)
+                     : await sb.from("emergency_contacts").insert(payload);
+  if(error){ showToast("Failed: "+error.message,"error"); return; }
+  showToast(id ? "Contact updated!" : "Contact added!");
+  closeModal("emergencyModal"); loadEmergencyContacts();
+}
 
 async function loadForms(){
   const { data, error } = await sb.from("forms").select("*").order("created_at", { ascending: false });
