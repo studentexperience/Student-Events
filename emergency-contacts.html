@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Campus Life" />
+  <link rel="apple-touch-icon" href="https://studentexperience.github.io/Student-Events/icon-192.png" />
+  <title>Campus Life · Emergency Contacts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --ink: #111827; --muted: #6b7280; --border: #e5e7eb;
+      --bg: #f3f4f6; --panel: #ffffff;
+      --shadow: 0 4px 16px rgba(0,0,0,.08);
+      --accent: #2563eb; --red: #dc2626;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
+
+    /* Topbar */
+    .topbar {
+      height: 56px;
+      background: linear-gradient(135deg,#1e40af 0%,#2563eb 60%,#3b82f6 100%);
+      box-shadow: 0 2px 12px rgba(37,99,235,.25);
+      display: flex; align-items: center; padding: 0 18px; gap: 12px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar-logo { color: white; font-weight: 800; font-size: 18px; text-decoration: none; }
+    .topbar-nav { display: flex; gap: 4px; margin-left: auto; }
+    .topbar-nav a {
+      color: rgba(255,255,255,.85); font-size: 13px; font-weight: 500;
+      padding: 6px 12px; border-radius: 8px; text-decoration: none; transition: background .15s;
+    }
+    .topbar-nav a:hover, .topbar-nav a.active { background: rgba(255,255,255,.18); color: white; }
+    @media(max-width:600px){ .topbar-nav { display: none; } }
+
+    /* Emergency banner */
+    .emergency-banner {
+      background: linear-gradient(135deg, #991b1b, #dc2626, #ef4444);
+      color: white; padding: 28px 20px; text-align: center;
+    }
+    .emergency-banner h1 { font-size: 24px; font-weight: 800; margin-bottom: 6px; }
+    .emergency-banner p { font-size: 13px; opacity: .9; }
+    .emergency-number {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: white; color: #dc2626; border-radius: 999px;
+      padding: 8px 20px; font-size: 18px; font-weight: 800;
+      margin-top: 14px; text-decoration: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,.2);
+    }
+
+    /* Content */
+    .content { max-width: 900px; margin: 0 auto; padding: 24px 16px 100px; }
+
+    /* Campus filter */
+    .filter-bar {
+      display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;
+    }
+    .filter-chip {
+      padding: 7px 16px; border-radius: 999px; border: 2px solid var(--border);
+      background: white; font-family: 'Poppins',sans-serif; font-size: 13px;
+      font-weight: 600; cursor: pointer; transition: all .15s; color: var(--muted);
+    }
+    .filter-chip.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+    /* Category section */
+    .category-section { margin-bottom: 32px; }
+    .category-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .6px; color: var(--muted);
+      padding: 0 4px; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .category-label::after {
+      content: ""; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* Contact cards */
+    .contacts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .contact-card {
+      background: white; border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow); overflow: hidden;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .contact-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+    .contact-card-top {
+      padding: 16px 16px 12px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .contact-avatar {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .contact-name { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+    .contact-role { font-size: 12px; color: var(--muted); }
+    .contact-dept { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .contact-actions {
+      border-top: 1px solid #f3f4f6;
+      display: flex;
+    }
+    .contact-action {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 11px 8px; font-size: 12px; font-weight: 700;
+      text-decoration: none; color: var(--muted); transition: background .15s;
+    }
+    .contact-action:hover { background: #f9fafb; }
+    .contact-action.call { color: #16a34a; }
+    .contact-action.email { color: var(--accent); }
+    .contact-action:not(:last-child) { border-right: 1px solid #f3f4f6; }
+    .contact-action .icon { font-size: 16px; }
+
+    /* Empty */
+    .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+    /* Bottom nav */
+    .bottom-nav {
+      display: none; position: fixed; bottom: 0; left: 0; right: 0;
+      background: white; border-top: 1px solid var(--border);
+      box-shadow: 0 -4px 12px rgba(0,0,0,.08); z-index: 100;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .bottom-nav-inner { display: flex; }
+    .bottom-nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: 8px 4px; font-size: 10px; font-weight: 600; color: var(--muted);
+      text-decoration: none; gap: 2px;
+    }
+    .bottom-nav-item span:first-child { font-size: 20px; }
+    .bottom-nav-item.active { color: var(--accent); }
+    @media(max-width:600px){
+      .bottom-nav { display: block; }
+      .contacts-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<header class="topbar">
+  <a href="index.html" class="topbar-logo">Campus Life</a>
+  <nav class="topbar-nav">
+    <a href="index.html">Events</a>
+    <a href="clubs.html">Clubs</a>
+    <a href="acc.html">ACC</a>
+    <a href="news.html">News</a>
+    <a href="resources.html">Resources</a>
+    <a href="emergency-contacts.html" class="active">Emergency</a>
+  </nav>
+</header>
+
+<!-- Emergency Banner -->
+<div class="emergency-banner">
+  <div style="font-size:32px;margin-bottom:8px;">🚨</div>
+  <h1>Emergency Contacts</h1>
+  <p>For life-threatening emergencies, call the AKU emergency number immediately</p>
+  <a href="tel:111-911-911" class="emergency-number">📞 111-911-911</a>
+</div>
+
+<div class="content">
+  <!-- Campus Filter -->
+  <div class="filter-bar" id="campusFilter">
+    <button class="filter-chip active" onclick="filterCampus('', this)">All Campuses</button>
+    <button class="filter-chip" onclick="filterCampus('Karachi', this)">Karachi</button>
+    <button class="filter-chip" onclick="filterCampus('Nairobi', this)">Nairobi</button>
+    <button class="filter-chip" onclick="filterCampus('Kampala', this)">Kampala</button>
+    <button class="filter-chip" onclick="filterCampus('Dar es Salaam', this)">Dar es Salaam</button>
+  </div>
+
+  <div id="contactsContainer"></div>
+</div>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <a href="index.html" class="bottom-nav-item"><span>📅</span><span>Events</span></a>
+    <a href="clubs.html" class="bottom-nav-item"><span>🎭</span><span>Clubs</span></a>
+    <a href="acc.html" class="bottom-nav-item"><span>🎨</span><span>ACC</span></a>
+    <a href="news.html" class="bottom-nav-item"><span>📰</span><span>News</span></a>
+    <a href="resources.html" class="bottom-nav-item"><span>🔗</span><span>Resources</span></a>
+    <a href="emergency-contacts.html" class="bottom-nav-item active"><span>🚨</span><span>Emergency</span></a>
+  </div>
+</nav>
+
+<script>
+const SUPABASE_URL = "https://dgzuqvffnbfybngoadse.supabase.co";
+const SUPABASE_KEY = "sb_publishable_77t5gCD7M620CzcMwESN-A_oAuqz6B8";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const CATEGORY_COLORS = {
+  "Medical":       { bg:"#fef2f2", icon:"🏥", color:"#dc2626" },
+  "Security":      { bg:"#fffbeb", icon:"🛡️", color:"#d97706" },
+  "Counselling":   { bg:"#f0fdf4", icon:"💚", color:"#16a34a" },
+  "Admin":         { bg:"#eff6ff", icon:"🏛️", color:"#2563eb" },
+  "IT Support":    { bg:"#f5f3ff", icon:"💻", color:"#7c3aed" },
+  "Facilities":    { bg:"#fef9c3", icon:"🔧", color:"#ca8a04" },
+  "Student Affairs":{ bg:"#fdf4ff", icon:"🎓", color:"#a21caf" },
+};
+
+function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+let allContacts = [];
+let activeCampus = "";
+
+async function loadContacts(){
+  const { data } = await sb.from("emergency_contacts")
+    .select("*").eq("is_active", true)
+    .order("display_order").order("name");
+  allContacts = data || [];
+  render(allContacts);
+}
+
+function filterCampus(campus, btn){
+  activeCampus = campus;
+  document.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
+  btn.classList.add("active");
+  const filtered = campus ? allContacts.filter(c => !c.campus || c.campus === campus) : allContacts;
+  render(filtered);
+}
+
+function render(contacts){
+  const container = document.getElementById("contactsContainer");
+  if(!contacts.length){
+    container.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div>No contacts found for this campus.</div></div>`;
+    return;
+  }
+
+  // Group by category
+  const groups = {};
+  contacts.forEach(c => {
+    const cat = c.category || "General";
+    if(!groups[cat]) groups[cat] = [];
+    groups[cat].push(c);
+  });
+
+  container.innerHTML = Object.entries(groups).map(([cat, items]) => {
+    const style = CATEGORY_COLORS[cat] || { bg:"#f3f4f6", icon:"📞", color:"#374151" };
+    return `<div class="category-section">
+      <div class="category-label">${style.icon} ${esc(cat)}</div>
+      <div class="contacts-grid">
+        ${items.map(c => {
+          const callBtn  = c.phone ? `<a href="tel:${esc(c.phone)}" class="contact-action call"><span class="icon">📞</span>${esc(c.phone)}</a>` : "";
+          const emailBtn = c.email ? `<a href="mailto:${esc(c.email)}" class="contact-action email"><span class="icon">✉️</span>Email</a>` : "";
+          return `<div class="contact-card">
+            <div class="contact-card-top">
+              <div class="contact-avatar" style="background:${style.bg};">${style.icon}</div>
+              <div>
+                <div class="contact-name">${esc(c.name)}</div>
+                ${c.role ? `<div class="contact-role">${esc(c.role)}</div>` : ""}
+                ${c.department ? `<div class="contact-dept">🏢 ${esc(c.department)}</div>` : ""}
+                ${c.campus ? `<div class="contact-dept">📍 ${esc(c.campus)}</div>` : ""}
+              </div>
+            </div>
+            ${callBtn || emailBtn ? `<div class="contact-actions">${callBtn}${emailBtn}</div>` : ""}
+          </div>`;
+        }).join("")}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+loadContacts();
+</script>
+</body>
+</html>
