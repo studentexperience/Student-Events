@@ -5148,7 +5148,7 @@ function pipelineCard(p, today, isMine = true){
     ? `<img class="pipeline-card-cover" src="${esc(p.cover_image)}" />`
     : `<div class="pipeline-card-cover-placeholder" style="background:linear-gradient(135deg,#667eea,#764ba2);">🎭</div>`;
 
-  const canUpdateStatus = isMine || currentRole === "admin" || currentRole === "super_admin";
+  const canUpdateStatus = isMine || ["admin","super_admin","event_lead"].includes(currentRole);
   const execBtnsHtml = canUpdateStatus ? `
     <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e5e7eb;">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:6px;">Update Status</div>
