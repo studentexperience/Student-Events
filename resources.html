@@ -14,177 +14,107 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    :root {
-      --ink: #111827; --muted: #6b7280; --border: #e5e7eb;
-      --bg: #f3f4f6; --panel: #ffffff;
-      --shadow: 0 4px 16px rgba(0,0,0,.08);
-      --accent: #2563eb;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
+    :root { --ink:#111827; --muted:#6b7280; --border:#e5e7eb; --bg:#f3f4f6; --panel:#ffffff; --shadow:0 4px 16px rgba(0,0,0,.08); --accent:#2563eb; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Poppins',sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; }
 
-    /* Topbar */
-    .topbar {
-      height: 56px;
-      background: linear-gradient(135deg,#1e40af 0%,#2563eb 60%,#3b82f6 100%);
-      box-shadow: 0 2px 12px rgba(37,99,235,.25);
-      display: flex; align-items: center; padding: 0 18px; gap: 12px;
-      position: sticky; top: 0; z-index: 100;
-    }
-    .topbar-logo { color: white; font-weight: 800; font-size: 18px; text-decoration: none; }
-    .topbar-nav { display: flex; gap: 4px; margin-left: auto; }
-    .topbar-nav a {
-      color: rgba(255,255,255,.85); font-size: 13px; font-weight: 500;
-      padding: 6px 12px; border-radius: 8px; text-decoration: none; transition: background .15s;
-    }
-    .topbar-nav a:hover, .topbar-nav a.active { background: rgba(255,255,255,.18); color: white; }
-    @media(max-width:600px){ .topbar-nav { display: none; } }
+    .topbar { height:56px; background:linear-gradient(135deg,#1e40af 0%,#2563eb 60%,#3b82f6 100%); box-shadow:0 2px 12px rgba(37,99,235,.25); display:flex; align-items:center; padding:0 18px; gap:12px; position:sticky; top:0; z-index:100; }
+    .brand { color:white; font-size:17px; font-weight:700; letter-spacing:.3px; }
+    .nav-toggle { display:none; background:none; border:none; cursor:pointer; padding:4px 6px; font-size:22px; color:white; }
 
-    /* Hero */
-    .hero {
-      background: linear-gradient(135deg,#1e40af 0%,#2563eb 60%,#3b82f6 100%);
-      color: white; padding: 32px 20px 40px; text-align: center;
-    }
-    .hero h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
-    .hero p { font-size: 13px; opacity: .85; max-width: 400px; margin: 0 auto; }
+    .shell { display:grid; grid-template-columns:160px 1fr; min-height:calc(100vh - 56px); }
+    .nav { background:var(--panel); border-right:1px solid var(--border); padding:16px 8px; width:160px; }
+    .nav a { display:flex; align-items:center; gap:8px; padding:9px 12px; margin:2px 0; border-radius:10px; color:var(--ink); text-decoration:none; font-size:13px; font-weight:500; }
+    .nav a:hover:not(.active) { background:#f9fafb; }
+    .nav a.active { background:#eff6ff; color:#1d4ed8; font-weight:700; border-left:3px solid #2563eb; padding-left:9px; }
+
+    .content { padding:22px; }
+    .page-title { font-size:28px; font-weight:700; margin:6px 0 4px; }
+    .page-subtitle { font-size:14px; color:var(--muted); margin:0 0 20px; }
 
     /* Search */
-    .search-wrap {
-      max-width: 500px; margin: -22px auto 0;
-      padding: 0 16px; position: relative; z-index: 10;
-    }
-    .search-input {
-      width: 100%; padding: 14px 18px 14px 44px;
-      border: none; border-radius: 14px;
-      font-family: 'Poppins',sans-serif; font-size: 14px;
-      box-shadow: 0 8px 24px rgba(0,0,0,.12); outline: none;
-    }
-    .search-icon {
-      position: absolute; left: 32px; top: 50%; transform: translateY(-50%);
-      font-size: 16px; color: var(--muted);
-    }
+    .search-row { display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
+    .search-row input { flex:1; min-width:200px; padding:10px 14px; border-radius:10px; border:1px solid var(--border); font-family:'Poppins',sans-serif; font-size:14px; background:var(--panel); box-shadow:var(--shadow); }
 
-    /* Content */
-    .content { max-width: 960px; margin: 0 auto; padding: 28px 16px 100px; }
-
-    /* Filter tabs */
-    .filter-bar { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
-    .filter-chip {
-      padding: 7px 16px; border-radius: 999px; border: 2px solid var(--border);
-      background: white; font-family: 'Poppins',sans-serif; font-size: 12px;
-      font-weight: 600; cursor: pointer; transition: all .15s; color: var(--muted);
-    }
-    .filter-chip.active { background: var(--accent); border-color: var(--accent); color: white; }
+    /* Filter chips */
+    .filter-bar { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+    .filter-chip { padding:6px 14px; border-radius:999px; border:2px solid var(--border); background:white; font-family:'Poppins',sans-serif; font-size:12px; font-weight:600; cursor:pointer; transition:all .15s; color:var(--muted); }
+    .filter-chip.active { background:var(--accent); border-color:var(--accent); color:white; }
 
     /* Category */
-    .category-section { margin-bottom: 36px; }
-    .category-header {
-      display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
-    }
-    .category-icon {
-      width: 36px; height: 36px; border-radius: 10px;
-      display: flex; align-items: center; justify-content: center; font-size: 18px;
-    }
-    .category-title { font-size: 16px; font-weight: 700; }
+    .category-section { margin-bottom:28px; }
+    .category-header { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+    .category-icon { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; }
+    .category-title { font-size:15px; font-weight:700; }
 
     /* Resource cards */
-    .resources-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 12px;
-    }
-    .resource-card {
-      background: white; border-radius: 16px;
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow); overflow: hidden;
-      transition: transform .15s, box-shadow .15s;
-      text-decoration: none; color: inherit;
-      display: flex; flex-direction: column;
-    }
-    .resource-card:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,.12); }
-    .resource-card-body { padding: 16px 18px; flex: 1; }
-    .resource-card-icon {
-      width: 44px; height: 44px; border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px; margin-bottom: 12px;
-    }
-    .resource-card-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
-    .resource-card-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
-    .resource-card-footer {
-      border-top: 1px solid #f3f4f6; padding: 10px 18px;
-      display: flex; align-items: center; justify-content: space-between;
-      font-size: 11px; color: var(--muted);
-    }
-    .resource-card-footer .arrow {
-      width: 28px; height: 28px; background: #eff6ff; border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      color: var(--accent); font-size: 14px;
-    }
-
-    /* Empty */
-    .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
-    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .resources-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; }
+    .resource-card { background:white; border-radius:14px; border:1px solid var(--border); box-shadow:var(--shadow); overflow:hidden; transition:transform .15s,box-shadow .15s; text-decoration:none; color:inherit; display:flex; flex-direction:column; }
+    .resource-card:hover { transform:translateY(-3px); box-shadow:0 10px 28px rgba(0,0,0,.1); }
+    .resource-card-body { padding:16px 18px; flex:1; }
+    .resource-card-icon { width:42px; height:42px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:20px; margin-bottom:10px; }
+    .resource-card-title { font-size:14px; font-weight:700; margin-bottom:5px; }
+    .resource-card-desc { font-size:12px; color:var(--muted); line-height:1.6; }
+    .resource-card-footer { border-top:1px solid #f3f4f6; padding:9px 18px; display:flex; align-items:center; justify-content:space-between; font-size:11px; color:var(--muted); }
+    .resource-arrow { width:26px; height:26px; background:#eff6ff; border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--accent); font-size:13px; }
+    .empty { text-align:center; padding:60px 20px; color:var(--muted); }
 
     /* Bottom nav */
-    .bottom-nav {
-      display: none; position: fixed; bottom: 0; left: 0; right: 0;
-      background: white; border-top: 1px solid var(--border);
-      box-shadow: 0 -4px 12px rgba(0,0,0,.08); z-index: 100;
-      padding-bottom: env(safe-area-inset-bottom);
-    }
-    .bottom-nav-inner { display: flex; }
-    .bottom-nav-item {
-      flex: 1; display: flex; flex-direction: column; align-items: center;
-      padding: 8px 4px; font-size: 10px; font-weight: 600; color: var(--muted);
-      text-decoration: none; gap: 2px;
-    }
-    .bottom-nav-item span:first-child { font-size: 20px; }
-    .bottom-nav-item.active { color: var(--accent); }
-    @media(max-width:600px){
-      .bottom-nav { display: block; }
-      .resources-grid { grid-template-columns: 1fr; }
+    .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:white; border-top:1px solid var(--border); box-shadow:0 -4px 12px rgba(0,0,0,.08); z-index:100; padding-bottom:env(safe-area-inset-bottom); }
+    .bottom-nav-inner { display:flex; }
+    .bottom-nav-item { flex:1; display:flex; flex-direction:column; align-items:center; padding:8px 4px; font-size:10px; font-weight:600; color:var(--muted); text-decoration:none; gap:2px; }
+    .bottom-nav-item span:first-child { font-size:18px; }
+    .bottom-nav-item.active { color:var(--accent); }
+
+    @media(max-width:768px){
+      .shell { grid-template-columns:1fr; }
+      .nav { display:none; position:fixed; top:56px; left:0; width:200px; height:calc(100vh - 56px); z-index:99; box-shadow:4px 0 20px rgba(0,0,0,.1); }
+      .nav.open { display:block; }
+      .nav-toggle { display:block; }
+      .bottom-nav { display:block; }
+      .content { padding:14px 14px 80px; }
+      .resources-grid { grid-template-columns:1fr; }
+      .page-title { font-size:22px; }
     }
   </style>
 </head>
 <body>
-
-<!-- Topbar -->
 <header class="topbar">
-  <a href="index.html" class="topbar-logo">Campus Life</a>
-  <nav class="topbar-nav">
-    <a href="index.html">Events</a>
-    <a href="clubs.html">Clubs</a>
-    <a href="acc.html">ACC</a>
-    <a href="news.html">News</a>
-    <a href="resources.html" class="active">Resources</a>
-    <a href="emergency-contacts.html">Emergency</a>
-  </nav>
+  <button class="nav-toggle" onclick="document.getElementById('sideNav').classList.toggle('open')">&#9776;</button>
+  <div class="brand">Campus Life</div>
 </header>
 
-<!-- Hero -->
-<div class="hero">
-  <div style="font-size:32px;margin-bottom:10px;">🔗</div>
-  <h1>Important Resources</h1>
-  <p>Everything you need — forms, guides, portals and useful links in one place.</p>
-</div>
-<div class="search-wrap">
-  <span class="search-icon">🔍</span>
-  <input class="search-input" type="text" placeholder="Search resources…" oninput="searchResources(this.value)" id="searchInput" />
+<div class="shell">
+  <nav class="nav" id="sideNav">
+    <a href="index.html">📅 Events</a>
+    <a href="clubs.html">🎭 Clubs</a>
+    <a href="acc.html">🎨 ACC</a>
+    <a href="news.html">📰 News</a>
+    <a href="resources.html" class="active">🔗 Resources</a>
+    <a href="emergency-contacts.html">🚨 Emergency</a>
+    <a href="event-hub.html" style="color:#7c3aed;font-weight:700;">✦ Event Hub</a>
+  </nav>
+
+  <main class="content">
+    <div class="page-title">🔗 Important Resources</div>
+    <div class="page-subtitle">Forms, guides, portals and useful links in one place</div>
+
+    <div class="search-row">
+      <input type="text" placeholder="🔍 Search resources…" oninput="applyFilters(this.value)" id="searchInput" />
+    </div>
+
+    <div class="filter-bar">
+      <button class="filter-chip active" onclick="filterCampus('',this)">All</button>
+      <button class="filter-chip" onclick="filterCampus('Karachi',this)">Karachi</button>
+      <button class="filter-chip" onclick="filterCampus('Nairobi',this)">Nairobi</button>
+      <button class="filter-chip" onclick="filterCampus('Kampala',this)">Kampala</button>
+      <button class="filter-chip" onclick="filterCampus('Dar es Salaam',this)">Dar es Salaam</button>
+    </div>
+
+    <div id="resourcesContainer"></div>
+  </main>
 </div>
 
-<div class="content">
-  <div class="filter-bar" id="campusFilter">
-    <button class="filter-chip active" onclick="filterCampus('', this)">All</button>
-    <button class="filter-chip" onclick="filterCampus('Karachi', this)">Karachi</button>
-    <button class="filter-chip" onclick="filterCampus('Nairobi', this)">Nairobi</button>
-    <button class="filter-chip" onclick="filterCampus('Kampala', this)">Kampala</button>
-    <button class="filter-chip" onclick="filterCampus('Dar es Salaam', this)">Dar es Salaam</button>
-  </div>
-
-  <div id="resourcesContainer"></div>
-</div>
-
-<!-- Bottom Nav -->
 <nav class="bottom-nav">
   <div class="bottom-nav-inner">
     <a href="index.html" class="bottom-nav-item"><span>📅</span><span>Events</span></a>
@@ -197,102 +127,63 @@
 </nav>
 
 <script>
-const SUPABASE_URL = "https://dgzuqvffnbfybngoadse.supabase.co";
-const SUPABASE_KEY = "sb_publishable_77t5gCD7M620CzcMwESN-A_oAuqz6B8";
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-const CATEGORY_STYLES = {
-  "Forms":           { bg:"#eff6ff", icon:"📋", color:"#2563eb" },
-  "Portals":         { bg:"#f5f3ff", icon:"🌐", color:"#7c3aed" },
-  "Health & Wellness":{ bg:"#f0fdf4", icon:"💚", color:"#16a34a" },
-  "Academic":        { bg:"#fef9c3", icon:"📚", color:"#ca8a04" },
-  "Student Affairs": { bg:"#fdf4ff", icon:"🎓", color:"#a21caf" },
-  "Finance":         { bg:"#fff7ed", icon:"💰", color:"#ea580c" },
-  "IT & Technology": { bg:"#f0fdfa", icon:"💻", color:"#0891b2" },
-  "Policies":        { bg:"#fef2f2", icon:"📜", color:"#dc2626" },
-};
-
+const sb = supabase.createClient("https://dgzuqvffnbfybngoadse.supabase.co","sb_publishable_77t5gCD7M620CzcMwESN-A_oAuqz6B8");
+const CATEGORY_STYLES = { "Forms":{bg:"#eff6ff",icon:"📋",color:"#2563eb"},"Portals":{bg:"#f5f3ff",icon:"🌐",color:"#7c3aed"},"Health & Wellness":{bg:"#f0fdf4",icon:"💚",color:"#16a34a"},"Academic":{bg:"#fef9c3",icon:"📚",color:"#ca8a04"},"Student Affairs":{bg:"#fdf4ff",icon:"🎓",color:"#a21caf"},"Finance":{bg:"#fff7ed",icon:"💰",color:"#ea580c"},"IT & Technology":{bg:"#f0fdfa",icon:"💻",color:"#0891b2"},"Policies":{bg:"#fef2f2",icon:"📜",color:"#dc2626"} };
 function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-
-let allResources = [];
-let activeCampus = "";
-let activeSearch = "";
+let allResources=[], activeCampus="", activeSearch="";
 
 async function loadResources(){
-  const { data } = await sb.from("resources")
-    .select("*").eq("is_active", true)
-    .order("display_order").order("title");
+  const { data } = await sb.from("resources").select("*").eq("is_active",true).order("display_order").order("title");
   allResources = data || [];
-  applyFilters();
+  render(allResources);
 }
 
 function filterCampus(campus, btn){
   activeCampus = campus;
-  document.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
+  document.querySelectorAll(".filter-chip").forEach(c=>c.classList.remove("active"));
   btn.classList.add("active");
   applyFilters();
 }
 
-function searchResources(q){
-  activeSearch = q.toLowerCase();
-  applyFilters();
-}
-
-function applyFilters(){
-  let filtered = allResources;
-  if(activeCampus) filtered = filtered.filter(r => !r.campus || r.campus === activeCampus);
-  if(activeSearch) filtered = filtered.filter(r =>
-    (r.title||"").toLowerCase().includes(activeSearch) ||
-    (r.description||"").toLowerCase().includes(activeSearch) ||
-    (r.category||"").toLowerCase().includes(activeSearch)
-  );
-  render(filtered);
+function applyFilters(q){
+  if(q !== undefined) activeSearch = q.toLowerCase();
+  let f = allResources;
+  if(activeCampus) f = f.filter(r=>!r.campus||r.campus===activeCampus);
+  if(activeSearch) f = f.filter(r=>(r.title||"").toLowerCase().includes(activeSearch)||(r.description||"").toLowerCase().includes(activeSearch)||(r.category||"").toLowerCase().includes(activeSearch));
+  render(f);
 }
 
 function render(resources){
   const container = document.getElementById("resourcesContainer");
-  if(!resources.length){
-    container.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><div>No resources found.</div></div>`;
-    return;
-  }
-
-  // Group by category
-  const groups = {};
-  resources.forEach(r => {
-    const cat = r.category || "General";
-    if(!groups[cat]) groups[cat] = [];
-    groups[cat].push(r);
-  });
-
-  container.innerHTML = Object.entries(groups).map(([cat, items]) => {
-    const style = CATEGORY_STYLES[cat] || { bg:"#f3f4f6", icon:"🔗", color:"#374151" };
+  if(!resources.length){ container.innerHTML=`<div class="empty"><div style="font-size:48px;margin-bottom:12px;">🔍</div><div>No resources found.</div></div>`; return; }
+  const groups={};
+  resources.forEach(r=>{ const cat=r.category||"General"; if(!groups[cat])groups[cat]=[]; groups[cat].push(r); });
+  container.innerHTML = Object.entries(groups).map(([cat,items])=>{
+    const style=CATEGORY_STYLES[cat]||{bg:"#f3f4f6",icon:"🔗",color:"#374151"};
     return `<div class="category-section">
       <div class="category-header">
         <div class="category-icon" style="background:${style.bg};">${style.icon}</div>
         <div class="category-title">${esc(cat)}</div>
       </div>
-      <div class="resources-grid">
-        ${items.map(r => {
-          const icon = r.icon || style.icon;
-          const tag = r.url ? "a" : "div";
-          const href = r.url ? `href="${esc(r.url)}" target="_blank" rel="noopener"` : "";
-          return `<${tag} ${href} class="resource-card">
-            <div class="resource-card-body">
-              <div class="resource-card-icon" style="background:${style.bg};">${icon}</div>
-              <div class="resource-card-title">${esc(r.title)}</div>
-              ${r.description ? `<div class="resource-card-desc">${esc(r.description)}</div>` : ""}
-            </div>
-            <div class="resource-card-footer">
-              <span>${r.campus ? `📍 ${esc(r.campus)}` : "🌐 All Campuses"}</span>
-              ${r.url ? `<div class="arrow">→</div>` : ""}
-            </div>
-          </${tag}>`;
-        }).join("")}
-      </div>
+      <div class="resources-grid">${items.map(r=>{
+        const icon=r.icon||style.icon;
+        const tag=r.url?"a":"div";
+        const href=r.url?`href="${esc(r.url)}" target="_blank" rel="noopener"`:"";
+        return `<${tag} ${href} class="resource-card">
+          <div class="resource-card-body">
+            <div class="resource-card-icon" style="background:${style.bg};">${icon}</div>
+            <div class="resource-card-title">${esc(r.title)}</div>
+            ${r.description?`<div class="resource-card-desc">${esc(r.description)}</div>`:""}
+          </div>
+          <div class="resource-card-footer">
+            <span>${r.campus?`📍 ${esc(r.campus)}`:"🌐 All Campuses"}</span>
+            ${r.url?`<div class="resource-arrow">→</div>`:""}
+          </div>
+        </${tag}>`;
+      }).join("")}</div>
     </div>`;
   }).join("");
 }
-
 loadResources();
 </script>
 </body>
