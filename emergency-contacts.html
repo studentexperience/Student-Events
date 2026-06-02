@@ -45,11 +45,11 @@
     .emergency-banner-text h2 { font-size:16px; font-weight:800; margin-bottom:3px; }
     .emergency-banner-text p { font-size:12px; opacity:.9; }
     .emergency-number {
-      display:flex; align-items:center; justify-content:center; gap:8px;
-      background:white; color:#dc2626; border-radius:999px;
-      padding:10px 20px; font-size:14px; font-weight:800;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      background:white; color:#dc2626; border-radius:14px;
+      padding:12px 20px; text-align:center;
       text-decoration:none; box-shadow:0 4px 12px rgba(0,0,0,.2);
-      width:100%; max-width:320px; box-sizing:border-box; word-break:break-word;
+      width:100%; max-width:320px; box-sizing:border-box;
     }
 
     /* Search */
@@ -199,18 +199,16 @@ async function init(){
   const num = settings?.value || "";
   const link = document.getElementById("emergencyNumberLink");
   if(num){
-    // Split on colon to put number on second line
     const parts = num.split(":");
     if(parts.length >= 2){
-      const label = parts[0].trim();
+      const label  = parts[0].trim();
       const number = parts.slice(1).join(":").trim();
       const digits = number.replace(/[^0-9+]/g,"");
-      link.innerHTML = `<span style="display:block;font-size:11px;font-weight:600;opacity:.85;">${label}</span><span style="display:block;font-size:16px;font-weight:800;">📞 ${number}</span>`;
-      if(digits) link.href = "tel:+" + digits.replace(/^\+/,"");
+      link.innerHTML = `<span style="display:block;font-size:11px;font-weight:600;opacity:.8;margin-bottom:2px;">${label}</span><span style="display:block;font-size:15px;font-weight:800;">📞 ${number}</span>`;
+      link.href = digits ? "tel:" + digits : "#";
     } else {
-      const digits = num.replace(/[^0-9+]/g,"");
-      link.textContent = "📞 " + num;
-      if(digits) link.href = "tel:" + digits;
+      link.innerHTML = `<span style="font-size:15px;font-weight:800;">📞 ${num}</span>`;
+      link.href = "tel:" + num.replace(/[^0-9+]/g,"");
     }
   } else {
     link.textContent = "📞 Contact Admin";
