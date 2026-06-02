@@ -129,6 +129,15 @@
       <a class="emergency-number" id="emergencyNumberLink" href="#">📞 Loading…</a>
     </div>
 
+    <!-- Search -->
+    <div style="margin-bottom:16px;">
+      <input type="text" id="contactSearch" placeholder="🔍 Search contacts, departments…"
+        oninput="searchContacts(this.value)"
+        style="width:100%;padding:10px 16px;border:1px solid var(--border);border-radius:10px;
+        font-family:'Poppins',sans-serif;font-size:14px;background:white;
+        box-shadow:var(--shadow);outline:none;" />
+    </div>
+
     <!-- Campus Filter -->
     <div class="filter-bar">
       <button class="filter-chip active" onclick="filterCampus('',this)">All Campuses</button>
@@ -157,7 +166,25 @@
 const sb = supabase.createClient("https://dgzuqvffnbfybngoadse.supabase.co","sb_publishable_77t5gCD7M620CzcMwESN-A_oAuqz6B8");
 const CATEGORY_COLORS = { "Medical":{bg:"#fef2f2",icon:"🏥",color:"#dc2626"},"Security":{bg:"#fffbeb",icon:"🛡️",color:"#d97706"},"Counselling":{bg:"#f0fdf4",icon:"💚",color:"#16a34a"},"Admin":{bg:"#eff6ff",icon:"🏛️",color:"#2563eb"},"IT Support":{bg:"#f5f3ff",icon:"💻",color:"#7c3aed"},"Facilities":{bg:"#fef9c3",icon:"🔧",color:"#ca8a04"},"Office of Student Experience Pakistan":{bg:"#fdf4ff",icon:"🎓",color:"#a21caf"} };
 function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-let allContacts=[], activeCampus="";
+let allContacts=[], activeCampus="", activeSearch="";
+
+function applyContactFilters(){
+  let filtered = allContacts;
+  if(activeCampus) filtered = filtered.filter(c => !c.campus || c.campus === activeCampus);
+  if(activeSearch)  filtered = filtered.filter(c =>
+    (c.name||"").toLowerCase().includes(activeSearch) ||
+    (c.role||"").toLowerCase().includes(activeSearch) ||
+    (c.department||"").toLowerCase().includes(activeSearch) ||
+    (c.category||"").toLowerCase().includes(activeSearch) ||
+    (c.phone||"").includes(activeSearch)
+  );
+  render(filtered);
+}
+
+function searchContacts(q){
+  activeSearch = q.toLowerCase();
+  applyContactFilters();
+}
 
 async function init(){
   // Load emergency number from settings
@@ -183,7 +210,7 @@ function filterCampus(campus, btn){
   activeCampus = campus;
   document.querySelectorAll(".filter-chip").forEach(c=>c.classList.remove("active"));
   btn.classList.add("active");
-  render(campus ? allContacts.filter(c=>!c.campus||c.campus===campus) : allContacts);
+  applyContactFilters();
 }
 
 function render(contacts){
