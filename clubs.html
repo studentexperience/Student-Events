@@ -306,7 +306,7 @@
     }
     .modal-backdrop.open { display: flex; }
     @media(max-width:768px){
-      .modal-backdrop { bottom: 70px; align-items: flex-end; padding: 0; }
+      .modal-backdrop { bottom: 70px !important; align-items: flex-end; padding: 0; }
     }
 
     .modal {
@@ -551,8 +551,9 @@
       background: white;
       border-top: 1px solid #e5e7eb;
       padding: 8px 0 max(8px, env(safe-area-inset-bottom));
-      z-index: 200;
+      z-index: 99999;
       box-shadow: 0 -4px 12px rgba(0,0,0,.08);
+      transform: translateZ(0);
     }
     .bottom-nav-inner {
       display: flex;
