@@ -164,8 +164,15 @@ async function init(){
   const { data: settings } = await sb.from("site_settings").select("value").eq("key","emergency_number").single();
   const num = settings?.value || "";
   const link = document.getElementById("emergencyNumberLink");
-  if(num){ link.textContent = "📞 " + num; link.href = "tel:" + num.replace(/\s/g,""); }
-  else { link.textContent = "📞 Contact Admin"; link.removeAttribute("href"); }
+  if(num){
+    // Extract just the phone digits for the tel: href
+    const digits = num.replace(/[^0-9+]/g, '').replace(/^00/, '+');
+    link.textContent = "📞 " + num;
+    link.href = digits ? "tel:" + digits : "#";
+  } else {
+    link.textContent = "📞 Contact Admin";
+    link.removeAttribute("href");
+  }
 
   const { data } = await sb.from("emergency_contacts").select("*").eq("is_active",true).order("display_order").order("name");
   allContacts = data || [];
