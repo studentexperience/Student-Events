@@ -2438,7 +2438,15 @@
       <div class="form-grid">
         <div class="field full"><label>Title *</label><input id="resTitle" type="text" placeholder="e.g. Transport Request Form" /></div>
         <div class="field full"><label>Description</label><textarea id="resDescription" rows="2" placeholder="Brief description of this resource…"></textarea></div>
-        <div class="field full"><label>URL</label><input id="resUrl" type="url" placeholder="https://…" /></div>
+        <div class="field full"><label>URL <span style="font-weight:400;text-transform:none;color:var(--muted);">(external link)</span></label><input id="resUrl" type="url" placeholder="https://…" /></div>
+        <div class="field full">
+          <label>Attachment <span style="font-weight:400;text-transform:none;color:var(--muted);">(or upload a file)</span></label>
+          <div style="border:2px dashed var(--border);border-radius:10px;padding:14px;text-align:center;background:#fafafa;cursor:pointer;" onclick="document.getElementById('resFileInput').click()">
+            <input type="file" id="resFileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif" style="display:none;" onchange="previewResFile(this)" />
+            <div id="resFilePreview" style="font-size:13px;color:var(--muted);">📎 Click to upload PDF, Word, Excel, PowerPoint, or Image</div>
+          </div>
+          <div id="resFileNote" style="font-size:11px;color:var(--muted);margin-top:4px;">Uploading a file will override the URL above with the file link.</div>
+        </div>
         <div class="field"><label>Category</label>
           <select id="resCategory">
             <option value="">Select…</option>
@@ -4917,6 +4925,8 @@ function openResourceModal(id = null){
   document.getElementById("resOrder").value = "0";
   document.getElementById("resActive").value = "true";
   document.getElementById("resourceModalTitle").textContent = id ? "Edit Resource" : "Add Resource";
+  document.getElementById("resFileInput").value = "";
+  document.getElementById("resFilePreview").textContent = "📎 Click to upload PDF, Word, Excel, PowerPoint, or Image";
   if(id){
     sb.from("resources").select("*").eq("id",id).single().then(({data:r}) => {
       if(!r) return;
@@ -4934,13 +4944,40 @@ function openResourceModal(id = null){
   document.getElementById("resourceModal").classList.add("open");
 }
 
+function previewResFile(input){
+  const file = input.files[0];
+  if(!file) return;
+  const preview = document.getElementById("resFilePreview");
+  const ext = file.name.split(".").pop().toUpperCase();
+  const size = (file.size / 1024).toFixed(0);
+  preview.innerHTML = `✅ <strong>${esc(file.name)}</strong> <span style="color:var(--muted);">(${ext} · ${size} KB)</span>`;
+}
+
 async function saveResource(){
   const id = document.getElementById("resourceId").value;
   const title = document.getElementById("resTitle").value.trim();
   if(!title){ showToast("Title is required","error"); return; }
+
+  const btn = document.querySelector("#resourceModal .btn-primary");
+  btn.disabled = true; btn.textContent = "Saving…";
+  const reset = () => { btn.disabled = false; btn.textContent = "Save Resource"; };
+
+  // Handle file upload — overrides URL field
+  let url = document.getElementById("resUrl").value.trim() || null;
+  const fileInput = document.getElementById("resFileInput");
+  if(fileInput.files[0]){
+    const file = fileInput.files[0];
+    const safeName = file.name.replace(/\s+/g,"_").replace(/[^a-zA-Z0-9._-]/g,"");
+    const path = `resources/${Date.now()}_${safeName}`;
+    const { error: upErr } = await sb.storage.from("campus-images").upload(path, file, { upsert: true });
+    if(upErr){ showToast("Upload failed: " + upErr.message, "error"); reset(); return; }
+    const { data: urlData } = sb.storage.from("campus-images").getPublicUrl(path);
+    url = urlData.publicUrl;
+  }
+
   const payload = {
     title, description: document.getElementById("resDescription").value.trim()||null,
-    url: document.getElementById("resUrl").value.trim()||null,
+    url,
     category: document.getElementById("resCategory").value||null,
     campus: document.getElementById("resCampus").value||null,
     icon: document.getElementById("resIcon").value.trim()||null,
@@ -4949,8 +4986,9 @@ async function saveResource(){
   };
   const {error} = id ? await sb.from("resources").update(payload).eq("id",id)
                      : await sb.from("resources").insert(payload);
-  if(error){ showToast("Failed: "+error.message,"error"); return; }
+  if(error){ showToast("Failed: "+error.message,"error"); reset(); return; }
   showToast(id ? "Resource updated!" : "Resource added!");
+  reset();
   closeModal("resourceModal"); loadResources();
 }
 
