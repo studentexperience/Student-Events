@@ -546,12 +546,20 @@
       display: none;
       position: fixed;
       bottom: 0; left: 0; right: 0;
-      background: white;
+      background: white !important;
       border-top: 1px solid #e5e7eb;
       padding: 8px 0 max(8px, env(safe-area-inset-bottom));
-      z-index: 99999;
+      z-index: 2147483647;
       box-shadow: 0 -4px 12px rgba(0,0,0,.08);
-      transform: translateZ(0);
+      isolation: isolate;
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+    }
+    .modal-backdrop.open ~ .bottom-nav,
+    .modal-backdrop.open + .bottom-nav {
+      z-index: 2147483647 !important;
+      display: block !important;
     }
     .bottom-nav-inner {
       display: flex;
@@ -574,8 +582,6 @@
     }
     .bottom-nav-item.active { color: #2563eb; }
     .bottom-nav-item span:first-child { font-size: 20px; }
-    /* Bottom nav - keep z-index higher than modal */
-    .bottom-nav { z-index: 99999 !important; }
     @media (max-width: 768px) {
       .bottom-nav { display: block; }
       body { padding-bottom: 70px; }
