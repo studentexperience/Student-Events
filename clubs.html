@@ -296,8 +296,7 @@
     .modal-backdrop {
       display: none;
       position: fixed;
-      top: 0; left: 0; right: 0;
-      bottom: 0;
+      inset: 0;
       background: rgba(0,0,0,.45);
       z-index: 500;
       align-items: center;
@@ -306,7 +305,7 @@
     }
     .modal-backdrop.open { display: flex; }
     @media(max-width:768px){
-      .modal-backdrop { bottom: 70px !important; align-items: flex-end; padding: 0; }
+      .modal-backdrop { align-items: flex-end; padding: 0 0 70px 0; }
     }
 
     .modal {
@@ -317,12 +316,11 @@
       max-height: 88vh;
       overflow-y: auto;
       box-shadow: 0 24px 60px rgba(0,0,0,.25);
+      display: flex;
+      flex-direction: column;
     }
     @media(max-width:768px){
       .modal { border-radius: 20px 20px 0 0; max-height: 85vh; margin: 0; }
-    }
-      display: flex;
-      flex-direction: column;
     }
 
     .modal-top-bar { height: 10px; border-radius: 20px 20px 0 0; flex-shrink: 0; }
@@ -576,9 +574,8 @@
     }
     .bottom-nav-item.active { color: #2563eb; }
     .bottom-nav-item span:first-child { font-size: 20px; }
-    /* Bottom nav always on top - never hidden */
-    .bottom-nav { z-index: 99999 !important; transform: translateZ(0); }
-    .shell.modal-open { overflow: hidden; height: calc(100vh - 56px); }
+    /* Bottom nav - keep z-index higher than modal */
+    .bottom-nav { z-index: 99999 !important; }
     @media (max-width: 768px) {
       .bottom-nav { display: block; }
       body { padding-bottom: 70px; }
@@ -973,12 +970,10 @@ document.addEventListener("DOMContentLoaded", () => {
     `).join("");
 
     backdrop.classList.add("open");
-    document.querySelector(".shell").classList.add("modal-open");
   }
 
   function closeModal(){
     backdrop.classList.remove("open");
-    document.querySelector(".shell").classList.remove("modal-open");
   }
 
   modalClose.addEventListener("click", closeModal);
