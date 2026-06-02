@@ -567,6 +567,9 @@
     }
     .bottom-nav-item.active { color: #2563eb; }
     .bottom-nav-item span:first-child { font-size: 20px; }
+    body.modal-open { overflow: hidden; }
+    /* Ensure bottom nav always stays visible above modal */
+    .bottom-nav { z-index: 600 !important; }
     @media (max-width: 768px) {
       .bottom-nav { display: block; }
       body { padding-bottom: 70px; }
@@ -961,12 +964,12 @@ document.addEventListener("DOMContentLoaded", () => {
     `).join("");
 
     backdrop.classList.add("open");
-    document.body.style.overflow = "hidden";
+    document.body.classList.add("modal-open");
   }
 
   function closeModal(){
     backdrop.classList.remove("open");
-    document.body.style.overflow = "";
+    document.body.classList.remove("modal-open");
   }
 
   modalClose.addEventListener("click", closeModal);
