@@ -199,10 +199,19 @@ async function init(){
   const num = settings?.value || "";
   const link = document.getElementById("emergencyNumberLink");
   if(num){
-    // Extract just the phone digits for the tel: href
-    const digits = num.replace(/[^0-9+]/g, '').replace(/^00/, '+');
-    link.textContent = "📞 " + num;
-    link.href = digits ? "tel:" + digits : "#";
+    // Split on colon to put number on second line
+    const parts = num.split(":");
+    if(parts.length >= 2){
+      const label = parts[0].trim();
+      const number = parts.slice(1).join(":").trim();
+      const digits = number.replace(/[^0-9+]/g,"");
+      link.innerHTML = `<span style="display:block;font-size:11px;font-weight:600;opacity:.85;">${label}</span><span style="display:block;font-size:16px;font-weight:800;">📞 ${number}</span>`;
+      if(digits) link.href = "tel:+" + digits.replace(/^\+/,"");
+    } else {
+      const digits = num.replace(/[^0-9+]/g,"");
+      link.textContent = "📞 " + num;
+      if(digits) link.href = "tel:" + digits;
+    }
   } else {
     link.textContent = "📞 Contact Admin";
     link.removeAttribute("href");
