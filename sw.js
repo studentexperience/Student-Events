@@ -1,21 +1,21 @@
-const CACHE_NAME = "aku-campus-life-v4";
+const CACHE_NAME = "campus-life-v1";
 
 // Only cache public pages — never admin or event-hub
 const STATIC_ASSETS = [
-  "/Student-Events/index.html",
-  "/Student-Events/clubs.html",
-  "/Student-Events/news.html",
-  "/Student-Events/forms.html",
-  "/Student-Events/resources.html",
-  "/Student-Events/emergency-contacts.html",
-  "/Student-Events/manifest.json",
-  "/Student-Events/offline.html",
+  "/index.html",
+  "/clubs.html",
+  "/news.html",
+  "/forms.html",
+  "/resources.html",
+  "/emergency-contacts.html",
+  "/manifest.json",
+  "/offline.html",
 ];
 
 // Pages that should NEVER be cached (authenticated portals)
 const NO_CACHE_PATHS = [
-  "/Student-Events/admin.html",
-  "/Student-Events/event-hub.html",
+  "/admin.html",
+  "/event-hub.html",
 ];
 
 // ── Install: cache static assets ──
@@ -75,15 +75,13 @@ self.addEventListener("fetch", event => {
     event.respondWith(
       fetch(event.request)
         .then(response => {
-          // Update cache with fresh version
           const copy = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
           return response;
         })
         .catch(() =>
-          // Fallback to cache when offline
           caches.match(event.request).then(cached =>
-            cached || caches.match("/Student-Events/index.html")
+            cached || caches.match("/index.html")
           )
         )
     );
@@ -108,13 +106,13 @@ self.addEventListener("fetch", event => {
 // ── Push Notifications ──
 self.addEventListener("push", event => {
   const data = event.data?.json() || {};
-  const title   = data.title   || "AKU Campus Life";
+  const title   = data.title   || "Campus Life";
   const options = {
     body:    data.body    || "You have a new notification.",
-    icon:    data.icon    || "/Student-Events/icon-192.png",
-    badge:   "/Student-Events/icon-192.png",
-    tag:     data.tag     || "aku-notification",
-    data:    { url: data.url || "/Student-Events/index.html" },
+    icon:    data.icon    || "/icon-192.png",
+    badge:   "/icon-192.png",
+    tag:     data.tag     || "campus-life-notification",
+    data:    { url: data.url || "/index.html" },
     actions: data.actions || [],
     vibrate: [200, 100, 200],
   };
@@ -124,11 +122,11 @@ self.addEventListener("push", event => {
 // ── Notification click: open relevant page ──
 self.addEventListener("notificationclick", event => {
   event.notification.close();
-  const url = event.notification.data?.url || "/Student-Events/index.html";
+  const url = event.notification.data?.url || "/index.html";
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then(clientList => {
       for(const client of clientList){
-        if(client.url.includes("Student-Events") && "focus" in client){
+        if(client.url.includes("lifeoncampus.net") && "focus" in client){
           client.navigate(url);
           return client.focus();
         }
