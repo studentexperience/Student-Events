@@ -4677,8 +4677,20 @@ async function addAdmin(){
     body: JSON.stringify({ type: "invite_user", user_email: email }),
   });
   const invResult = await invRes.json();
-  console.log("[Invite] Response:", invRes.status, invResult);
-  const inviteErr = !invRes.ok || invResult.error ? invResult.error : null;
+  const alreadyExists = invResult.error?.toLowerCase().includes("already");
+
+  // If user already exists in Auth — send password reset instead
+  if(alreadyExists){
+    const resetRes = await fetch("https://dgzuqvffnbfybngoadse.supabase.co/functions/v1/bright-processor", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPABASE_KEY}` },
+      body: JSON.stringify({ type: "reset_password_link", user_email: email }),
+    });
+    const resetResult = await resetRes.json();
+    console.log("[Reset] Response:", resetRes.status, resetResult);
+  }
+
+  const inviteErr = !invRes.ok && !alreadyExists ? invResult.error : null;
 
   const roleLabel = role === "super_admin" ? "Super Admin" : role === "event_lead" ? "Event Lead" : "Admin";
 
@@ -7823,7 +7835,7 @@ function showForceChangePassword(){
   openChangePassword(true);
 }
 
-checkSession();
+handleAuthRedirect();
 </script>
 </body>
 </html>
