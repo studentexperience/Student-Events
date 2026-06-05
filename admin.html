@@ -4677,6 +4677,7 @@ async function addAdmin(){
     body: JSON.stringify({ type: "invite_user", user_email: email }),
   });
   const invResult = await invRes.json();
+  console.log("[Invite] Status:", invRes.status, "Response:", JSON.stringify(invResult));
   const alreadyExists = invResult.error?.toLowerCase().includes("already");
 
   // If user already exists in Auth — send password reset instead
@@ -4687,7 +4688,7 @@ async function addAdmin(){
       body: JSON.stringify({ type: "reset_password_link", user_email: email }),
     });
     const resetResult = await resetRes.json();
-    console.log("[Reset] Response:", resetRes.status, resetResult);
+    console.log("[Reset] Status:", resetRes.status, "Response:", JSON.stringify(resetResult));
   }
 
   const inviteErr = !invRes.ok && !alreadyExists ? invResult.error : null;
