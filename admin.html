@@ -4677,6 +4677,7 @@ async function addAdmin(){
     body: JSON.stringify({ type: "invite_user", user_email: email }),
   });
   const invResult = await invRes.json();
+  console.log("[Invite] Response:", invRes.status, invResult);
   const inviteErr = !invRes.ok || invResult.error ? invResult.error : null;
 
   const roleLabel = role === "super_admin" ? "Super Admin" : role === "event_lead" ? "Event Lead" : "Admin";
