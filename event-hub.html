@@ -301,6 +301,31 @@
       border-radius: 10px;
     }
 
+    /* OTP digit boxes */
+    .otp-box {
+      width: 44px; height: 52px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      text-align: center;
+      color: var(--accent);
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      background: white;
+      caret-color: transparent;
+    }
+    .otp-box:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(124,58,237,.15);
+    }
+    .otp-box.filled {
+      border-color: var(--accent);
+      background: #f5f3ff;
+    }
+    .otp-box.error-box { border-color: var(--danger); background: #fef2f2; }
+
     /* ══ MAIN PORTAL ══ */
     .portal { display: none; }
     .portal.visible { display: block; }
@@ -965,48 +990,98 @@
 
 <!-- ══ PENDING APPROVAL SCREEN ══ -->
 <div class="login-screen" id="pendingScreen" style="display:none;">
-  <div class="login-card" style="text-align:center;">
-    <div style="font-size:60px;margin-bottom:20px;">⏳</div>
-    <div class="login-title">Request Submitted!</div>
-    <div class="login-sub" style="margin-bottom:24px;">
-      Your club access request has been sent to the OSE team for review. You'll be able to log in once your account is approved.<br/><br/>
-      This usually takes <strong>1-2 business days</strong>.
+  <div class="login-brand-panel">
+    <div class="login-brand-icon">🎉</div>
+    <div class="login-brand-title">You're in the queue!</div>
+    <div class="login-brand-sub">The OSEP team reviews all club access requests personally to ensure Campus Life remains a trusted space for AKU clubs.</div>
+    <div class="login-brand-features" style="margin-top:32px;">
+      <div class="login-brand-feature"><div class="login-brand-feature-icon">📋</div><span>Your request has been logged</span></div>
+      <div class="login-brand-feature"><div class="login-brand-feature-icon">👀</div><span>OSEP team will review within 1-2 days</span></div>
+      <div class="login-brand-feature"><div class="login-brand-feature-icon">📧</div><span>You'll get an email once approved</span></div>
     </div>
-    <div style="background:#f5f3ff;border-radius:14px;padding:16px;font-size:13px;color:var(--accent);margin-bottom:20px;">
-      📧 You'll be notified when your account is approved.
+  </div>
+  <div class="login-form-panel">
+    <div class="login-card" style="text-align:center;">
+      <div style="width:80px;height:80px;background:linear-gradient(135deg,#7c3aed,#a855f7);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 24px;box-shadow:0 8px 24px rgba(124,58,237,.35);">⏳</div>
+      <div class="login-title" style="text-align:center;">Request Submitted!</div>
+      <div class="login-sub" style="text-align:center;margin-bottom:24px;">
+        Your email has been verified and your access request sent to the OSEP team. You'll receive an approval email within <strong>1–2 working days</strong>.
+      </div>
+
+      <!-- What happens next -->
+      <div style="background:#f5f3ff;border-radius:14px;padding:20px;text-align:left;margin-bottom:24px;">
+        <div style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">What happens next</div>
+        <div style="font-size:13px;color:var(--ink);line-height:2;">
+          1️⃣ OSEP team reviews your request<br>
+          2️⃣ You receive an approval email<br>
+          3️⃣ Sign in with your email and password<br>
+          4️⃣ Start submitting event proposals 🎉
+        </div>
+      </div>
+
+      <!-- Contact -->
+      <div style="font-size:12px;color:var(--muted);margin-bottom:20px;">
+        Questions? Contact us at
+        <a href="mailto:student.affairs@aku.edu" style="color:var(--accent);font-weight:600;">student.affairs@aku.edu</a>
+      </div>
+
+      <a href="index.html" class="login-btn" style="display:block;text-decoration:none;text-align:center;">
+        ← Explore Campus Life
+      </a>
     </div>
-    <a href="index.html" class="login-btn" style="display:block;text-decoration:none;text-align:center;">← Back to Campus Life</a>
   </div>
 </div>
 
 <!-- ══ OTP VERIFICATION SCREEN ══ -->
 <div class="login-screen" id="otpScreen" style="display:none;">
-  <div class="login-card" style="text-align:center;">
-    <div style="font-size:60px;margin-bottom:16px;">📧</div>
-    <div class="login-title">Verify Your Email</div>
-    <div class="login-sub" style="margin-bottom:8px;">
-      We've sent a 6-digit verification code to:
+  <div class="login-brand-panel">
+    <div class="login-brand-icon">🔐</div>
+    <div class="login-brand-title">Almost there!</div>
+    <div class="login-brand-sub">We've sent a verification code to your club email. Enter it to confirm your identity and submit your access request.</div>
+    <div class="login-brand-features" style="margin-top:32px;">
+      <div class="login-brand-feature"><div class="login-brand-feature-icon">📧</div><span>Check your inbox (and spam folder)</span></div>
+      <div class="login-brand-feature"><div class="login-brand-feature-icon">⏱️</div><span>Code expires in 10 minutes</span></div>
+      <div class="login-brand-feature"><div class="login-brand-feature-icon">🔒</div><span>Never share this code with anyone</span></div>
     </div>
-    <div style="font-weight:700;color:var(--accent);font-size:15px;margin-bottom:20px;" id="otpEmailDisplay"></div>
-    <div style="text-align:left;margin-bottom:16px;">
-      <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Verification Code</label>
-      <input id="otpInput" type="text" maxlength="8" placeholder="Enter verification code"
-        style="width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;
-        font-size:24px;letter-spacing:8px;text-align:center;font-family:'Poppins',sans-serif;
-        margin-top:6px;outline:none;"
-        oninput="this.value=this.value.replace(/[^0-9]/g,'')"
-        onkeydown="if(event.key==='Enter') verifyOTP()" />
-    </div>
-    <div id="otpMsg" style="display:none;font-size:13px;margin-bottom:12px;"></div>
-    <button id="otpBtn" class="login-btn" onclick="verifyOTP()" style="width:100%;margin-bottom:12px;">
-      ✅ Verify Email
-    </button>
-    <button onclick="document.getElementById('otpScreen').style.display='none';document.getElementById('loginScreen').style.display='flex';"
-      style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;font-family:'Poppins',sans-serif;">
-      ← Go back
-    </button>
-    <div style="margin-top:16px;padding:12px;background:#eff6ff;border-radius:10px;font-size:12px;color:var(--muted);">
-      💡 Check your spam folder if you don't see the email within 2 minutes.
+  </div>
+  <div class="login-form-panel">
+    <div class="login-card">
+      <div class="login-icon" style="background:linear-gradient(135deg,#7c3aed,#a855f7);">🔐</div>
+      <div class="login-title">Verify Your Email</div>
+      <div class="login-sub">Enter the verification code sent to</div>
+      <div style="font-weight:700;color:var(--accent);font-size:14px;margin-bottom:28px;word-break:break-all;" id="otpEmailDisplay"></div>
+
+      <!-- Individual digit boxes -->
+      <div id="otpBoxes" style="display:flex;gap:8px;justify-content:center;margin-bottom:8px;">
+        <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]*" />
+        <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]*" />
+        <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]*" />
+        <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]*" />
+        <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]*" />
+        <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]*" />
+        <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]*" />
+        <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]*" />
+      </div>
+      <!-- Hidden input that collects full OTP value -->
+      <input type="hidden" id="otpInput" />
+
+      <div id="otpMsg" style="display:none;font-size:13px;margin-bottom:12px;text-align:center;padding:10px;border-radius:8px;"></div>
+
+      <button id="otpBtn" class="login-btn" onclick="verifyOTP()" style="margin-top:8px;">
+        Verify & Submit Request →
+      </button>
+
+      <div style="text-align:center;margin-top:16px;display:flex;align-items:center;justify-content:center;gap:16px;">
+        <button onclick="document.getElementById('otpScreen').style.display='none';document.getElementById('loginScreen').style.display='flex';"
+          style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;font-family:'Poppins',sans-serif;">
+          ← Go back
+        </button>
+        <span style="color:var(--border);">|</span>
+        <button onclick="resendOTP()"
+          style="background:none;border:none;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif;">
+          Resend code
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -1572,6 +1647,54 @@ function showOTPScreen(email){
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("otpScreen").style.display   = "flex";
   document.getElementById("otpEmailDisplay").textContent = email;
+
+  // Set up individual OTP box behaviour
+  const boxes = document.querySelectorAll(".otp-box");
+  boxes.forEach((box, i) => {
+    box.value = "";
+    box.classList.remove("filled","error-box");
+
+    box.addEventListener("input", () => {
+      box.value = box.value.replace(/[^0-9]/g,"").slice(-1);
+      if(box.value){ box.classList.add("filled"); if(i < boxes.length-1) boxes[i+1].focus(); }
+      else { box.classList.remove("filled"); }
+      // Update hidden input
+      document.getElementById("otpInput").value = [...boxes].map(b=>b.value).join("");
+    });
+
+    box.addEventListener("keydown", e => {
+      if(e.key === "Backspace" && !box.value && i > 0){ boxes[i-1].focus(); boxes[i-1].value=""; boxes[i-1].classList.remove("filled"); }
+      if(e.key === "Enter") verifyOTP();
+    });
+
+    box.addEventListener("paste", e => {
+      e.preventDefault();
+      const paste = (e.clipboardData || window.clipboardData).getData("text").replace(/[^0-9]/g,"");
+      [...paste.slice(0,8)].forEach((ch, j) => {
+        if(boxes[j]){ boxes[j].value = ch; boxes[j].classList.add("filled"); }
+      });
+      document.getElementById("otpInput").value = [...boxes].map(b=>b.value).join("");
+      const next = boxes[Math.min(paste.length, boxes.length-1)];
+      if(next) next.focus();
+    });
+  });
+
+  // Focus first box
+  setTimeout(() => boxes[0]?.focus(), 100);
+}
+
+async function resendOTP(){
+  const email = document.getElementById("otpEmailDisplay").textContent;
+  if(!email) return;
+  const btn = document.querySelector("#otpScreen [onclick='resendOTP()']");
+  if(btn){ btn.textContent = "Sending…"; btn.disabled = true; }
+  const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+  if(btn){ btn.textContent = "Resend code"; btn.disabled = false; }
+  if(error){
+    showOTPMsg("❌ Could not resend: " + error.message, "error");
+  } else {
+    showOTPMsg("✅ New code sent! Check your inbox.", "success");
+  }
 }
 
 async function verifyOTP(){
@@ -1650,6 +1773,7 @@ function showOTPMsg(msg, type){
   const el = document.getElementById("otpMsg");
   if(!el) return;
   el.textContent = msg;
+  el.style.background = type === "error" ? "#fef2f2" : "#f0fdf4";
   el.style.color = type === "error" ? "#dc2626" : "#16a34a";
   el.style.display = "block";
 }
