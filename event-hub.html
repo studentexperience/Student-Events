@@ -979,6 +979,38 @@
   </div>
 </div>
 
+<!-- ══ OTP VERIFICATION SCREEN ══ -->
+<div class="login-screen" id="otpScreen" style="display:none;">
+  <div class="login-card" style="text-align:center;">
+    <div style="font-size:60px;margin-bottom:16px;">📧</div>
+    <div class="login-title">Verify Your Email</div>
+    <div class="login-sub" style="margin-bottom:8px;">
+      We've sent a 6-digit verification code to:
+    </div>
+    <div style="font-weight:700;color:var(--accent);font-size:15px;margin-bottom:20px;" id="otpEmailDisplay"></div>
+    <div style="text-align:left;margin-bottom:16px;">
+      <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Verification Code</label>
+      <input id="otpInput" type="text" maxlength="6" placeholder="Enter 6-digit code"
+        style="width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;
+        font-size:24px;letter-spacing:8px;text-align:center;font-family:'Poppins',sans-serif;
+        margin-top:6px;outline:none;"
+        oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+        onkeydown="if(event.key==='Enter') verifyOTP()" />
+    </div>
+    <div id="otpMsg" style="display:none;font-size:13px;margin-bottom:12px;"></div>
+    <button id="otpBtn" class="login-btn" onclick="verifyOTP()" style="width:100%;margin-bottom:12px;">
+      ✅ Verify Email
+    </button>
+    <button onclick="document.getElementById('otpScreen').style.display='none';document.getElementById('loginScreen').style.display='flex';"
+      style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;font-family:'Poppins',sans-serif;">
+      ← Go back
+    </button>
+    <div style="margin-top:16px;padding:12px;background:#eff6ff;border-radius:10px;font-size:12px;color:var(--muted);">
+      💡 Check your spam folder if you don't see the email within 2 minutes.
+    </div>
+  </div>
+</div>
+
 <!-- ══ MAIN PORTAL ══ -->
 <div class="portal" id="portal">
   <div class="portal-shell">
@@ -1498,40 +1530,87 @@ async function handleSignup(){
     return;
   }
 
-  btn.textContent = "Submitting…";
+  btn.textContent = "Sending verification…";
 
-  // Insert or update club_accounts with pending status
+  // Store form data temporarily for after verification
+  sessionStorage.setItem("pending_club", JSON.stringify({ clubName, campus, email, pw, existing: !!existing }));
+
+  // Send OTP verification email via Supabase
+  const { error: otpErr } = await sb.auth.signInWithOtp({
+    email,
+    options: {
+      shouldCreateUser: true,
+      emailRedirectTo: null,
+      data: { purpose: "club_verification" }
+    }
+  });
+
+  if(otpErr){
+    showMsg("❌ Could not send verification email: " + otpErr.message, "error");
+    btn.disabled = false; btn.textContent = "Submit Access Request";
+    return;
+  }
+
+  // Show OTP input screen
+  btn.disabled = false; btn.textContent = "Submit Access Request";
+  showOTPScreen(email);
+}
+
+function showOTPScreen(email){
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("otpScreen").style.display   = "flex";
+  document.getElementById("otpEmailDisplay").textContent = email;
+}
+
+async function verifyOTP(){
+  const email = document.getElementById("otpEmailDisplay").textContent;
+  const otp   = document.getElementById("otpInput").value.trim();
+  const btn   = document.getElementById("otpBtn");
+
+  if(!otp || otp.length < 6){ showOTPMsg("Please enter the 6-digit code.", "error"); return; }
+
+  btn.disabled = true; btn.textContent = "Verifying…";
+
+  const { error: verifyErr } = await sb.auth.verifyOtp({
+    email, token: otp, type: "email"
+  });
+
+  if(verifyErr){
+    showOTPMsg("❌ Invalid or expired code. Please try again.", "error");
+    btn.disabled = false; btn.textContent = "Verify Email";
+    return;
+  }
+
+  // Email verified — now save to club_accounts
+  const pending = JSON.parse(sessionStorage.getItem("pending_club") || "{}");
+  sessionStorage.removeItem("pending_club");
+
   let dbErr;
-  if(existing){
-    // Re-applying after being declined — update existing row
+  if(pending.existing){
     const { error } = await sb.from("club_accounts").update({
-      club_name:  clubName,
-      campus,
+      club_name:  pending.clubName,
+      campus:     pending.campus,
       status:     "pending",
       authorized: false,
-    }).eq("email", email);
+    }).eq("email", pending.email);
     dbErr = error;
   } else {
-    // Brand new request — insert with password stored for auth creation on approval
     const { error } = await sb.from("club_accounts").insert({
-      email,
-      club_name:     clubName,
-      campus,
+      email:         pending.email,
+      club_name:     pending.clubName,
+      campus:        pending.campus,
       status:        "pending",
       authorized:    false,
-      password_hash: pw, // stored temporarily so admin can create auth on approval
+      password_hash: pending.pw,
     });
     dbErr = error;
   }
 
   if(dbErr){
-    showMsg("❌ " + dbErr.message, "error");
-    btn.disabled = false; btn.textContent = "Submit Access Request";
+    showOTPMsg("❌ " + dbErr.message, "error");
+    btn.disabled = false; btn.textContent = "Verify Email";
     return;
   }
-
-  // Don't create auth account yet — only create it when admin approves
-  // Just notify admins of the new request
 
   // Notify all admins
   const { data: staffList } = await sb.from("admins").select("email");
@@ -1541,15 +1620,26 @@ async function handleSignup(){
         recipient: s.email,
         type:      "club_access_request",
         title:     "🎭 Club Access Request",
-        message:   `${clubName} (${campus}) has signed up and is requesting access to Event Hub. Email: ${email}`,
+        message:   `${pending.clubName} (${pending.campus}) has requested access to Event Hub. Email: ${pending.email}`,
         is_read:   false,
       }))
     );
   }
 
+  // Sign out the OTP session — club isn't approved yet
+  await sb.auth.signOut();
+
   // Show pending screen
-  document.getElementById("loginScreen").style.display  = "none";
+  document.getElementById("otpScreen").style.display    = "none";
   document.getElementById("pendingScreen").style.display = "flex";
+}
+
+function showOTPMsg(msg, type){
+  const el = document.getElementById("otpMsg");
+  if(!el) return;
+  el.textContent = msg;
+  el.style.color = type === "error" ? "#dc2626" : "#16a34a";
+  el.style.display = "block";
 }
 
 async function signOut(){
