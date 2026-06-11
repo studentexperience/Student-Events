@@ -1817,12 +1817,43 @@ document.addEventListener("DOMContentLoaded", () => {
     const e = allEvents.find(x => x.id === eventId);
     if(!e) return;
 
-    const cover = document.getElementById("eventModalCover");
+    const cover      = document.getElementById("eventModalCover");
+    const coverWrap  = document.getElementById("eventModalCoverWrap");
+    const campusBar  = document.getElementById("eventModalCampusBar");
+    const coverBadges= document.getElementById("eventModalCoverBadges");
+    const barColors  = { "Karachi":"#0f766e","Nairobi":"#166534","Kampala":"#7e22ce","Dar es Salaam":"#0369a1" };
+    const campusColor= barColors[e.campus] || "#000060";
+
+    // Campus bar — always shown
+    if(campusBar) campusBar.style.background = campusColor;
+
+    // Cover badges — campus + audience
+    if(coverBadges){
+      coverBadges.innerHTML = `
+        ${e.campus ? `<div style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;background:${campusColor};color:white;">📍 ${escapeHtml(e.campus)}</div>` : '<div></div>'}
+        ${e.audience ? `<div style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;background:rgba(0,0,0,.55);color:white;backdrop-filter:blur(4px);max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">👥 ${escapeHtml(e.audience)}</div>` : ''}
+      `;
+    }
+
     if(e.image){
-      cover.src = e.image; cover.style.display = "block";
-      cover.style.borderRadius = "24px 24px 0 0";
+      cover.src = e.image;
+      cover.style.display = "block";
+      if(coverWrap) coverWrap.style.cssText = "position:relative;";
     } else {
       cover.style.display = "none";
+      // Styled gradient placeholder using campus colour
+      if(coverWrap){
+        const emoji = {"Sports":"🏆","Cultural":"🎭","Academic":"🔬","Workshop/Session":"💡","Meeting":"📋"}[e.category] || "🎓";
+        coverWrap.innerHTML = `
+          <div style="height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,${campusColor}dd,${campusColor});position:relative;">
+            <div style="font-size:52px;">${emoji}</div>
+            <div style="color:rgba(255,255,255,.85);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">${escapeHtml(e.category||"Event")}</div>
+            <div style="position:absolute;bottom:10px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-end;">
+              ${e.campus ? `<div style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;background:rgba(0,0,0,.3);color:white;">📍 ${escapeHtml(e.campus)}</div>` : '<div></div>'}
+              ${e.audience ? `<div style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;background:rgba(0,0,0,.3);color:white;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">👥 ${escapeHtml(e.audience)}</div>` : ''}
+            </div>
+          </div>`;
+      }
     }
 
     document.getElementById("eventModalName").textContent = e.name;
@@ -1874,17 +1905,19 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("eventModalActions").innerHTML = `
       <button class="${isInterested ? "interested-btn active" : "interested-btn"}"
         style="background:${isInterested?"#fee2e2":"#f9fafb"};color:${isInterested?"#b91c1c":"#374151"};"
-        onclick="toggleInterested(event,'${e.id}');window._openEventModal('${e.id}')">
-        ${isInterested?"❤️":"🤍"} <span id="modal-count-${e.id}">${e.interested||0}</span> Interested
+        onclick="toggleInterested(event,'${e.id}')">
+        <span class="heart-icon">${isInterested?"❤️":"🤍"}</span>
+        <span id="count-modal-${e.id}">${e.interested||0}</span>
+        <span>${(e.interested||0) === 1 ? "person interested" : "people interested"}</span>
       </button>
       ${e.date ? `<button onclick="downloadICS('${e.id}')"
         style="background:#eff6ff;color:#000060;">
-        📆 Save to Calendar
+        🔖 Save to Calendar
       </button>` : ""}
       <button class="${isNotified?"notify-btn active":"notify-btn"}"
         style="background:${isNotified?"#f5f3ff":"#f9fafb"};color:${isNotified?"#7c3aed":"#374151"};"
         onclick="toggleEventNotification('${e.id}',this)">
-        ${isNotified?"🔔 Notified":"🔕 Notify Me"}
+        ${isNotified?"🔔 Notified":"🔕 Remind Me"}
       </button>`;
 
     document.getElementById("eventDetailModal").classList.add("open");
@@ -1997,25 +2030,38 @@ document.addEventListener("DOMContentLoaded", () => {
     evt.stopPropagation();
     evt.preventDefault();
 
-    const btn       = evt.currentTarget;
-    const countEl   = document.getElementById(`count-${eventId}`);
-    const heartEl   = btn.querySelector(".heart-icon");
-    const labelEl   = btn.querySelector("span:last-child");
+    const btn      = evt.currentTarget;
+    // Update BOTH card count and modal count if open
+    const countEl      = document.getElementById(`count-${eventId}`);
+    const modalCountEl = document.getElementById(`count-modal-${eventId}`);
+    const heartEl  = btn.querySelector(".heart-icon");
     const interested = getInterestedSet();
     const isAdding   = !interested.has(eventId);
 
-    // Optimistic UI update — instant feedback
     btn.classList.add("pulse");
     setTimeout(() => btn.classList.remove("pulse"), 500);
 
-    let currentCount = parseInt(countEl.textContent, 10) || 0;
+    let currentCount = parseInt((countEl || modalCountEl)?.textContent, 10) || 0;
     const newCount   = isAdding ? currentCount + 1 : Math.max(0, currentCount - 1);
-    countEl.textContent = newCount;
-    heartEl.textContent = isAdding ? "❤️" : "🤍";
-    btn.classList.toggle("active", isAdding);
-    labelEl.textContent = newCount === 1 ? "person interested" : "people interested";
 
-    // Disable while saving to prevent rapid double-clicks
+    // Update card count
+    if(countEl){
+      countEl.textContent = newCount;
+      const cardLabel = countEl.nextElementSibling;
+      if(cardLabel) cardLabel.textContent = newCount === 1 ? "interested" : "interested";
+    }
+    // Update modal count
+    if(modalCountEl){
+      modalCountEl.textContent = newCount;
+      const modalLabel = modalCountEl.nextElementSibling;
+      if(modalLabel) modalLabel.textContent = newCount === 1 ? "person interested" : "people interested";
+    }
+    if(heartEl) heartEl.textContent = isAdding ? "❤️" : "🤍";
+    btn.classList.toggle("active", isAdding);
+    // Update button colours
+    btn.style.background = isAdding ? "#fee2e2" : "#f9fafb";
+    btn.style.color      = isAdding ? "#b91c1c" : "#374151";
+
     btn.disabled = true;
 
     try {
@@ -2023,25 +2069,30 @@ document.addEventListener("DOMContentLoaded", () => {
       const { data, error } = await sb.rpc(fn, { event_id: eventId });
       if(error) throw error;
 
-      // Sync local state
       if(isAdding) interested.add(eventId);
       else         interested.delete(eventId);
       saveInterestedSet(interested);
 
-      // Sync count from server (handles concurrent users)
+      // Sync from server
       if(typeof data === "number"){
-        countEl.textContent = data;
-        labelEl.textContent = data === 1 ? "person interested" : "people interested";
-        // Update local cache
+        if(countEl) countEl.textContent = data;
+        if(modalCountEl) modalCountEl.textContent = data;
         const ev = allEvents.find(x => x.id === eventId);
         if(ev) ev.interested = data;
+        // Update label
+        const label = document.querySelector(`#count-modal-${eventId}`)?.nextElementSibling;
+        if(label) label.textContent = data === 1 ? "person interested" : "people interested";
+        const cardLabel = document.querySelector(`#count-${eventId}`)?.nextElementSibling;
+        if(cardLabel) cardLabel.textContent = data === 1 ? "interested" : "interested";
       }
     } catch(err){
-      // Revert on failure
-      countEl.textContent = currentCount;
-      heartEl.textContent = isAdding ? "🤍" : "❤️";
+      // Revert
+      if(countEl) countEl.textContent = currentCount;
+      if(modalCountEl) modalCountEl.textContent = currentCount;
+      if(heartEl) heartEl.textContent = isAdding ? "🤍" : "❤️";
       btn.classList.toggle("active", !isAdding);
-      labelEl.textContent = currentCount === 1 ? "person interested" : "people interested";
+      btn.style.background = isAdding ? "#f9fafb" : "#fee2e2";
+      btn.style.color      = isAdding ? "#374151" : "#b91c1c";
       console.error("Failed to update interest:", err);
     } finally {
       btn.disabled = false;
@@ -2544,7 +2595,14 @@ if("serviceWorker" in navigator){
 <div class="event-modal-backdrop" id="eventDetailModal" onclick="if(event.target===this)window._closeEventModal()">
   <div class="event-modal" id="eventModalInner">
     <div class="event-modal-pill"></div>
-    <img id="eventModalCover" class="event-modal-cover" src="" alt="" style="display:none;" />
+    <!-- Campus colour bar -->
+    <div id="eventModalCampusBar" style="height:3px;"></div>
+    <!-- Cover — real image or gradient placeholder -->
+    <div id="eventModalCoverWrap" style="position:relative;">
+      <img id="eventModalCover" class="event-modal-cover" src="" alt="" style="display:none;" />
+      <!-- Badges overlaid on cover -->
+      <div id="eventModalCoverBadges" style="position:absolute;bottom:10px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-end;"></div>
+    </div>
     <div class="event-modal-body">
       <div class="event-modal-header">
         <div class="event-modal-title" id="eventModalName"></div>
