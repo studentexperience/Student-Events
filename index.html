@@ -50,7 +50,7 @@
     /* ===== Top header ===== */
     .topbar{
       height:56px;
-      background: linear-gradient(135deg, #1e40af 0%, #2563eb 60%, #3b82f6 100%);
+      background: linear-gradient(135deg, #000060 0%, #2563eb 60%, #3b82f6 100%);
       border-bottom: none; box-shadow: 0 2px 12px rgba(37,99,235,.25);
       display:flex;
       align-items:center;
@@ -217,7 +217,7 @@
       font-size:13px;
     }
     .pill.active{
-      background:var(--ink);
+      background:#000060;
       color:#fff;
     }
 
@@ -230,8 +230,8 @@
     ============================================= */
     .cards{
       display:grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap:18px;
+      grid-template-columns: repeat(3, 1fr);
+      gap:16px;
     }
 
     .empty{
@@ -254,32 +254,36 @@
            .meta      – date, time, venue
          .organizer-banner – sticky bottom strip
     ============================================= */
+    /* ── Card base ── */
     .card{
-      border-radius:16px;
+      border-radius:12px;
       overflow:hidden;
       box-shadow: var(--shadow);
       display:flex;
       flex-direction:column;
-      background:var(--panel);
+      background:white;
+      border:1px solid #e2e8f0;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .card:hover{
+      transform:translateY(-2px);
+      box-shadow:0 8px 24px rgba(0,0,0,.10);
     }
 
-    /* Cover image area */
+    /* Campus colour bar at top of card */
+    .card-campus-bar{ height:3px; flex-shrink:0; }
+
+    /* Cover image */
     .cover-img{
       width:100%;
-      /* 1.2× height factor applied here too: base ~160px × 1.2 = ~192px */
-      height:192px;
+      height:160px;
       object-fit:cover;
       display:block;
-      background-size:cover;
-      background-position:center;
-      background-repeat:no-repeat;
       flex-shrink:0;
     }
-
-    /* Placeholder shown when no image URL is available */
     .cover-placeholder{
       width:100%;
-      height:192px;
+      height:160px;
       flex-shrink:0;
       display:flex;
       align-items:center;
@@ -288,52 +292,83 @@
       opacity:0.55;
     }
 
-    /* Body: 1.2× padding (original ~12px 14px 14px → ~14px 17px 17px) */
+    /* Badges overlaid on image */
+    .cover-wrap{
+      position:relative;
+      flex-shrink:0;
+    }
+    .cover-badges{
+      position:absolute;
+      bottom:8px;
+      left:8px;
+      right:8px;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      pointer-events:none;
+    }
+    .cover-campus-badge{
+      font-size:10px;
+      font-weight:700;
+      padding:3px 9px;
+      border-radius:20px;
+      color:white;
+      white-space:nowrap;
+    }
+    .cover-audience-badge{
+      font-size:10px;
+      font-weight:700;
+      padding:3px 9px;
+      border-radius:20px;
+      background:rgba(0,0,0,.55);
+      color:white;
+      backdrop-filter:blur(4px);
+      white-space:nowrap;
+      max-width:55%;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    /* Body */
     .body{
-      padding:14px 17px 17px;
+      padding:12px 14px 10px;
       flex:1;
       display:flex;
       flex-direction:column;
     }
 
-    /* Bold event name */
+    /* Event name */
     .title{
-      font-size:15.5px;
+      font-size:14px;
       font-weight:700;
-      margin:0 0 0;
+      margin:0 0 8px;
       line-height:1.35;
-    }
-
-    /* Two line-spaces gap between title and meta */
-    .title-gap{
-      height:2em; /* two line-space equivalent */
+      color:#0f172a;
     }
 
     /* Date / time / venue lines */
     .meta{
-      font-size:13.5px;
-      margin:3px 0;
+      font-size:11.5px;
+      margin:2px 0;
       line-height:1.35;
-      color:#333;
+      color:#475569;
       display:flex;
       align-items:flex-start;
       gap:5px;
     }
-    .meta-icon{
-      flex-shrink:0;
-      margin-top:1px;
-    }
+    .meta-icon{ flex-shrink:0; margin-top:1px; }
 
-    /* Category chip (kept for reference, hidden in new layout — remove if unwanted) */
+    /* Description */
     .event-desc {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.5;
-      margin: 6px 0 4px;
+      font-size: 11px;
+      color: #64748b;
+      line-height: 1.55;
+      margin: 8px 0 0;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
+      flex:1;
     }
 
     /* ── Event Detail Modal ── */
@@ -451,31 +486,30 @@
        ORGANIZER BANNER — bottom of card
     ============================================= */
     .organizer-banner{
-      padding:9px 17px;
-      font-size:12px;
+      padding:8px 14px;
+      font-size:11px;
       font-weight:600;
-      letter-spacing:.2px;
       color:#fff;
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
       flex-shrink:0;
       text-decoration:none;
-      display:block;
+      display:flex;
+      align-items:center;
+      gap:6px;
       transition: filter .15s;
     }
     .organizer-banner:hover{
-      filter: brightness(1.15);
+      filter: brightness(1.12);
       cursor: pointer;
     }
-    .organizer-banner::after{
-      content: " →";
-      opacity: 0;
-      transition: opacity .15s;
+    .organizer-banner span.org-arrow{
+      margin-left:auto;
+      opacity:0;
+      transition:opacity .15s;
     }
-    .organizer-banner:hover::after{
-      opacity: 1;
-    }
+    .organizer-banner:hover span.org-arrow{ opacity:1; }
 
     /* Campus tag on card */
     .campus-tag{
@@ -489,95 +523,83 @@
       margin-top:8px;
       align-self:flex-start;
     }
-    .campus-tag.karachi    { background:#eff6ff; color:#1d4ed8; }
-    .campus-tag.nairobi    { background:#f0fdf4; color:#15803d; }
-    .campus-tag.kampala    { background:#fffbeb; color:#b45309; }
-    .campus-tag.dares      { background:#fdf4ff; color:#7e22ce; }
+    /* Campus tag colours — AKU official campus palette */
+    .campus-tag.karachi    { background:#ccfbf1; color:#134e4a; }
+    .campus-tag.nairobi    { background:#dcfce7; color:#14532d; }
+    .campus-tag.kampala    { background:#f3e8ff; color:#581c87; }
+    .campus-tag.dares      { background:#e0f2fe; color:#0c4a6e; }
     .campus-tag.default    { background:#f3f4f6; color:#374151; }
 
-    /* Interested button */
+    /* Campus bar colours */
+    .campus-bar-karachi  { background:#0f766e; }
+    .campus-bar-nairobi  { background:#166534; }
+    .campus-bar-kampala  { background:#7e22ce; }
+    .campus-bar-dares    { background:#0369a1; }
+    .campus-bar-default  { background:#000060; }
+
+    /* Campus badge on image */
+    .campus-badge-karachi  { background:#0f766e; }
+    .campus-badge-nairobi  { background:#166534; }
+    .campus-badge-kampala  { background:#7e22ce; }
+    .campus-badge-dares    { background:#0369a1; }
+    .campus-badge-default  { background:#000060; }
+
+    /* ── Card footer: FOMO + actions ── */
     .interested-row {
       display: flex;
       align-items: center;
-      gap: 6px;
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px dashed rgba(0,0,0,.1);
-      flex-wrap: nowrap;
-      min-width: 0;
+      justify-content: space-between;
+      padding: 8px 14px;
+      border-top: 1px solid #f1f5f9;
+      gap: 8px;
     }
     .interested-btn {
-      flex: 1;
-      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      padding: 0;
+    }
+    .interested-btn .heart-icon { font-size: 14px; }
+    .interested-btn.active { color: #e11d48; }
+    .card-actions { display:flex; gap:6px; }
+    .add-to-cal-btn, .notify-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      border: 1.5px solid #e2e8f0;
+      background: white;
+      cursor: pointer;
+      font-size: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
-      padding: 6px 6px;
-      border: 1.5px solid rgba(0,0,0,.12);
-      background: white;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--ink);
-      cursor: pointer;
+      transition: background .15s, border-color .15s;
       font-family: 'Poppins', sans-serif;
-      transition: all .18s ease;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
     }
-    .interested-btn span:last-child {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    .add-to-cal-btn:hover { background:#fef9c3; border-color:#fbbf24; }
+    .notify-btn:hover { background:#eff6ff; border-color:#93c5fd; }
+    .notify-btn.active { background:#eff6ff; border-color:#93c5fd; }
+    .fomo-avatars { display:flex; }
+    .fomo-av {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      border: 1.5px solid white;
+      margin-left: -5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
     }
-    .interested-btn:hover {
-      border-color: #ef4444;
-      color: #ef4444;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(239,68,68,.15);
-    }
-    .interested-btn.active {
-      background: linear-gradient(135deg, #ef4444, #f97316);
-      color: white;
-      border-color: transparent;
-      box-shadow: 0 4px 12px rgba(239,68,68,.3);
-    }
-    .interested-btn.active:hover {
-      transform: translateY(-1px) scale(1.02);
-    }
-    .interested-btn .heart-icon {
-      font-size: 14px;
-      transition: transform .25s ease;
-    }
-    .interested-btn:hover .heart-icon,
-    .interested-btn.active .heart-icon {
-      transform: scale(1.25);
-    }
-    .interested-count {
-      font-variant-numeric: tabular-nums;
-    }
-    /* Pulse animation when clicked */
-    @keyframes heart-pulse {
-      0%   { transform: scale(1); }
-      40%  { transform: scale(1.4); }
-      70%  { transform: scale(0.9); }
-      100% { transform: scale(1); }
-    }
-    .interested-btn.pulse .heart-icon {
-      animation: heart-pulse .5s ease;
-    }
-    .nav-toggle{
-      display:none;
-      background:none;
-      border:none;
-      cursor:pointer;
-      padding:4px 6px;
-      font-size:22px;
-      line-height:1;
-      color:var(--ink);
-    }
+    .fomo-av:first-child { margin-left: 0; }
 
     /* Mobile filter toggle button */
     .filter-toggle{
@@ -728,7 +750,7 @@
       align-items: center;
       gap: 6px;
     }
-    .view-switch button:hover { color: #2563eb; }
+    .view-switch button:hover { color: #000060; }
     .view-switch button.active {
       background: linear-gradient(135deg, #2563eb, #7c3aed);
       color: white;
@@ -766,7 +788,7 @@
       justify-content: center;
       transition: all .15s;
     }
-    .cal-nav-btn:hover { border-color: #2563eb; color: #2563eb; }
+    .cal-nav-btn:hover { border-color: #000060; color: #000060; }
     .cal-month-label {
       font-size: 18px;
       font-weight: 700;
@@ -780,14 +802,14 @@
       border-radius: 999px;
       border: 1.5px solid #2563eb;
       background: white;
-      color: #2563eb;
+      color: #000060;
       font-family: 'Poppins', sans-serif;
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       transition: all .15s;
     }
-    .cal-today-btn:hover { background: #2563eb; color: white; }
+    .cal-today-btn:hover { background: #000060; color: white; }
 
     /* Days-of-week row */
     .cal-weekdays {
@@ -1311,7 +1333,7 @@
 
     /* ── CAMPUS LIFE BRAND TOPBAR ── */
     .topbar {
-      background: linear-gradient(135deg, #1e40af 0%, #2563eb 60%, #3b82f6 100%);
+      background: linear-gradient(135deg, #000060 0%, #2563eb 60%, #3b82f6 100%);
       border-bottom: none;
       box-shadow: 0 2px 12px rgba(37,99,235,.25);
     }
@@ -1400,7 +1422,7 @@
       transition: color .15s;
       min-width: 56px;
     }
-    .bottom-nav-item.active { color: #2563eb; }
+    .bottom-nav-item.active { color: #000060; }
     .bottom-nav-item span:first-child { font-size: 20px; }
     @media (max-width: 768px) {
       .bottom-nav { display: block; }
@@ -1707,24 +1729,30 @@ document.addEventListener("DOMContentLoaded", () => {
       const audienceLine = e.audience ? `<div class="meta"><span class="meta-icon">👥</span>${escapeHtml(e.audience)}</div>` : "";
       const campusTag = e.campus ? `<div class="campus-tag ${campusClass(e.campus)}">🏫 ${escapeHtml(e.campus)}</div>` : "";
       const bannerHtml = e.organiser
-        ? `<a class="organizer-banner" href="clubs.html?club=${encodeURIComponent(e.organiser)}" style="background:${bannerColor};" title="View ${escapeHtml(e.organiser)} on Clubs page">🎭 ${escapeHtml(e.organiser)}</a>`
+        ? `<a class="organizer-banner" href="clubs.html?club=${encodeURIComponent(e.organiser)}" style="background:${bannerColor};" title="View ${escapeHtml(e.organiser)} on Clubs page">🎭 ${escapeHtml(e.organiser)}<span class="org-arrow">→</span></a>`
         : "";
 
-      // Interested counter — only show for upcoming events
+      // Interested counter + save + reminder — only show for upcoming events
       const isInterested  = hasUserInterested(e.id);
       const isNotified    = isSubscribedToEvent(e.id);
       const interestedHtml = (mode === "upcoming" && e.id) ? `
         <div class="interested-row">
-          <button class="interested-btn ${isInterested ? 'active' : ''}" 
-                  data-event-id="${e.id}" 
+          <button class="interested-btn ${isInterested ? 'active' : ''}"
+                  data-event-id="${e.id}"
                   onclick="toggleInterested(event, '${e.id}')"
                   title="${isInterested ? "You're interested!" : "Mark as interested"}">
-            <span class="heart-icon">${isInterested ? '❤️' : '🤍'}</span>
+            <div class="fomo-avatars">
+              <div class="fomo-av">👤</div>
+              <div class="fomo-av">👤</div>
+              <div class="fomo-av">👤</div>
+            </div>
             <span class="interested-count" id="count-${e.id}">${e.interested || 0}</span>
-            <span>${e.interested === 1 ? 'person' : 'people'} interested</span>
+            <span>interested</span>
           </button>
-          ${e.id && e.date ? `<button class="add-to-cal-btn" onclick="downloadICS('${e.id}')" title="Add to your calendar">📆 Save</button>` : ""}
-          ${e.id ? `<button class="notify-btn ${isNotified ? 'active' : ''}" id="notify-${e.id}" onclick="toggleEventNotification('${e.id}', this)" title="${isNotified ? 'Stop notifications' : 'Notify me before this event'}">${isNotified ? '🔔' : '🔕'}</button>` : ""}
+          <div class="card-actions">
+            ${e.id && e.date ? `<button class="add-to-cal-btn" onclick="downloadICS('${e.id}')" title="Save to calendar">🔖</button>` : ""}
+            ${e.id ? `<button class="notify-btn ${isNotified ? 'active' : ''}" id="notify-${e.id}" onclick="toggleEventNotification('${e.id}', this)" title="${isNotified ? 'Stop reminders' : 'Remind me'}">${isNotified ? '🔔' : '🔕'}</button>` : ""}
+          </div>
         </div>` : "";
 
       // Description snippet
@@ -1738,21 +1766,24 @@ document.addEventListener("DOMContentLoaded", () => {
         : `<img class="cover-img" src="${getActivityImage(e.category, i)}" alt="${escapeHtml(e.name)}" loading="lazy" onerror="this.src='https://picsum.photos/seed/${i + 10}/800/420'" />`;
 
       eventsEl.insertAdjacentHTML("beforeend", `
-        <article class="card" style="background:${base};cursor:pointer;" onclick="window._openEventModal('${e.id}')">
-          ${coverHtml}
+        <article class="card" style="cursor:pointer;" onclick="window._openEventModal('${e.id}')">
+          <div class="card-campus-bar ${campusBarClass(e.campus)}"></div>
+          <div class="cover-wrap">
+            ${coverHtml}
+            <div class="cover-badges">
+              ${e.campus ? `<div class="cover-campus-badge ${campusBadgeClass(e.campus)}">📍 ${escapeHtml(e.campus)}</div>` : ''}
+              ${e.audience ? `<div class="cover-audience-badge">👥 ${escapeHtml(e.audience)}</div>` : ''}
+            </div>
+          </div>
           <div class="body">
             <div class="title">${escapeHtml(e.name)}</div>
-            <div class="title-gap"></div>
             ${dateLine}
             ${timeLine}
             ${venueLine}
-            ${audienceLine}
             ${descHtml}
-            <div class="chip">${escapeHtml(e.category)}</div>
-            ${campusTag}
-            <div onclick="event.stopPropagation()">
-              ${interestedHtml}
-            </div>
+          </div>
+          <div onclick="event.stopPropagation()">
+            ${interestedHtml}
           </div>
           ${bannerHtml}
         </article>
@@ -1763,6 +1794,14 @@ document.addEventListener("DOMContentLoaded", () => {
   function campusClass(campus){
     const map = { "Karachi":"karachi", "Nairobi":"nairobi", "Kampala":"kampala", "Dar es Salaam":"dares" };
     return map[campus] || "default";
+  }
+  function campusBarClass(campus){
+    const map = { "Karachi":"campus-bar-karachi","Nairobi":"campus-bar-nairobi","Kampala":"campus-bar-kampala","Dar es Salaam":"campus-bar-dares" };
+    return map[campus] || "campus-bar-default";
+  }
+  function campusBadgeClass(campus){
+    const map = { "Karachi":"campus-badge-karachi","Nairobi":"campus-badge-nairobi","Kampala":"campus-badge-kampala","Dar es Salaam":"campus-badge-dares" };
+    return map[campus] || "campus-badge-default";
   }
 
   /* ── Event Detail Modal ── */
@@ -1839,7 +1878,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ${isInterested?"❤️":"🤍"} <span id="modal-count-${e.id}">${e.interested||0}</span> Interested
       </button>
       ${e.date ? `<button onclick="downloadICS('${e.id}')"
-        style="background:#eff6ff;color:#2563eb;">
+        style="background:#eff6ff;color:#000060;">
         📆 Save to Calendar
       </button>` : ""}
       <button class="${isNotified?"notify-btn active":"notify-btn"}"
@@ -2449,7 +2488,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const og     = e.organiser ? `<span>🎭 ${escapeHtml(e.organiser)}</span>` : "";
       const icsBtn = e.id ? `<button class="add-to-cal-btn" onclick="downloadICS('${e.id}')">📆 Add to Calendar</button>` : "";
       const clubLink = e.organiser
-        ? `<a href="clubs.html?club=${encodeURIComponent(e.organiser)}" style="color:#2563eb;font-size:12px;font-weight:600;text-decoration:none;">View Club →</a>`
+        ? `<a href="clubs.html?club=${encodeURIComponent(e.organiser)}" style="color:#000060;font-size:12px;font-weight:600;text-decoration:none;">View Club →</a>`
         : "";
       return `
         <div class="cal-mobile-event">
